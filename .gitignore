@@ -47,10 +47,10 @@ htmlcov/
 test-results/
 playwright-report/
 
-# Screenshots and scraped HTML at root (not code)
+# Screenshots at root (not code)
 Screenshot *.png
 screencapture-*.png
-app_getpoppy_ai.html
 
-# Reference materials (large PDFs/images, not source code)
+# Non-project files at root
 Personal Branding/
+app_getpoppy_ai.html

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { oauthApi } from "@/lib/api";
 
-export default function NotionOAuthCallback() {
+function NotionCallbackInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -55,5 +55,19 @@ export default function NotionOAuthCallback() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function NotionOAuthCallback() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-[60vh] items-center justify-center">
+          <div className="animate-spin h-8 w-8 border-4 border-gray-800 border-t-transparent rounded-full" />
+        </main>
+      }
+    >
+      <NotionCallbackInner />
+    </Suspense>
   );
 }

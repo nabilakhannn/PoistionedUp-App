@@ -4,6 +4,8 @@ from typing import List
 from pydantic_settings import BaseSettings
 
 # .env lives at project root (two levels up from apps/api/)
+# In containers this path may not exist, which is fine: pydantic-settings
+# falls back to real environment variables set by the hosting platform.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 _ENV_FILE = _PROJECT_ROOT / ".env"
 
@@ -16,7 +18,7 @@ class Settings(BaseSettings):
     supabase_db_url: str = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
     # API
-    api_port: int = 8000
+    port: int = 8000  # Railway/Render inject PORT automatically
     cors_origins: List[str] = ["http://localhost:3000"]
 
     # LLM
@@ -39,7 +41,7 @@ class Settings(BaseSettings):
     max_workflows_per_user_per_day: int = 10
 
     # Observability
-    log_level: str = "DEBUG"
+    log_level: str = "INFO"  # DEBUG for local, INFO for production
 
     # OAuth
     google_client_id: str = ""
