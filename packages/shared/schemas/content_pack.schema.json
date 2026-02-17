@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ContentPack",
+  "description": "Schema for a complete YouTube content pack output",
+  "type": "object",
+  "properties": {
+    "workflow_id": { "type": "string", "format": "uuid" },
+    "version": { "type": "integer", "minimum": 1 },
+    "long_script": { "type": "object" },
+    "shorts": { "type": "array", "items": { "type": "object" } },
+    "titles": { "type": "array", "items": { "type": "string" } },
+    "description": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "pinned_comment": { "type": "string" },
+    "thumbnail_brief": { "type": "object" }
+  },
+  "required": ["workflow_id", "version"]
+}
