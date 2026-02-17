@@ -62,6 +62,7 @@ COMPOUND → Save NEW patterns to docs/compound/patterns/
 | `patterns/rls.md` | Row-Level Security policies, testing, uuid gotcha |
 | `patterns/fastapi-auth.md` | JWT auth via Supabase, dependency injection |
 | `patterns/async-worker.md` | Table-based polling, optimistic locking, stub pipeline |
+| `patterns/slice-21-document-context-injection.md` | LLM document injection: markers, validation gate, dedicated message slot |
 
 ### Documents to update AFTER every slice
 
@@ -1344,3 +1345,63 @@ Six feature tiers that close out the PRD's remaining "Must Have" items. Users ca
 - See existing patterns (no new pattern file needed, this extends `patterns/async-worker.md` and `patterns/fastapi-auth.md`)
 
 *Last updated: 2026-02-17 after Tier 1+2 completion.*
+
+---
+
+## Slice 21: Document Context Injection Fix (Fix Ladder)
+
+**Date:** 2026-02-17
+**Status:** COMPLETE
+
+### What we did (plain English)
+
+Users could upload PDFs, images, and links in the brand chat, but the AI kept saying "I can't read PDFs" even though the text was extracted correctly. The problem was how we fed the extracted text to the LLM: it was appended to the user's message (easy to lose), the system prompt contained the word "PDF" (triggers GPT-4o's refusal template), and there was no check to catch empty extractions before calling the LLM. We fixed all four issues from the user's "Fix Ladder" diagnostic.
+
+### Files changed
+
+| File | Action | What changed |
+|------|--------|-------------|
+| `apps/api/app/services/brand_chat.py` | Modified | `build_chat_messages()` now accepts `document_context` param. Document text injected as a dedicated user message before conversation history. System prompt rewritten to put document-handling rules first (primacy bias). All "PDF" references replaced with "document text". Assistant acknowledgment added after document injection. |
+| `apps/api/app/routers/brand.py` | Modified | Chat endpoint builds `doc_context_block` with DOCUMENT_CONTEXT markers, SHA1 fingerprint, and char count. Validation gate rejects documents under 50 chars. Removed old logic that appended file text to user message. |
+
+### What changed in behavior
+
+1. **Before:** Extracted document text was concatenated into the user's chat message. The LLM sometimes ignored it or said "I can't read PDFs."
+2. **After:** Document text is injected as its own message with structured markers. The LLM reads it reliably. The word "PDF" no longer appears in any prompt sent to the model.
+3. **New validation:** If file extraction returns fewer than 50 characters, the API returns a 422 error immediately instead of wasting an LLM call on empty input.
+4. **New logging:** Every document injection logs `source`, `sha1`, and `chars` so we can verify the text reached the model.
+
+### Tests run + results
+
+| Suite | Result |
+|-------|--------|
+| Backend pytest | **611 passed**, 0 failures, 6 warnings |
+| Playwright E2E | **52/52 passed** |
+| Manual verification | Uploaded a multi-page document, AI referenced specific content from it |
+
+### How to verify manually
+
+1. Go to `/brand/chat/foundation`, upload a document (PDF, image, or link).
+2. Ask the AI "What does this document say?" — it should reference specific content from the document.
+3. Upload an empty or corrupt file — you should see an error message about extraction failing, NOT an AI response saying "I can't read PDFs."
+
+### Risks + mitigations
+
+| Risk | Mitigation |
+|------|-----------|
+| 50-char threshold too aggressive for very short documents | Threshold is conservative; a single paragraph exceeds 50 chars. Can be tuned later. |
+| SHA1 logging could leak sensitive doc content | Only the hash is logged, never the actual text. Hash is truncated to 12 chars. |
+| Fake assistant acknowledgment could confuse the model | Uses the same JSON schema the brand chat expects (`{"reply": ..., "extracted": ...}`), so it blends naturally. |
+
+### Decisions
+
+- **#58: Document text goes into a dedicated message, never appended to user input.** Appending to the user message was fragile (truncation, lost in long conversations). A dedicated message slot is explicit and debuggable.
+- **#59: Never say "PDF" in prompts.** GPT-4o has a trained refusal template for "reading PDFs." Using "document text" or "user-provided document" avoids triggering it even when the actual text is present.
+- **#60: Validation gate before LLM call.** Fail fast with a clear error message rather than letting the LLM hallucinate about empty documents.
+- **#61: DOCUMENT_CONTEXT markers for grep-ability.** If the model ignores document content, search logs for `DOCUMENT_CONTEXT v1` and the SHA1 to prove whether the text was in the payload.
+
+### Pattern saved
+
+- New: `patterns/slice-21-document-context-injection.md`
+
+*Last updated: 2026-02-17 after Slice 21 (Fix Ladder) completion.*

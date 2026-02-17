@@ -18,14 +18,14 @@
 - [ ] Agent Zero runs in sandboxed Docker container with resource limits
 - [x] No secrets in logs (API keys, tokens, passwords redacted) -- Tier 2C: `_redact_query()` masks code, token, access_token, refresh_token, state in logged paths. `_REDACT_HEADERS` strips authorization, cookie, x-api-key from logs.
 - [x] CORS restricted to frontend origin only -- Slice 3: configured via CORS_ORIGINS env var, defaults to localhost:3000
-- [x] Input validation on all API endpoints (Pydantic models) -- Slice 3: WorkflowCreate validates goal_text length (10-2000 chars), returns 422 on invalid
+- [x] Input validation on all API endpoints (Pydantic models) -- Slice 3: WorkflowCreate validates goal_text length (10-2000 chars), returns 422 on invalid. Slice 21: document context validated (min 50 chars) before LLM call.
 - [x] SQL injection prevented (Supabase client uses parameterized queries) -- Slice 3: all DB access via Supabase Python client (.eq(), .insert()), no raw SQL
 
 ## UX Baseline Checklist
 
 - [x] Every status change visible in UI within 2 seconds (via Supabase Realtime) -- Slices 7-12: workflows table has Realtime enabled (008_realtime_workflows.sql), scheduled_items table too (009_schedule.sql). Workflow detail page and kanban board both subscribe to changes.
 - [x] Loading states shown during all async operations -- Slices 7-12: Content dashboard, workflow detail, schedule page all show skeleton/spinner during fetch. Export and import buttons show "Loading..." state.
-- [x] Error messages are human-readable (no raw stack traces shown to user) -- Slice 17/18: brand chat, research, performance all return user-friendly error messages (503 for quota, 502 for AI errors)
+- [x] Error messages are human-readable (no raw stack traces shown to user) -- Slice 17/18: brand chat, research, performance all return user-friendly error messages (503 for quota, 502 for AI errors). Slice 21: document extraction failures return clear 422 with actionable message.
 - [x] Workflow can be abandoned at any point without breaking anything -- Tier 1C: `POST /workflows/{id}/abandon` marks workflow as failed with audit trail. Works on queued, running, or awaiting_* statuses. Terminal statuses (approved, rejected, failed) return 409.
 - [x] Topic selection UI shows scores, sources, and reasoning (not just titles) -- Slice 8: TopicSelection component renders score, evidence, and reasoning per topic
 - [x] Hook selection UI shows hook type and score breakdown -- Slice 8: HookSelection component renders hook_type, score, and text
@@ -56,4 +56,5 @@
 - [x] Health check endpoint exists for monitoring -- Slice 1: `GET /health`. Week 8: enhanced with DB connectivity check.
 - [x] Environment variables documented in .env.example -- Slice 1: all vars with comments
 - [x] No hardcoded URLs or keys in source code -- Tier 2C: Codebase audit confirmed. All secrets loaded from `.env` via `settings`. Google/Notion OAuth URLs are public endpoints (not secrets).
-- [x] External API calls degrade gracefully on failure -- Slice 18: web search, YouTube, Reddit all wrap in try/except, return empty on failure, never crash the app
+- [x] External API calls degrade gracefully on failure -- Slice 18: web search, YouTube, Reddit all wrap in try/except, return empty on failure, never crash the app. Slice 21: document extraction failures return 422 with actionable message rather than passing empty text to LLM.
+- [x] LLM prompt injection mitigated for user-uploaded content -- Slice 21: document text injected with structured markers (DOCUMENT_CONTEXT v1), separated from system instructions by message boundaries. SHA1 fingerprint enables post-hoc audit.
