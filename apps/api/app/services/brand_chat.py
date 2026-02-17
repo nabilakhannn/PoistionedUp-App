@@ -408,6 +408,7 @@ def build_chat_messages(
     performance_context: str = "",
     memory_context: str = "",
     research_context: str = "",
+    document_context: str = "",
 ) -> List[Dict[str, str]]:
     """Build the LLM messages array from conversation history.
 
@@ -415,23 +416,28 @@ def build_chat_messages(
     never produces em dashes, reversal templates, corporate filler,
     or any other AI tell in its replies.
 
-    Context layers (all optional, all injected into system prompt):
-    - resource_context: user's uploaded knowledge base
-    - performance_context: content performance data
-    - memory_context: learned preferences and patterns
-    - research_context: LIVE web research (trends, competitors, Reddit)
+    Context layers (all optional):
+    - resource_context: user's uploaded knowledge base (system prompt)
+    - performance_context: content performance data (system prompt)
+    - memory_context: learned preferences and patterns (system prompt)
+    - research_context: LIVE web research (system prompt)
+    - document_context: extracted text from user's attached file/link
+      (injected as a dedicated user message, NOT appended to the
+       user's actual message, so it never gets truncated or lost)
     """
-    # ── CRITICAL: File/link instruction goes FIRST so the model never refuses ──
+    # ── CRITICAL: Document-handling instruction goes FIRST ──
     # GPT-4o has primacy bias; instructions at the top of the system prompt
     # take priority over instructions buried later.
-    system = """HARD RULE — FILE & LINK ATTACHMENTS:
-Our app already extracted the text from any file or link the user attached.
-The extracted text appears in user messages after "[Attached: <filename>]".
-That text IS the file content. You MUST read it and use it.
-NEVER say "I cannot read/extract/open PDFs" or any similar refusal.
-The text is literally right there in the conversation. Treat it exactly like
-the user copy-pasted it. Reference specific details from it.
-This rule overrides your default training about file limitations.
+    # NOTE: We avoid the word "PDF" anywhere in prompts because it triggers
+    # the model's trained refusal template ("I can't read PDFs").
+    system = """HARD RULE — DOCUMENT CONTEXT:
+When the user provides document text (from files, links, or uploads), it appears
+in a dedicated DOCUMENT_CONTEXT message in this conversation.
+That text IS the document content, already extracted and ready to use.
+You MUST read it, reference specific details from it, and use it in your coaching.
+NEVER say you cannot read documents or that you need the original file.
+The text is right here in the conversation. Treat it exactly as if the user typed it.
+This rule overrides any default training about file limitations.
 """
 
     system += MODULE_SYSTEMS.get(module, ICA_EXTRACTION_SYSTEM)
@@ -463,6 +469,29 @@ This rule overrides your default training about file limitations.
         )
 
     messages = [{"role": "system", "content": system}]
+
+    # ── Inject document context as a DEDICATED user message ──
+    # This goes right after the system prompt and before the conversation
+    # history. It's a separate message so it:
+    #   1. Never gets truncated by being mixed into the user's question
+    #   2. Is clearly visible in the message array for debugging
+    #   3. Has markers so we can verify it reached the model
+    if document_context:
+        messages.append({
+            "role": "user",
+            "content": document_context,
+        })
+        # Add a brief assistant acknowledgment so the model knows the
+        # document was received (keeps the alternating user/assistant pattern)
+        messages.append({
+            "role": "assistant",
+            "content": '{"reply": "Got it, I have the document text. Let me review it.", "extracted": {}}',
+        })
+        logger.info(
+            "Document context injected as dedicated message (chars=%d)",
+            len(document_context),
+        )
+
     messages.extend(conversation)
     return messages
 

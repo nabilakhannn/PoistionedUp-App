@@ -478,21 +478,45 @@ async def chat(
         )
         chat_row = new_chat.data[0]
 
-    # Build user message content (include file/link context if attached)
-    user_content = body.message
+    # ── Build document context block with markers (Fix Ladder step 2) ──
+    import hashlib
+
+    doc_context_block = None
     if body.file_context:
         file_label = body.file_name or "attached content"
-        user_content = (
-            f"{body.message}\n\n"
-            f"[Attached: {file_label}]\n"
-            f"{body.file_context[:15000]}"
+        doc_text = body.file_context[:15000]
+
+        # Validation gate (Fix Ladder step 1): reject if extraction is empty/broken
+        if len(doc_text.strip()) < 50:
+            logger.error(
+                "Document text too short to be useful (len=%d). "
+                "Extraction/attachment pipeline may be broken.",
+                len(doc_text.strip()),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Document text was not included properly (length={len(doc_text.strip())}). "
+                    "The file extraction may have failed. Please try uploading the file again."
+                ),
+            )
+
+        sha1 = hashlib.sha1(doc_text.encode("utf-8", errors="replace")).hexdigest()[:12]
+        doc_context_block = (
+            f"DOCUMENT_CONTEXT v1\n"
+            f"source={file_label}\n"
+            f"sha1={sha1}\n"
+            f"chars={len(doc_text)}\n"
+            f"--- BEGIN DOCUMENT TEXT ---\n"
+            f"{doc_text}\n"
+            f"--- END DOCUMENT TEXT ---"
         )
         logger.info(
-            "File context attached: name=%s, chars=%d (user_content total=%d)",
-            file_label, len(body.file_context), len(user_content),
+            "Document context prepared: source=%s, sha1=%s, chars=%d",
+            file_label, sha1, len(doc_text),
         )
 
-    # Append user message (show original message in history, full content goes to LLM)
+    # Append user message to chat history (stored version shows attachment label only)
     messages = list(chat_row.get("messages", []))
     stored_msg = body.message
     if body.file_name:
@@ -529,18 +553,25 @@ async def chat(
     except Exception as e:
         logger.debug("Research context fetch failed: %s", e)
 
-    # For the LLM, use messages with full file content in the last user message
-    llm_messages_input = list(messages)
-    if body.file_context and user_content != stored_msg:
-        # Replace the last stored message with the full version (including file text)
-        llm_messages_input[-1] = {"role": "user", "content": user_content}
-
     # Build LLM prompt and get response
+    # Document text is injected as a DEDICATED message (not appended to user msg)
     llm = _get_llm_client()
     llm_messages = build_chat_messages(
-        body.module, llm_messages_input, resource_context,
+        body.module, messages, resource_context,
         perf_context, mem_context, research_context,
+        document_context=doc_context_block or "",
     )
+
+    # ── Debug: log outbound message structure (Fix Ladder step 2) ──
+    if doc_context_block:
+        msg_roles = [m["role"] for m in llm_messages]
+        has_doc_marker = any("DOCUMENT_CONTEXT v1" in m.get("content", "") for m in llm_messages)
+        logger.info(
+            "LLM message structure: roles=%s, has_doc_marker=%s, total_chars=%d",
+            msg_roles,
+            has_doc_marker,
+            sum(len(m.get("content", "")) for m in llm_messages),
+        )
 
     try:
         response = llm.chat(
