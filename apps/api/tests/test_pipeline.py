@@ -891,9 +891,9 @@ class TestLLMUtils:
         assert result == {"foo": "bar"}
 
     def test_parse_invalid_json_raises(self):
-        from worker.graph.llm import parse_json_response
+        from worker.graph.llm import parse_json_response, LLMResponseParseError
 
-        with pytest.raises(json.JSONDecodeError):
+        with pytest.raises(LLMResponseParseError):
             parse_json_response("not json at all")
 
     def test_set_and_get_client(self):

@@ -78,16 +78,15 @@ class TestWorkflowSchemas:
         asset = ContentAsset(
             id="asset-1",
             workflow_id="wf-1",
-            asset_type="youtube_long",
+            type="youtube_long",
             platform="youtube",
-            title="Test Script",
-            body={"sections": []},
+            content_json={"sections": []},
             version=1,
             status="draft",
             created_at=datetime.now(),
             updated_at=datetime.now(),
         )
-        assert asset.asset_type == "youtube_long"
+        assert asset.type == "youtube_long"
         assert asset.platform == "youtube"
 
     def test_valid_platforms_constant(self):
@@ -123,42 +122,85 @@ class TestWorkflowEndpoints:
     @patch("app.routers.usage.check_daily_workflow_cap", return_value={"used": 0, "cap": 10, "remaining": 10, "at_limit": False})
     @patch("app.routers.workflows.get_admin_client")
     def test_create_workflow_brand_gate_blocks_incomplete(self, mock_admin, _mock_cap):
-        """Should reject workflow creation when brand profile is < 50% complete."""
+        """Should reject workflow creation when brand profile is < 50% complete.
+
+        With 8 modules and calculate_completeness(), a profile with only
+        sparse data in 1 module scores 0% overall (no module reaches 50%).
+        """
         mock_client = MagicMock()
         mock_admin.return_value = mock_client
 
-        # Profile with only 1 of 4 sections filled (25%)
-        mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-            data=[{"profile_json": {"foundation": {"beliefs": "test", "it_factor": "test"}}}]
+        sparse_profile = {
+            "foundation": {"beliefs": ["test"], "it_factor": {"unfair_advantage": "test"}},
+        }
+
+        # Route personal_brands lookups to return actual profile data
+        eq_inner = MagicMock()
+        eq_inner.execute.return_value = MagicMock(
+            data=[{"profile_json": sparse_profile}]
         )
+        eq_outer = MagicMock()
+        eq_outer.eq.return_value = eq_inner
+        mock_client.table.return_value.select.return_value.eq.return_value = eq_outer
 
         resp = self.client.post("/workflows", json={
             "goal_text": "Create content about personal branding strategies",
             "platforms": ["youtube"],
+            "brand_id": "test-brand-sparse",
         })
         assert resp.status_code == 400
-        assert "25% complete" in resp.json()["detail"]
+        assert "0% complete" in resp.json()["detail"]
 
     @patch("app.routers.usage.check_daily_workflow_cap", return_value={"used": 0, "cap": 10, "remaining": 10, "at_limit": False})
     @patch("app.routers.workflows.get_admin_client")
     def test_create_workflow_brand_gate_allows_complete(self, mock_admin, _mock_cap):
-        """Should allow workflow creation when brand profile >= 50% complete."""
+        """Should allow workflow creation when brand profile >= 50% complete.
+
+        Need at least 4 of 8 modules each >= 50% filled to hit overall 50%.
+        """
         mock_client = MagicMock()
         mock_admin.return_value = mock_client
 
-        # Profile with 3 of 4 sections filled (75%)
+        # Profile with 4 of 8 modules sufficiently filled (50% overall)
         profile = {
-            "foundation": {"beliefs": "test", "it_factor": "test"},
-            "ica": {"big_need": "test", "big_want": "test"},
-            "offer": {"what": "test", "target_audience": "test"},
+            # Brand: 2/3 keys = 66%
+            "brand": {
+                "statement": "We help founders position themselves",
+                "content_pillars": ["Branding", "Growth", "Content"],
+            },
+            # Foundation: 4/6 keys = 66%
+            "foundation": {
+                "beliefs": ["Content compounds", "Most people give up too early"],
+                "it_factor": {"unfair_advantage": "Built 3 businesses from scratch"},
+                "achievements_professional": ["$1M revenue", "500 clients"],
+                "content_pillars": ["Branding", "Growth"],
+            },
+            # ICA: 7/12 keys = 58%
+            "ica": {
+                "demographics": {"occupation": "Coach", "age": 35},
+                "persona_words": ["Ambitious", "Busy"],
+                "buying_motivations": {"money": "Revenue growth"},
+                "big_need": "Consistent leads",
+                "big_want": "Authority in their niche",
+                "pains": ["No time for content"],
+                "desires": ["Passive income"],
+            },
+            # Competitors: 3/6 keys = 50%
+            "competitors": {
+                "competitors": [{"name": "Competitor A", "strengths": ["Great content"]}],
+                "white_space": "Nobody teaches revenue ops for solopreneurs",
+                "differentiation": "I have actual operator experience",
+            },
         }
 
-        # For select().eq() calls, we chain
-        select_mock = MagicMock()
-        mock_client.table.return_value.select.return_value = select_mock
-        select_mock.eq.return_value.execute.return_value = MagicMock(
+        # Route personal_brands profile lookup (double .eq() chain)
+        eq_inner = MagicMock()
+        eq_inner.execute.return_value = MagicMock(
             data=[{"profile_json": profile}]
         )
+        eq_outer = MagicMock()
+        eq_outer.eq.return_value = eq_inner
+        mock_client.table.return_value.select.return_value.eq.return_value = eq_outer
 
         # For insert() call (workflow creation and audit)
         mock_client.table.return_value.insert.return_value.execute.return_value = MagicMock(
@@ -174,6 +216,7 @@ class TestWorkflowEndpoints:
         resp = self.client.post("/workflows", json={
             "goal_text": "Create content about personal branding strategies",
             "platforms": ["youtube"],
+            "brand_id": "test-brand-complete",
         })
         assert resp.status_code == 201
         assert resp.json()["id"] == "wf-new-123"
@@ -262,12 +305,13 @@ class TestWorkflowEndpoints:
             {
                 "id": "asset-1",
                 "workflow_id": "wf-1",
-                "asset_type": "youtube_long",
+                "type": "youtube_long",
                 "platform": "youtube",
-                "title": "Test Script",
-                "body": {"sections": []},
+                "content_json": {"sections": []},
                 "version": 1,
+                "is_latest": True,
                 "status": "draft",
+                "feedback": None,
                 "created_at": "2026-01-01T00:00:00",
                 "updated_at": "2026-01-01T00:00:00",
             }

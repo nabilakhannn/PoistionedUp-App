@@ -14,6 +14,7 @@ class ExperimentCreate(BaseModel):
     variant_b: str = Field(..., min_length=1)
     platform: str = Field(..., min_length=1)
     target_posts: int = Field(default=4, ge=2, le=20)
+    brand_id: Optional[str] = None
 
 
 class ExperimentUpdate(BaseModel):
@@ -38,6 +39,7 @@ class ExperimentSummary(BaseModel):
     variant_b_avg_engagement: Optional[float] = None
     winner: Optional[str] = None
     conclusion: Optional[str] = None
+    brand_id: Optional[str] = None
     created_at: str
     completed_at: Optional[str] = None
 

@@ -39,6 +39,7 @@ def create_experiment(
     platform: str,
     target_posts: int = 4,
     status: str = "proposed",
+    brand_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create a new experiment."""
     from app.deps import get_admin_client
@@ -54,6 +55,8 @@ def create_experiment(
         "target_posts": target_posts,
         "status": status,
     }
+    if brand_id:
+        insert_data["brand_id"] = brand_id
 
     resp = admin.table("agent_experiments").insert(insert_data).execute()
     if not resp.data:
@@ -85,6 +88,7 @@ def list_experiments(
     user_id: str,
     status: Optional[str] = None,
     platform: Optional[str] = None,
+    brand_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """List experiments with optional filters."""
     from app.deps import get_admin_client
@@ -96,6 +100,8 @@ def list_experiments(
         .eq("user_id", user_id)
         .order("created_at", desc=True)
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
     if status:
         query = query.eq("status", status)
     if platform:
@@ -339,6 +345,7 @@ def check_and_conclude(user_id: str, experiment_id: str) -> Dict[str, Any]:
                 category=exp["variable"],
                 source="experiment",
                 status="pending_approval",
+                brand_id=exp.get("brand_id"),
             )
             resulting_memory_id = memory.get("id")
             updates["resulting_memory_id"] = resulting_memory_id
@@ -362,13 +369,14 @@ def check_and_conclude(user_id: str, experiment_id: str) -> Dict[str, Any]:
 def get_active_experiment_context(
     user_id: str,
     platform: Optional[str] = None,
+    brand_id: Optional[str] = None,
 ) -> str:
     """Get formatted experiment context for pipeline prompt injection.
 
     Returns a string describing any active/running experiments the agent
     should be aware of when generating content.
     """
-    experiments = list_experiments(user_id)
+    experiments = list_experiments(user_id, brand_id=brand_id)
 
     # Filter to approved/running experiments for this platform
     active = [
@@ -413,9 +421,10 @@ def get_completed_experiments_summary(
     user_id: str,
     platform: Optional[str] = None,
     limit: int = 5,
+    brand_id: Optional[str] = None,
 ) -> str:
     """Get summary of completed experiments for context injection."""
-    experiments = list_experiments(user_id, status="completed")
+    experiments = list_experiments(user_id, status="completed", brand_id=brand_id)
 
     if platform:
         experiments = [e for e in experiments if e["platform"] == platform]
@@ -434,7 +443,7 @@ def get_completed_experiments_summary(
 
 # ── Auto-Proposal ─────────────────────────────────────────
 
-def auto_propose_experiments(user_id: str) -> List[Dict[str, Any]]:
+def auto_propose_experiments(user_id: str, brand_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Use LLM to analyze performance data and propose experiments.
 
     Looks at the user's content_posts, finds variables with variance,
@@ -444,10 +453,16 @@ def auto_propose_experiments(user_id: str) -> List[Dict[str, Any]]:
     admin = get_admin_client()
 
     # Get user's posts with engagement data
-    resp = (
+    query = (
         admin.table("content_posts")
         .select("hook_type, topic_category, platform, engagement_rate, performance_tier")
         .eq("user_id", user_id)
+    )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+
+    resp = (
+        query
         .order("created_at", desc=True)
         .limit(50)
         .execute()
@@ -459,7 +474,7 @@ def auto_propose_experiments(user_id: str) -> List[Dict[str, Any]]:
         return []
 
     # Get existing experiments to avoid duplicates
-    existing = list_experiments(user_id)
+    existing = list_experiments(user_id, brand_id=brand_id)
     existing_vars = set()
     for e in existing:
         if e["status"] not in ("cancelled", "completed"):
@@ -532,6 +547,7 @@ def auto_propose_experiments(user_id: str) -> List[Dict[str, Any]]:
                 platform=p["platform"],
                 target_posts=p["target_posts"],
                 status="proposed",
+                brand_id=brand_id,
             )
             created.append(exp)
         except Exception as e:

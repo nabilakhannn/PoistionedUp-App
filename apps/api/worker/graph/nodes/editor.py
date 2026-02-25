@@ -10,15 +10,17 @@ import json
 import logging
 from typing import Any, Dict
 
-from worker.graph.llm import get_llm_client, get_model_for_step, parse_json_response, set_tracking_context
+from worker.graph.llm import get_llm_client, get_model_for_step, parse_json_response, set_tracking_context, safe_node
 from worker.graph.prompts import editor as prompts
 
 logger = logging.getLogger("worker.graph.nodes.editor")
 
 
+@safe_node
 def editor(state: Dict[str, Any]) -> Dict[str, Any]:
     """Edit the content pack for voice consistency and clarity across all platforms."""
-    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "editor")
+    _tier = state.get("settings", {}).get("model_tier", "")
+    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "editor", _tier)
 
     content_pack = state.get("content_pack", {})
     profile = state.get("profile_snapshot", {})

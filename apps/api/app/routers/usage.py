@@ -52,6 +52,8 @@ class UsageSummary(BaseModel):
     workflow_count: int
     daily_workflows_used: int
     daily_workflow_cap: int
+    daily_tokens_used: int
+    daily_token_cap: int
     period_costs: Dict[str, float]  # daily, weekly, monthly
     workflows: List[WorkflowCostSummary]
 
@@ -61,6 +63,10 @@ class CapStatus(BaseModel):
     daily_workflow_cap: int
     remaining: int
     at_limit: bool
+    daily_tokens_used: int
+    daily_token_cap: int
+    token_cap_remaining: int
+    token_cap_at_limit: bool
 
 
 # ── Helpers ──────────────────────────────────────────────────
@@ -96,22 +102,59 @@ def check_daily_workflow_cap(user_id: str) -> Dict[str, Any]:
     }
 
 
+def check_daily_token_cap(user_id: str) -> Dict[str, Any]:
+    """Check how many tokens the user has consumed today vs their cap.
+
+    Returns dict with used, cap, remaining, and at_limit.
+    """
+    admin = get_admin_client()
+    today_start = datetime.now(timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+    resp = (
+        admin.table("usage_costs")
+        .select("input_tokens, output_tokens")
+        .eq("user_id", user_id)
+        .gte("created_at", today_start.isoformat())
+        .execute()
+    )
+
+    used = 0
+    for row in (resp.data or []):
+        used += row.get("input_tokens", 0) + row.get("output_tokens", 0)
+
+    cap = settings.max_tokens_per_user_per_day
+
+    return {
+        "used": used,
+        "cap": cap,
+        "remaining": max(0, cap - used),
+        "at_limit": used >= cap,
+    }
+
+
 # ── Endpoints ────────────────────────────────────────────────
 
 
 @router.get("", response_model=UsageSummary)
-async def get_usage_summary(user: CurrentUser = Depends(get_current_user)):
+async def get_usage_summary(
+    brand_id: Optional[str] = None,
+    user: CurrentUser = Depends(get_current_user),
+):
     """Get comprehensive usage summary for the current user."""
     admin = get_admin_client()
 
     # Get all usage cost rows for this user
-    costs_resp = (
+    query = (
         admin.table("usage_costs")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", desc=True)
-        .execute()
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+
+    costs_resp = query.order("created_at", desc=True).execute()
     costs = costs_resp.data or []
 
     # Totals
@@ -196,6 +239,7 @@ async def get_usage_summary(user: CurrentUser = Depends(get_current_user)):
 
     # Daily cap status
     cap_info = check_daily_workflow_cap(user.id)
+    token_cap_info = check_daily_token_cap(user.id)
 
     return UsageSummary(
         total_cost=round(total_cost, 6),
@@ -205,6 +249,8 @@ async def get_usage_summary(user: CurrentUser = Depends(get_current_user)):
         workflow_count=len(wf_costs),
         daily_workflows_used=cap_info["used"],
         daily_workflow_cap=cap_info["cap"],
+        daily_tokens_used=token_cap_info["used"],
+        daily_token_cap=token_cap_info["cap"],
         period_costs={
             "daily": round(daily_cost, 6),
             "weekly": round(weekly_cost, 6),
@@ -217,6 +263,7 @@ async def get_usage_summary(user: CurrentUser = Depends(get_current_user)):
 @router.get("/daily", response_model=List[DailyUsage])
 async def get_daily_usage(
     days: int = 30,
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
     """Get daily usage breakdown for the last N days (for charting)."""
@@ -224,10 +271,16 @@ async def get_daily_usage(
 
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
-    costs_resp = (
+    query = (
         admin.table("usage_costs")
         .select("*")
         .eq("user_id", user.id)
+    )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+
+    costs_resp = (
+        query
         .gte("created_at", since.isoformat())
         .order("created_at")
         .execute()
@@ -289,11 +342,16 @@ async def get_daily_usage(
 
 @router.get("/cap", response_model=CapStatus)
 async def get_cap_status(user: CurrentUser = Depends(get_current_user)):
-    """Get the current daily workflow cap status."""
+    """Get the current daily workflow cap and token cap status."""
     cap_info = check_daily_workflow_cap(user.id)
+    token_cap_info = check_daily_token_cap(user.id)
     return CapStatus(
         daily_workflows_used=cap_info["used"],
         daily_workflow_cap=cap_info["cap"],
         remaining=cap_info["remaining"],
         at_limit=cap_info["at_limit"],
+        daily_tokens_used=token_cap_info["used"],
+        daily_token_cap=token_cap_info["cap"],
+        token_cap_remaining=token_cap_info["remaining"],
+        token_cap_at_limit=token_cap_info["at_limit"],
     )

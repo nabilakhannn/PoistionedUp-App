@@ -33,6 +33,7 @@ class CollectionCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     description: str = Field(default="", max_length=2000)
     creator_url: Optional[str] = None
+    brand_id: Optional[str] = None
 
 
 class CollectionUpdate(BaseModel):
@@ -70,12 +71,14 @@ class CollectionSummary(BaseModel):
 
 
 class CollectionResourceOut(BaseModel):
-    """Minimal resource info for collection detail view."""
+    """Resource info for collection detail view, includes content preview."""
     id: str
     type: str
     title: str
     source_url: Optional[str] = None
     chunk_count: int = 0
+    content_preview: str = ""
+    has_transcript: bool = False
     created_at: datetime
 
 

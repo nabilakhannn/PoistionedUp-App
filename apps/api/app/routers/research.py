@@ -233,3 +233,198 @@ async def reddit_search(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Reddit search error: {str(e)[:200]}",
         )
+
+
+@router.post("/linkedin", response_model=QuickSearchResponse)
+async def linkedin_search(
+    body: QuickSearchRequest,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Search LinkedIn for posts and articles on a topic."""
+    try:
+        from app.services.web_search import search_web
+
+        raw = search_web(
+            f"site:linkedin.com/posts OR site:linkedin.com/pulse {body.query}",
+            max_results=body.max_results,
+        )
+        results = [
+            ResearchResult(
+                title=r.get("title", ""),
+                url=r.get("url", ""),
+                snippet=r.get("snippet", ""),
+                source="linkedin",
+            )
+            for r in raw
+        ]
+
+        return QuickSearchResponse(results=results, source="linkedin")
+
+    except Exception as e:
+        logger.error("LinkedIn search failed: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"LinkedIn search error: {str(e)[:200]}",
+        )
+
+
+@router.post("/tiktok", response_model=QuickSearchResponse)
+async def tiktok_search(
+    body: QuickSearchRequest,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Search TikTok for content on a topic."""
+    try:
+        from app.services.web_search import search_web
+
+        raw = search_web(
+            f"site:tiktok.com {body.query}",
+            max_results=body.max_results,
+        )
+        results = [
+            ResearchResult(
+                title=r.get("title", ""),
+                url=r.get("url", ""),
+                snippet=r.get("snippet", ""),
+                source="tiktok",
+            )
+            for r in raw
+        ]
+
+        return QuickSearchResponse(results=results, source="tiktok")
+
+    except Exception as e:
+        logger.error("TikTok search failed: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"TikTok search error: {str(e)[:200]}",
+        )
+
+
+@router.post("/feed", response_model=ResearchResponse)
+async def research_feed(
+    body: ResearchRequest,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Multi-platform feed search. Searches all requested platforms and returns unified results.
+
+    Unlike the main /research endpoint, this returns results organized for a feed view
+    with per-platform results aggregated together.
+    """
+    try:
+        from app.services.web_search import (
+            search_web,
+            search_youtube_trends,
+            search_reddit,
+        )
+
+        web_results = []
+        youtube_trends = []
+        reddit_discussions = []
+        signal_count = 0
+
+        sources = body.sources or {}
+
+        # Reddit
+        if sources.get("reddit", False):
+            try:
+                raw = search_reddit(body.topic, max_results=body.max_results)
+                reddit_discussions = raw
+                signal_count += len(raw)
+            except Exception as e:
+                logger.warning("Feed reddit search failed: %s", e)
+
+        # YouTube
+        if sources.get("youtube", False):
+            try:
+                raw = search_youtube_trends(body.topic, max_results=body.max_results)
+                youtube_trends = raw
+                signal_count += len(raw)
+            except Exception as e:
+                logger.warning("Feed youtube search failed: %s", e)
+
+        # LinkedIn (via web search scoped to linkedin.com)
+        if sources.get("linkedin", False):
+            try:
+                raw = search_web(
+                    f"site:linkedin.com/posts OR site:linkedin.com/pulse {body.topic}",
+                    max_results=body.max_results,
+                )
+                for r in raw:
+                    r["source"] = "linkedin"
+                web_results.extend(raw)
+                signal_count += len(raw)
+            except Exception as e:
+                logger.warning("Feed linkedin search failed: %s", e)
+
+        # TikTok (via web search scoped to tiktok.com)
+        if sources.get("tiktok", False):
+            try:
+                raw = search_web(
+                    f"site:tiktok.com {body.topic}",
+                    max_results=body.max_results,
+                )
+                for r in raw:
+                    r["source"] = "tiktok"
+                web_results.extend(raw)
+                signal_count += len(raw)
+            except Exception as e:
+                logger.warning("Feed tiktok search failed: %s", e)
+
+        # General web (fallback / "All" tab)
+        if sources.get("web", False):
+            try:
+                raw = search_web(body.topic, max_results=body.max_results)
+                web_results.extend(raw)
+                signal_count += len(raw)
+            except Exception as e:
+                logger.warning("Feed web search failed: %s", e)
+
+        # Convert to response format
+        web = [
+            ResearchResult(
+                title=r.get("title", ""),
+                url=r.get("url", ""),
+                snippet=r.get("snippet", ""),
+                source=r.get("source", "web"),
+            )
+            for r in web_results
+        ]
+
+        youtube = [
+            ResearchResult(
+                title=r.get("title", ""),
+                url=r.get("url", ""),
+                description=r.get("description", ""),
+                publisher=r.get("publisher", ""),
+                views=r.get("views", ""),
+                source="youtube",
+            )
+            for r in youtube_trends
+        ]
+
+        reddit = [
+            ResearchResult(
+                title=r.get("title", ""),
+                url=r.get("url", ""),
+                snippet=r.get("snippet", ""),
+                source="reddit",
+            )
+            for r in reddit_discussions
+        ]
+
+        return ResearchResponse(
+            web_results=web,
+            youtube_trends=youtube,
+            reddit_discussions=reddit,
+            competitor_analysis=[],
+            signal_count=signal_count,
+            summary=f"Found {signal_count} results across selected platforms.",
+        )
+
+    except Exception as e:
+        logger.error("Research feed failed: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Feed search error: {str(e)[:200]}",
+        )

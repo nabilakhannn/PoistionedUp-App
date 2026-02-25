@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -60,10 +60,10 @@ def _get_resource_count(admin, collection_id: str) -> int:
 
 
 def _get_collection_resources(admin, collection_id: str) -> List[CollectionResourceOut]:
-    """Fetch resources belonging to a collection with chunk counts."""
+    """Fetch resources belonging to a collection with chunk counts and content preview."""
     resp = (
         admin.table("resources")
-        .select("id, type, title, source_url, created_at")
+        .select("id, type, title, source_url, content_text, created_at")
         .eq("collection_id", collection_id)
         .order("created_at", desc=True)
         .execute()
@@ -85,17 +85,32 @@ def _get_collection_resources(admin, collection_id: str) -> List[CollectionResou
             rid = row["resource_id"]
             chunk_counts[rid] = chunk_counts.get(rid, 0) + 1
 
-    return [
-        CollectionResourceOut(
-            id=r["id"],
-            type=r["type"],
-            title=r["title"],
-            source_url=r.get("source_url"),
-            chunk_count=chunk_counts.get(r["id"], 0),
-            created_at=r["created_at"],
+    results = []
+    for r in resp.data:
+        content = r.get("content_text") or ""
+        # Check if transcript has been extracted (content has [TRANSCRIPT] marker + text after it)
+        has_transcript = "[TRANSCRIPT]" in content and len(content.split("[TRANSCRIPT]", 1)[-1].strip()) > 50
+        # Build preview: take first 500 chars after the [TRANSCRIPT] marker if present
+        if has_transcript:
+            transcript_text = content.split("[TRANSCRIPT]", 1)[-1].strip()
+            preview = transcript_text[:500]
+        else:
+            preview = content[:500] if content else ""
+
+        results.append(
+            CollectionResourceOut(
+                id=r["id"],
+                type=r["type"],
+                title=r["title"],
+                source_url=r.get("source_url"),
+                chunk_count=chunk_counts.get(r["id"], 0),
+                content_preview=preview,
+                has_transcript=has_transcript,
+                created_at=r["created_at"],
+            )
         )
-        for r in resp.data
-    ]
+
+    return results
 
 
 # ── CRUD ─────────────────────────────────────────────────
@@ -109,14 +124,18 @@ async def create_collection(
     """Create a new collection (knowledge folder)."""
     admin = get_admin_client()
 
+    insert_data = {
+        "user_id": user.id,
+        "name": body.name,
+        "description": body.description,
+        "creator_url": body.creator_url,
+    }
+    if body.brand_id:
+        insert_data["brand_id"] = body.brand_id
+
     resp = (
         admin.table("collections")
-        .insert({
-            "user_id": user.id,
-            "name": body.name,
-            "description": body.description,
-            "creator_url": body.creator_url,
-        })
+        .insert(insert_data)
         .execute()
     )
 
@@ -135,18 +154,22 @@ async def create_collection(
 
 @router.get("", response_model=List[CollectionSummary])
 async def list_collections(
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """List all collections for the authenticated user."""
+    """List all collections for the authenticated user, optionally filtered by brand."""
     admin = get_admin_client()
 
-    resp = (
+    query = (
         admin.table("collections")
         .select("*")
         .eq("user_id", user.id)
         .order("updated_at", desc=True)
-        .execute()
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+
+    resp = query.execute()
 
     if not resp.data:
         return []

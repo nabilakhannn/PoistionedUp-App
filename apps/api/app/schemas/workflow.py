@@ -42,6 +42,11 @@ class WorkflowCreate(BaseModel):
         },
         description="Research source toggles and other settings",
     )
+    brand_id: Optional[str] = Field(
+        None,
+        description="ID of the personal brand to use for content generation. "
+                    "If omitted, uses the user's current/default brand.",
+    )
 
 
 # ── Response models ───────────────────────────────────────
@@ -58,6 +63,8 @@ class WorkflowSummary(BaseModel):
     updated_at: datetime
     platforms: List[str] = Field(default_factory=lambda: ["youtube"])
     estimated_cost: float = 0.0
+    objective: Optional[str] = None
+    content_type: Optional[str] = None
 
 
 class WorkflowDetail(BaseModel):
@@ -87,10 +94,9 @@ class ContentAsset(BaseModel):
     """A single content asset from a workflow."""
     id: str
     workflow_id: str
-    asset_type: str
-    platform: Optional[str] = None
-    title: Optional[str] = None
-    body: Optional[Dict[str, Any]] = None
+    type: str
+    platform: str = "youtube"
+    content_json: Optional[Dict[str, Any]] = None
     version: int = 1
     is_latest: bool = True
     status: str = "draft"

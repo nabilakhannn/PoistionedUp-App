@@ -193,6 +193,42 @@ def search_reddit(
         return []
 
 
+# ── LinkedIn Search ────────────────────────────────────────
+
+
+def search_linkedin(
+    query: str,
+    max_results: int = 5,
+) -> List[Dict[str, Any]]:
+    """Search LinkedIn for posts and articles on a topic.
+
+    Uses web search scoped to linkedin.com/posts and linkedin.com/pulse.
+    """
+    search_query = f"site:linkedin.com/posts OR site:linkedin.com/pulse {query}"
+    results = search_web(search_query, max_results=max_results)
+    for r in results:
+        r["source"] = "linkedin"
+    return results
+
+
+# ── TikTok Search ─────────────────────────────────────────
+
+
+def search_tiktok(
+    query: str,
+    max_results: int = 5,
+) -> List[Dict[str, Any]]:
+    """Search TikTok for trending content on a topic.
+
+    Uses web search scoped to tiktok.com.
+    """
+    search_query = f"site:tiktok.com {query}"
+    results = search_web(search_query, max_results=max_results)
+    for r in results:
+        r["source"] = "tiktok"
+    return results
+
+
 # ── Competitor Content Analysis ─────────────────────────────
 
 

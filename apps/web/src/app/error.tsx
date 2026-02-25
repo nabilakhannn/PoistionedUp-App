@@ -10,24 +10,46 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[PositionedUp] Uncaught error:", error);
+    console.error("Unhandled error:", error);
   }, [error]);
 
   return (
-    <main className="max-w-lg mx-auto py-20 px-6 text-center">
-      <div className="bg-red-50 border border-red-200 rounded-xl p-8">
-        <h2 className="text-lg font-bold text-red-900 mb-2">
+    <main className="flex min-h-[60vh] flex-col items-center justify-center p-8">
+      <div className="text-center max-w-md">
+        <div className="text-5xl mb-4">⚠️</div>
+        <h1 className="text-2xl font-bold text-zinc-100 mb-2">
           Something went wrong
-        </h2>
-        <p className="text-sm text-red-700 mb-6">
-          {error.message || "An unexpected error occurred. Please try again."}
+        </h1>
+        <p className="text-zinc-400 text-sm mb-6">
+          An unexpected error occurred. This has been logged and we will look
+          into it. You can try again or go back to the home page.
         </p>
-        <button
-          onClick={reset}
-          className="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
-        >
-          Try again
-        </button>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={reset}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+          >
+            Try again
+          </button>
+          <a
+            href="/brands"
+            className="px-4 py-2 border border-zinc-700 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-800 transition"
+          >
+            Go to Home
+          </a>
+        </div>
+        {process.env.NODE_ENV === "development" && (
+          <details className="mt-6 text-left">
+            <summary className="text-xs text-zinc-500 cursor-pointer">
+              Error details (dev only)
+            </summary>
+            <pre className="mt-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg overflow-auto max-h-48">
+              {error.message}
+              {"\n"}
+              {error.stack}
+            </pre>
+          </details>
+        )}
       </div>
     </main>
   );

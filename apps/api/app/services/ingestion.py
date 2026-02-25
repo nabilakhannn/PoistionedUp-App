@@ -15,8 +15,11 @@ from __future__ import annotations
 
 import csv
 import io
+import logging
 import re
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────
 
@@ -260,9 +263,10 @@ def _format_duration(seconds: Optional[int]) -> str:
     """Format seconds as HH:MM:SS or MM:SS."""
     if not seconds:
         return "unknown"
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    secs = seconds % 60
+    s = int(seconds)  # yt-dlp may return float
+    hours = s // 3600
+    minutes = (s % 3600) // 60
+    secs = s % 60
     if hours > 0:
         return f"{hours}:{minutes:02d}:{secs:02d}"
     return f"{minutes}:{secs:02d}"
@@ -272,11 +276,12 @@ def _format_views(count: Optional[int]) -> str:
     """Format view count as human-readable string."""
     if count is None:
         return "unknown"
-    if count >= 1_000_000:
-        return f"{count / 1_000_000:.1f}M"
-    if count >= 1_000:
-        return f"{count / 1_000:.1f}K"
-    return str(count)
+    c = int(count)  # yt-dlp may return float
+    if c >= 1_000_000:
+        return f"{c / 1_000_000:.1f}M"
+    if c >= 1_000:
+        return f"{c / 1_000:.1f}K"
+    return str(c)
 
 
 def extract_video_metadata(url: str) -> Dict[str, Any]:
@@ -365,30 +370,48 @@ def format_metadata_header(meta: Dict[str, Any]) -> str:
 def _transcribe_with_captions(video_id: str) -> Optional[Dict[str, str]]:
     """Try to get transcript from YouTube captions (free, instant).
 
+    Uses youtube-transcript-api v1.x API (instance methods, not class methods).
     Returns dict with text/language/error, or None if no captions available.
     """
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
 
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        api = YouTubeTranscriptApi()
 
-        # Prefer English, fall back to any available, then try auto-generated
+        # Strategy 1: Try direct fetch with English (simplest, handles most cases)
+        try:
+            fetched = api.fetch(video_id, languages=["en"])
+            lines = [entry.text for entry in fetched]
+            full_text = " ".join(lines)
+            if full_text.strip():
+                logger.info(f"Captions fetched for {video_id} via direct fetch (en)")
+                return {"text": full_text, "language": "en", "error": "", "method": "captions"}
+        except Exception as e:
+            logger.debug(f"Direct English captions failed for {video_id}: {e}")
+
+        # Strategy 2: List available transcripts and pick the best one
+        try:
+            transcript_list = api.list(video_id)
+        except Exception as e:
+            logger.debug(f"No transcripts available for {video_id}: {e}")
+            return None
+
+        # Prefer English manual, then any manual, then any generated
         transcript = None
         lang = "unknown"
         try:
             transcript = transcript_list.find_transcript(["en"])
             lang = "en"
         except Exception:
+            # Try any manually created transcript
             try:
-                for t in transcript_list:
-                    if not t.is_generated:
-                        transcript = t
-                        lang = t.language_code
-                        break
+                transcript = transcript_list.find_manually_created_transcript(["en"])
+                lang = "en"
             except Exception:
                 pass
 
         if transcript is None:
+            # Fall back to any available transcript
             try:
                 for t in transcript_list:
                     transcript = t
@@ -398,15 +421,22 @@ def _transcribe_with_captions(video_id: str) -> Optional[Dict[str, str]]:
                 pass
 
         if transcript is None:
+            logger.debug(f"No usable transcript found for {video_id}")
             return None
 
         entries = transcript.fetch()
         lines = [entry.text for entry in entries]
         full_text = " ".join(lines)
 
+        if not full_text.strip():
+            logger.debug(f"Empty transcript text for {video_id}")
+            return None
+
+        logger.info(f"Captions fetched for {video_id} via list+fetch (lang={lang}, {len(full_text.split())} words)")
         return {"text": full_text, "language": lang, "error": "", "method": "captions"}
 
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Caption extraction failed for {video_id}: {type(e).__name__}: {e}")
         return None
 
 

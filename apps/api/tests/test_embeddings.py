@@ -348,7 +348,7 @@ class TestBrandChatContext:
         result = get_relevant_context("offer question", "user-123")
 
         assert result == "Formatted context"
-        mock_search.assert_called_once_with("offer question", "user-123", limit=3, threshold=0.7)
+        mock_search.assert_called_once_with("offer question", "user-123", limit=3, threshold=0.7, brand_id=None)
 
     @patch("app.services.embeddings.search_similar_chunks", side_effect=Exception("no module"))
     def test_get_relevant_context_handles_import_error(self, mock_search):

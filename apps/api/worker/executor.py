@@ -15,6 +15,8 @@ from supabase import Client
 
 from worker.graph.pipeline import build_graph, create_initial_state, get_checkpointer
 from worker.lifecycle import create_snapshot, update_status
+from app.services.agent_memory import record_workflow_memories
+from app.services.analytics import track_pipeline_event
 
 logger = logging.getLogger("worker.executor")
 
@@ -188,6 +190,14 @@ def run_pipeline(
         )
 
         logger.info("Starting pipeline for workflow %s", workflow_id)
+
+        # Track pipeline start
+        track_pipeline_event(
+            user_id=wf["user_id"],
+            workflow_id=workflow_id,
+            event_type="started",
+        )
+
         result = graph.invoke(initial_state, config=config)
 
     elif action == "resume":
@@ -214,6 +224,47 @@ def run_pipeline(
 
     # Determine outcome: did we hit an interrupt or complete?
     final_state = result if isinstance(result, dict) else {}
+
+    # ── Check for node-level errors (from safe_node decorator) ──
+    node_error = final_state.get("node_error")
+    if node_error:
+        error_node = node_error.get("node", "unknown")
+        error_msg = node_error.get("error", "Unknown error")
+        error_type = node_error.get("error_type", "Exception")
+        elapsed = node_error.get("elapsed_seconds", 0)
+
+        logger.error(
+            "Pipeline failed at node %s (wf=%s): [%s] %s (%.1fs)",
+            error_node, workflow_id, error_type, error_msg, elapsed,
+        )
+
+        # Track pipeline failure
+        user_id = final_state.get("user_id", "")
+        track_pipeline_event(
+            user_id=user_id,
+            workflow_id=workflow_id,
+            event_type="failed",
+            step=error_node,
+            properties={
+                "error_type": error_type,
+                "error": error_msg[:200],
+                "elapsed_seconds": elapsed,
+            },
+        )
+
+        create_snapshot(client, workflow_id, error_node, state_json={
+            "step": error_node,
+            "status": "failed",
+            "error": error_msg,
+            "error_type": error_type,
+        })
+
+        update_status(
+            client, workflow_id, "failed",
+            current_step=error_node,
+        )
+
+        return "failed"
 
     # Check for pending interrupts
     graph_state = graph.get_state(config)
@@ -244,6 +295,15 @@ def run_pipeline(
             current_step=interrupt_node,
         )
 
+        # Track pipeline interruption
+        user_id = final_state.get("user_id", "")
+        track_pipeline_event(
+            user_id=user_id,
+            workflow_id=workflow_id,
+            event_type="interrupted",
+            step=interrupt_node,
+        )
+
         logger.info(
             "Pipeline interrupted at %s (status=%s) for workflow %s",
             interrupt_node, interrupt_status, workflow_id,
@@ -263,7 +323,46 @@ def run_pipeline(
     final_decision = final_state.get("approval_decision", "approved")
     final_status = "approved" if final_decision == "approved" else "rejected"
 
+    # ── Auto-record memories on approval ──
+    if final_decision == "approved":
+        try:
+            # Fetch brand_id from the workflow row
+            wf_resp = (
+                client.table("workflows")
+                .select("brand_id")
+                .eq("id", workflow_id)
+                .execute()
+            )
+            wf_brand_id = None
+            if wf_resp.data:
+                wf_brand_id = wf_resp.data[0].get("brand_id")
+
+            memories = record_workflow_memories(
+                user_id=final_state.get("user_id", ""),
+                workflow_id=workflow_id,
+                state=final_state,
+                brand_id=wf_brand_id,
+            )
+            logger.info(
+                "Auto-recorded %d memories from approved workflow %s",
+                len(memories), workflow_id,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to auto-record memories for workflow %s: %s",
+                workflow_id, e,
+            )
+
     update_status(client, workflow_id, final_status, current_step="approval")
+
+    # Track pipeline completion
+    user_id = final_state.get("user_id", "")
+    track_pipeline_event(
+        user_id=user_id,
+        workflow_id=workflow_id,
+        event_type="completed",
+        properties={"decision": final_decision},
+    )
 
     logger.info(
         "Pipeline completed for workflow %s (decision=%s)",

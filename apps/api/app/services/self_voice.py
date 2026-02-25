@@ -68,7 +68,7 @@ drift_score: 0.0 = perfect match, 1.0 = completely different voice
 Be specific about what's different. Reference their actual patterns.""" + HUMAN_WRITING_RULES
 
 
-def analyze_self_voice(user_id: str) -> Dict[str, Any]:
+def analyze_self_voice(user_id: str, brand_id: Optional[str] = None) -> Dict[str, Any]:
     """Analyze the user's published content to extract their Self-Voice DNA.
 
     Uses their top-performing posts (by engagement) to build a voice
@@ -81,10 +81,16 @@ def analyze_self_voice(user_id: str) -> Dict[str, Any]:
     admin = get_admin_client()
 
     # Fetch user's published posts with content
-    resp = (
+    query = (
         admin.table("content_posts")
         .select("title, hook_used, content_body, platform, engagement_rate, performance_tier")
         .eq("user_id", user_id)
+    )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+
+    resp = (
+        query
         .order("engagement_rate", desc=True)
         .limit(30)
         .execute()
@@ -170,7 +176,7 @@ def analyze_self_voice(user_id: str) -> Dict[str, Any]:
     return voice_dna
 
 
-def get_voice_baseline(user_id: str) -> Optional[Dict[str, Any]]:
+def get_voice_baseline(user_id: str, brand_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Get the stored self-voice DNA for a user."""
     from app.deps import get_admin_client
     admin = get_admin_client()
@@ -196,12 +202,13 @@ def get_voice_baseline(user_id: str) -> Optional[Dict[str, Any]]:
 def check_voice_drift(
     user_id: str,
     generated_text: str,
+    brand_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Compare AI-generated text against the user's natural voice.
 
     Returns drift analysis with score, details, and recommendations.
     """
-    voice_dna = get_voice_baseline(user_id)
+    voice_dna = get_voice_baseline(user_id, brand_id=brand_id)
 
     if not voice_dna:
         return {

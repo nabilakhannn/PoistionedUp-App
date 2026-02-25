@@ -6,25 +6,12 @@ import json
 import logging
 from typing import Any, Dict
 
-from worker.graph.llm import get_llm_client, parse_json_response, set_tracking_context
+from worker.graph.context import fetch_relevant_resources as _fetch_relevant_resources
+from worker.graph.llm import get_llm_client, get_model_for_step, parse_json_response, set_tracking_context, safe_node
 from worker.graph.nodes.signal_research import _format_ica, _format_offer
 from worker.graph.prompts import gap_analysis as prompts
 
 logger = logging.getLogger("worker.graph.nodes.gap_analysis")
-
-
-def _fetch_relevant_resources(query: str, user_id: str) -> str:
-    """Fetch relevant resource chunks via semantic search. Graceful fallback."""
-    if not user_id:
-        return "No user context available for resource search."
-    try:
-        from app.services.embeddings import search_similar_chunks, format_chunks_as_context
-        chunks = search_similar_chunks(query, user_id, limit=5)
-        context = format_chunks_as_context(chunks)
-        return context if context else "No relevant resources found."
-    except Exception as e:
-        logger.debug("Resource retrieval unavailable: %s", e)
-        return "No relevant resources found."
 
 
 def _fetch_memory_context(user_id: str, context_query: str = "") -> str:
@@ -76,9 +63,11 @@ def _fetch_performance_context(user_id: str, platform: str = "") -> str:
         return ""
 
 
+@safe_node
 def gap_analysis(state: Dict[str, Any]) -> Dict[str, Any]:
     """Analyze gaps and generate 10 topic candidates with scores."""
-    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "gap_analysis")
+    _tier = state.get("settings", {}).get("model_tier", "")
+    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "gap_analysis", _tier)
 
     goal_text = state["goal_text"]
     profile = state.get("profile_snapshot", {})
@@ -119,7 +108,7 @@ def gap_analysis(state: Dict[str, Any]) -> Dict[str, Any]:
                 gold_resources=gold_resources,
             )},
         ],
-        model="gpt-4o",
+        model=get_model_for_step("gap_analysis"),
         temperature=0.7,
         response_format={"type": "json_object"},
     )

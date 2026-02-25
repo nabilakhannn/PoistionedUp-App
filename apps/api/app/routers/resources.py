@@ -31,6 +31,8 @@ from app.services.ingestion import (
     transcribe_audio_bytes,
 )
 
+from app.services.analytics import track_event
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/resources", tags=["resources"])
@@ -150,6 +152,8 @@ async def create_resource(
     }
     if body.collection_id:
         insert_data["collection_id"] = body.collection_id
+    if body.brand_id:
+        insert_data["brand_id"] = body.brand_id
 
     resp = (
         admin.table("resources")
@@ -162,6 +166,14 @@ async def create_resource(
     chunk_count = _create_chunks(
         admin, resource["id"], content_text, extra_metadata=extraction_metadata,
     )
+
+    track_event(user.id, "resource_created", {
+        "resource_id": resource["id"],
+        "type": resource["type"],
+        "source_url": body.source_url or "",
+        "brand_id": body.brand_id or "",
+        "chunk_count": chunk_count,
+    })
 
     return ResourceCreated(
         id=resource["id"],
@@ -181,6 +193,7 @@ async def upload_resource(
     tags: str = Query(default="", description="Comma-separated tags"),
     is_gold: bool = Query(default=False),
     collection_id: Optional[str] = Query(default=None, description="Collection to assign resource to"),
+    brand_id: Optional[str] = Query(default=None, description="Brand to scope resource to"),
     user: CurrentUser = Depends(get_current_user),
 ):
     """Upload a file or audio, extract text, create resource + chunks.
@@ -251,6 +264,8 @@ async def upload_resource(
     }
     if collection_id:
         upload_data["collection_id"] = collection_id
+    if brand_id:
+        upload_data["brand_id"] = brand_id
 
     resp = (
         admin.table("resources")
@@ -260,8 +275,10 @@ async def upload_resource(
     resource = resp.data[0]
     resource_id = resource["id"]
 
-    # Upload file to Supabase Storage
-    storage_path = f"{user.id}/{resource_id}/{filename}"
+    # Upload file to Supabase Storage (sanitize filename to prevent path traversal)
+    import os as _os
+    safe_filename = _os.path.basename(filename)
+    storage_path = f"{user.id}/{resource_id}/{safe_filename}"
     try:
         admin.storage.from_("resource-uploads").upload(
             path=storage_path,
@@ -276,6 +293,15 @@ async def upload_resource(
 
     # Generate chunks
     chunk_count = _create_chunks(admin, resource_id, content_text, extra_metadata=extraction_metadata)
+
+    track_event(user.id, "resource_uploaded", {
+        "resource_id": resource_id,
+        "type": resource_type,
+        "file_name": filename,
+        "content_type": content_type,
+        "brand_id": brand_id or "",
+        "chunk_count": chunk_count,
+    })
 
     return ResourceCreated(
         id=resource_id,
@@ -433,6 +459,8 @@ async def import_channel(
             }
             if body.collection_id:
                 video_insert["collection_id"] = body.collection_id
+            if body.brand_id:
+                video_insert["brand_id"] = body.brand_id
 
             resp = (
                 admin.table("resources")
@@ -472,6 +500,17 @@ async def import_channel(
         )
 
     processing_count = len(background_pairs)
+
+    track_event(user.id, "channel_import", {
+        "channel_name": channel_data["channel_name"],
+        "total_videos": channel_data["count"],
+        "imported": imported,
+        "skipped": skipped,
+        "failed": failed,
+        "processing": processing_count,
+        "brand_id": body.brand_id or "",
+    })
+
     msg = f"Imported {imported} videos from {channel_data['channel_name']}"
     if processing_count > 0:
         msg += f". Transcripts extracting in background for {processing_count} videos."
@@ -487,6 +526,74 @@ async def import_channel(
     )
 
 
+# ── POST /resources/re-extract (retry transcript extraction) ─
+
+
+@router.post("/re-extract")
+async def re_extract_transcripts(
+    collection_id: str = Query(..., description="Collection to re-extract transcripts for"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Re-extract transcripts for resources in a collection that have no transcript.
+
+    Finds all resources with type=transcript whose content_text is short
+    (metadata-only, no actual transcript) and re-triggers extraction.
+    """
+    admin = get_admin_client()
+
+    # Find resources in this collection that are transcript-type with short content
+    resp = (
+        admin.table("resources")
+        .select("id, title, source_url, content_text")
+        .eq("user_id", user.id)
+        .eq("collection_id", collection_id)
+        .eq("type", "transcript")
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    if not resp.data:
+        return {"message": "No transcript resources found in this collection", "queued": 0}
+
+    # Filter to only resources with short content (metadata-only, no actual transcript)
+    background_pairs = []
+    for r in resp.data:
+        content = r.get("content_text", "") or ""
+        # If content_text is less than 500 chars, it's likely just the metadata header
+        if len(content) < 500 and r.get("source_url"):
+            # Extract video_id from source_url
+            url = r["source_url"]
+            video_id = None
+            if "youtube.com/watch" in url:
+                import urllib.parse
+                parsed = urllib.parse.urlparse(url)
+                qs = urllib.parse.parse_qs(parsed.query)
+                video_id = qs.get("v", [None])[0]
+            elif "youtu.be/" in url:
+                video_id = url.split("youtu.be/")[-1].split("?")[0]
+
+            if video_id:
+                background_pairs.append((r["id"], video_id, content))
+
+    if not background_pairs:
+        return {"message": "All resources already have transcripts", "queued": 0}
+
+    # Queue background extraction
+    background_tasks.add_task(
+        _extract_transcripts_background,
+        user_id=user.id,
+        resource_video_pairs=background_pairs,
+        channel_name="re-extract",
+        tags=[],
+    )
+
+    return {
+        "message": f"Re-extracting transcripts for {len(background_pairs)} videos",
+        "queued": len(background_pairs),
+    }
+
+
 # ── GET /resources ─────────────────────────────────────────
 
 
@@ -495,9 +602,10 @@ async def list_resources(
     tag: Optional[str] = Query(None, description="Filter by tag"),
     is_gold: Optional[bool] = Query(None, description="Filter gold resources only"),
     resource_type: Optional[str] = Query(None, alias="type", description="Filter by type"),
+    brand_id: Optional[str] = Query(None, description="Filter by brand"),
     user: CurrentUser = Depends(get_current_user),
 ):
-    """List resources for the authenticated user. Supports filtering by tag, gold, type."""
+    """List resources for the authenticated user. Supports filtering by tag, gold, type, brand."""
     admin = get_admin_client()
 
     query = (
@@ -506,6 +614,9 @@ async def list_resources(
         .eq("user_id", user.id)
         .order("created_at", desc=True)
     )
+
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
 
     if tag:
         query = query.contains("tags", [tag])
@@ -633,6 +744,12 @@ async def update_resource(
     )
 
     resource = resp.data[0]
+
+    track_event(user.id, "resource_updated", {
+        "resource_id": resource_id,
+        "fields_updated": list(update_data.keys()),
+    })
+
     return ResourceSummary(chunk_count=0, **resource)
 
 
@@ -675,3 +792,5 @@ async def delete_resource(
 
     # Delete resource row
     admin.table("resources").delete().eq("id", resource_id).eq("user_id", user.id).execute()
+
+    track_event(user.id, "resource_deleted", {"resource_id": resource_id})

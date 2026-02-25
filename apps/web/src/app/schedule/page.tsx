@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { scheduleApi, KanbanBoard, ScheduledItem } from "@/lib/api";
+import { useBrand } from "@/lib/brand-context";
 import {
   CalendarIcon,
   ViewColumnsIcon,
@@ -14,16 +15,17 @@ import {
   ChevronRightIcon,
 } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/posthog";
 
 // ── Platform badges ──────────────────────────────────
 
 const PLATFORM_COLORS: Record<string, string> = {
-  youtube: "bg-red-100 text-red-700",
-  linkedin: "bg-blue-100 text-blue-700",
-  twitter: "bg-sky-100 text-sky-700",
-  tiktok: "bg-pink-100 text-pink-700",
-  instagram: "bg-purple-100 text-purple-700",
-  other: "bg-gray-100 text-gray-600",
+  youtube: "bg-red-500/20 text-red-300 border border-red-500/30",
+  linkedin: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+  twitter: "bg-sky-500/20 text-sky-300 border border-sky-500/30",
+  tiktok: "bg-pink-500/20 text-pink-300 border border-pink-500/30",
+  instagram: "bg-purple-500/20 text-purple-300 border border-purple-500/30",
+  other: "bg-zinc-700 text-zinc-300 border border-zinc-600",
 };
 
 const COLOR_LABEL_STYLES: Record<string, string> = {
@@ -37,10 +39,10 @@ const COLOR_LABEL_STYLES: Record<string, string> = {
 };
 
 const COLUMN_HEADERS: Record<string, { label: string; bgClass: string; dotClass: string }> = {
-  draft: { label: "Draft", bgClass: "bg-gray-50", dotClass: "bg-gray-400" },
-  scheduled: { label: "Scheduled", bgClass: "bg-blue-50", dotClass: "bg-blue-400" },
-  published: { label: "Published", bgClass: "bg-green-50", dotClass: "bg-green-400" },
-  archived: { label: "Archived", bgClass: "bg-yellow-50", dotClass: "bg-yellow-400" },
+  draft: { label: "Draft", bgClass: "bg-zinc-900/80", dotClass: "bg-zinc-500" },
+  scheduled: { label: "Scheduled", bgClass: "bg-blue-500/10", dotClass: "bg-blue-500" },
+  published: { label: "Published", bgClass: "bg-green-500/10", dotClass: "bg-green-500" },
+  archived: { label: "Archived", bgClass: "bg-yellow-500/10", dotClass: "bg-yellow-500" },
 };
 
 // ── Utility ──────────────────────────────────────────
@@ -55,15 +57,6 @@ function formatTime(iso: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
   return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-}
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 // ── Sub-components ───────────────────────────────────
@@ -96,24 +89,24 @@ function KanbanCard({
     <div
       draggable
       onDragStart={(e) => onDragStart(e, item)}
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group ${
+      className={`bg-zinc-800 rounded-lg border border-zinc-700 p-3 cursor-grab active:cursor-grabbing hover:border-zinc-600 transition-all group ${
         colorBorder ? `border-l-4 ${colorBorder}` : ""
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1">
+        <h4 className="text-sm font-medium text-zinc-100 line-clamp-2 flex-1">
           {item.title}
         </h4>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           <button
             onClick={() => onEdit(item)}
-            className="p-1 text-gray-400 hover:text-gray-600 rounded"
+            className="p-1 text-zinc-500 hover:text-zinc-300 rounded"
           >
             <PencilIcon className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => onDelete(item.id)}
-            className="p-1 text-gray-400 hover:text-red-500 rounded"
+            className="p-1 text-zinc-500 hover:text-red-400 rounded"
           >
             <TrashIcon className="h-3.5 w-3.5" />
           </button>
@@ -121,13 +114,13 @@ function KanbanCard({
       </div>
 
       {item.body_preview && (
-        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.body_preview}</p>
+        <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{item.body_preview}</p>
       )}
 
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         <PlatformBadge platform={item.platform} />
         {item.scheduled_at && (
-          <span className="text-xs text-gray-500 flex items-center gap-1">
+          <span className="text-xs text-zinc-500 flex items-center gap-1">
             <CalendarIcon className="h-3 w-3" />
             {formatDate(item.scheduled_at)}
           </span>
@@ -135,7 +128,7 @@ function KanbanCard({
         {item.workflow_id && (
           <Link
             href={`/content/${item.workflow_id}`}
-            className="text-xs text-blue-500 hover:text-blue-700"
+            className="text-xs text-blue-400 hover:text-blue-300"
             onClick={(e) => e.stopPropagation()}
           >
             workflow
@@ -144,7 +137,7 @@ function KanbanCard({
       </div>
 
       {item.notes && (
-        <p className="text-xs text-gray-400 mt-1.5 italic line-clamp-1">{item.notes}</p>
+        <p className="text-xs text-zinc-600 mt-1.5 italic line-clamp-1">{item.notes}</p>
       )}
     </div>
   );
@@ -171,14 +164,14 @@ function KanbanColumn({
 
   return (
     <div
-      className={`flex-1 min-w-[260px] max-w-[340px] rounded-xl ${header.bgClass} p-3`}
+      className={`flex-1 min-w-[260px] max-w-[340px] rounded-xl ${header.bgClass} border border-zinc-800 p-3`}
       onDrop={(e) => onDrop(e, columnKey)}
       onDragOver={onDragOver}
     >
       <div className="flex items-center gap-2 mb-3 px-1">
         <div className={`w-2.5 h-2.5 rounded-full ${header.dotClass}`} />
-        <h3 className="text-sm font-semibold text-gray-700">{header.label}</h3>
-        <span className="text-xs text-gray-400 bg-white px-1.5 py-0.5 rounded-full ml-auto">
+        <h3 className="text-sm font-semibold text-zinc-300">{header.label}</h3>
+        <span className="text-xs text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full ml-auto">
           {items.length}
         </span>
       </div>
@@ -193,7 +186,7 @@ function KanbanColumn({
           />
         ))}
         {items.length === 0 && (
-          <div className="text-center py-8 text-xs text-gray-400">
+          <div className="text-center py-8 text-xs text-zinc-600">
             Drag items here
           </div>
         )}
@@ -207,9 +200,11 @@ function KanbanColumn({
 function NewItemModal({
   onClose,
   onCreated,
+  brandId,
 }: {
   onClose: () => void;
   onCreated: () => void;
+  brandId?: string;
 }) {
   const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState("youtube");
@@ -231,6 +226,7 @@ function NewItemModal({
         content_type: contentType,
         scheduled_at: scheduledAt || undefined,
         notes: notes.trim() || undefined,
+        brand_id: brandId || undefined,
       });
       onCreated();
       onClose();
@@ -242,35 +238,35 @@ function NewItemModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">New Scheduled Item</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 className="text-lg font-semibold text-zinc-100">New Scheduled Item</h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What are you publishing?"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Platform</label>
               <select
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="youtube">YouTube</option>
                 <option value="linkedin">LinkedIn</option>
@@ -281,11 +277,11 @@ function NewItemModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Content Type</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">Content Type</label>
               <select
                 value={contentType}
                 onChange={(e) => setContentType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="youtube_long">YouTube Long</option>
                 <option value="youtube_short">YouTube Short</option>
@@ -298,42 +294,42 @@ function NewItemModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Scheduled Date (optional)
             </label>
             <input
               type="datetime-local"
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Notes (optional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Any notes or reminders..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !title.trim()}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg disabled:opacity-50 transition"
             >
               {loading ? "Creating..." : "Create"}
             </button>
@@ -350,10 +346,12 @@ function EditItemModal({
   item,
   onClose,
   onSaved,
+  brandId,
 }: {
   item: ScheduledItem;
   onClose: () => void;
   onSaved: () => void;
+  brandId?: string;
 }) {
   const [title, setTitle] = useState(item.title);
   const [scheduledAt, setScheduledAt] = useState(
@@ -374,6 +372,7 @@ function EditItemModal({
         scheduled_at: scheduledAt || null,
         notes: notes.trim() || null,
         published_url: publishedUrl.trim() || null,
+        brand_id: brandId || undefined,
       } as any);
       onSaved();
       onClose();
@@ -385,63 +384,73 @@ function EditItemModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Edit Item</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 className="text-lg font-semibold text-zinc-100">Edit Item</h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Scheduled Date</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Scheduled Date</label>
             <input
               type="datetime-local"
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Published URL</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Published URL</label>
             <input
               type="url"
               value={publishedUrl}
               onChange={(e) => setPublishedUrl(e.target.value)}
               placeholder="https://..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
-            <button type="submit" disabled={loading} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg disabled:opacity-50 transition"
+            >
               {loading ? "Saving..." : "Save"}
             </button>
           </div>
@@ -503,29 +512,29 @@ function CalendarView({ items }: { items: ScheduledItem[] }) {
     <div>
       {/* Month nav */}
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-lg">
-          <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+        <button onClick={prevMonth} className="p-2 hover:bg-zinc-800 rounded-lg transition">
+          <ChevronLeftIcon className="h-5 w-5 text-zinc-400" />
         </button>
-        <h3 className="text-lg font-semibold text-gray-900">{monthLabel}</h3>
-        <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg">
-          <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+        <h3 className="text-lg font-semibold text-zinc-200">{monthLabel}</h3>
+        <button onClick={nextMonth} className="p-2 hover:bg-zinc-800 rounded-lg transition">
+          <ChevronRightIcon className="h-5 w-5 text-zinc-400" />
         </button>
       </div>
 
       {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div key={d} className="text-center text-xs font-medium text-gray-500 py-2">
+          <div key={d} className="text-center text-xs font-medium text-zinc-500 py-2">
             {d}
           </div>
         ))}
       </div>
 
       {/* Day grid */}
-      <div className="grid grid-cols-7 border-t border-l border-gray-200">
+      <div className="grid grid-cols-7 border-t border-l border-zinc-800">
         {/* Empty cells before first day */}
         {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-          <div key={`empty-${i}`} className="border-r border-b border-gray-200 bg-gray-50 min-h-[90px]" />
+          <div key={`empty-${i}`} className="border-r border-b border-zinc-800 bg-zinc-900/50 min-h-[90px]" />
         ))}
 
         {/* Day cells */}
@@ -537,15 +546,15 @@ function CalendarView({ items }: { items: ScheduledItem[] }) {
           return (
             <div
               key={day}
-              className={`border-r border-b border-gray-200 min-h-[90px] p-1 ${
-                isToday ? "bg-blue-50" : "bg-white"
+              className={`border-r border-b border-zinc-800 min-h-[90px] p-1 ${
+                isToday ? "bg-blue-500/10" : "bg-zinc-950"
               }`}
             >
               <div
                 className={`text-xs font-medium mb-1 ${
                   isToday
                     ? "text-white bg-blue-600 w-5 h-5 rounded-full flex items-center justify-center"
-                    : "text-gray-600 px-0.5"
+                    : "text-zinc-500 px-0.5"
                 }`}
               >
                 {day}
@@ -562,7 +571,7 @@ function CalendarView({ items }: { items: ScheduledItem[] }) {
                 </div>
               ))}
               {dItems.length > 3 && (
-                <div className="text-[10px] text-gray-400 px-1">
+                <div className="text-[10px] text-zinc-600 px-1">
                   +{dItems.length - 3} more
                 </div>
               )}
@@ -577,6 +586,7 @@ function CalendarView({ items }: { items: ScheduledItem[] }) {
 // ── Main Page ────────────────────────────────────────
 
 export default function SchedulePage() {
+  const { brandId, loading: brandLoading } = useBrand();
   const [board, setBoard] = useState<KanbanBoard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -588,15 +598,16 @@ export default function SchedulePage() {
   const dragItem = useRef<ScheduledItem | null>(null);
 
   const fetchBoard = useCallback(async () => {
+    if (brandLoading) return;
     try {
-      const data = await scheduleApi.getBoard();
+      const data = await scheduleApi.getBoard(brandId || undefined);
       setBoard(data);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [brandId, brandLoading]);
 
   useEffect(() => {
     fetchBoard();
@@ -604,6 +615,7 @@ export default function SchedulePage() {
 
   // Realtime subscription
   useEffect(() => {
+    if (brandLoading) return;
     const supabase = createClient();
     const channel = supabase
       .channel("scheduled_items_changes")
@@ -619,12 +631,11 @@ export default function SchedulePage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchBoard]);
+  }, [fetchBoard, brandLoading]);
 
   const handleDragStart = (e: React.DragEvent, item: ScheduledItem) => {
     dragItem.current = item;
     e.dataTransfer.effectAllowed = "move";
-    // Transparent drag image for cleaner look
     const el = e.currentTarget as HTMLElement;
     e.dataTransfer.setDragImage(el, el.offsetWidth / 2, 20);
   };
@@ -654,7 +665,7 @@ export default function SchedulePage() {
     }
 
     try {
-      await scheduleApi.move(item.id, targetStatus, board ? (board[targetStatus as keyof KanbanBoard]?.length || 0) : 0);
+      await scheduleApi.move(item.id, targetStatus, board ? (board[targetStatus as keyof KanbanBoard]?.length || 0) : 0, brandId || undefined);
     } catch (err) {
       // Revert on failure
       fetchBoard();
@@ -665,7 +676,7 @@ export default function SchedulePage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this item?")) return;
     try {
-      await scheduleApi.delete(id);
+      await scheduleApi.delete(id, brandId || undefined);
       fetchBoard();
     } catch (err: any) {
       setError(err.message);
@@ -678,12 +689,13 @@ export default function SchedulePage() {
 
   if (loading) {
     return (
-      <main className="max-w-7xl mx-auto p-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-48" />
+      <main className="min-h-screen bg-zinc-950 text-zinc-100">
+        <div className="max-w-7xl mx-auto p-8 animate-pulse space-y-4">
+          <div className="h-8 bg-zinc-800 rounded w-48" />
+          <div className="h-4 bg-zinc-800 rounded w-72" />
           <div className="flex gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex-1 h-64 bg-gray-100 rounded-xl" />
+              <div key={i} className="flex-1 h-64 bg-zinc-900 border border-zinc-800 rounded-xl" />
             ))}
           </div>
         </div>
@@ -692,132 +704,139 @@ export default function SchedulePage() {
   }
 
   return (
-    <main className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Content Schedule</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Plan, schedule, and track your content across all platforms
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* View toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
-            <button
-              onClick={() => setView("kanban")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                view === "kanban"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <ViewColumnsIcon className="h-4 w-4" />
-              Board
-            </button>
-            <button
-              onClick={() => setView("calendar")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                view === "calendar"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <CalendarIcon className="h-4 w-4" />
-              Calendar
-            </button>
+    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-100">Content Schedule</h1>
+            <p className="text-sm text-zinc-400 mt-1">
+              Plan, schedule, and track your content across all platforms
+            </p>
           </div>
 
-          <button
-            onClick={() => setShowNewModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-          >
-            <PlusIcon className="h-4 w-4" />
-            New Item
-          </button>
+          <div className="flex items-center gap-3">
+            {/* View toggle */}
+            <div className="flex bg-zinc-800 rounded-lg p-0.5">
+              <button
+                onClick={() => setView("kanban")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                  view === "kanban"
+                    ? "bg-zinc-700 text-zinc-100 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <ViewColumnsIcon className="h-4 w-4" />
+                Board
+              </button>
+              <button
+                onClick={() => setView("calendar")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                  view === "calendar"
+                    ? "bg-zinc-700 text-zinc-100 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <CalendarIcon className="h-4 w-4" />
+                Calendar
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowNewModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+            >
+              <PlusIcon className="h-4 w-4" />
+              New Item
+            </button>
+          </div>
         </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+            {error}
+            <button onClick={() => setError("")} className="ml-3 text-red-400 hover:text-red-200">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Board or Calendar */}
+        {view === "kanban" && board && (
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {(["draft", "scheduled", "published", "archived"] as const).map((col) => (
+              <KanbanColumn
+                key={col}
+                columnKey={col}
+                items={board[col]}
+                onDragStart={handleDragStart}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onEdit={setEditingItem}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
+
+        {view === "calendar" && <CalendarView items={allItems} />}
+
+        {/* Quick stats */}
+        {board && (
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-zinc-300">{board.draft.length}</div>
+              <div className="text-xs text-zinc-500 mt-1">Drafts</div>
+            </div>
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-blue-400">{board.scheduled.length}</div>
+              <div className="text-xs text-blue-400/70 mt-1">Scheduled</div>
+            </div>
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-green-400">{board.published.length}</div>
+              <div className="text-xs text-green-400/70 mt-1">Published</div>
+            </div>
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-yellow-400">{board.archived.length}</div>
+              <div className="text-xs text-yellow-400/70 mt-1">Archived</div>
+            </div>
+          </div>
+        )}
+
+        {/* Import hint */}
+        {board && board.draft.length === 0 && board.scheduled.length === 0 && (
+          <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-xl p-6 text-center">
+            <h3 className="text-blue-300 font-medium mb-2">No content in your schedule yet</h3>
+            <p className="text-blue-400/70 text-sm mb-4">
+              Create items manually or go to an approved workflow and import content into your schedule.
+            </p>
+            <Link
+              href="/content"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+            >
+              Go to Content Dashboard
+            </Link>
+          </div>
+        )}
+
+        {/* Modals */}
+        {showNewModal && (
+          <NewItemModal
+            onClose={() => setShowNewModal(false)}
+            onCreated={fetchBoard}
+            brandId={brandId || undefined}
+          />
+        )}
+
+        {editingItem && (
+          <EditItemModal
+            item={editingItem}
+            onClose={() => setEditingItem(null)}
+            onSaved={fetchBoard}
+            brandId={brandId || undefined}
+          />
+        )}
       </div>
-
-      {error && (
-        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* Board or Calendar */}
-      {view === "kanban" && board && (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {(["draft", "scheduled", "published", "archived"] as const).map((col) => (
-            <KanbanColumn
-              key={col}
-              columnKey={col}
-              items={board[col]}
-              onDragStart={handleDragStart}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onEdit={setEditingItem}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      )}
-
-      {view === "calendar" && <CalendarView items={allItems} />}
-
-      {/* Quick stats */}
-      {board && (
-        <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{board.draft.length}</div>
-            <div className="text-xs text-gray-500 mt-1">Drafts</div>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-blue-700">{board.scheduled.length}</div>
-            <div className="text-xs text-blue-600 mt-1">Scheduled</div>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-green-700">{board.published.length}</div>
-            <div className="text-xs text-green-600 mt-1">Published</div>
-          </div>
-          <div className="bg-yellow-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-700">{board.archived.length}</div>
-            <div className="text-xs text-yellow-600 mt-1">Archived</div>
-          </div>
-        </div>
-      )}
-
-      {/* Import hint */}
-      {board && board.draft.length === 0 && board.scheduled.length === 0 && (
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <h3 className="text-blue-900 font-medium mb-2">No content in your schedule yet</h3>
-          <p className="text-blue-700 text-sm mb-4">
-            Create items manually or go to an approved workflow and import content into your schedule.
-          </p>
-          <Link
-            href="/content"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-          >
-            Go to Content Dashboard
-          </Link>
-        </div>
-      )}
-
-      {/* Modals */}
-      {showNewModal && (
-        <NewItemModal
-          onClose={() => setShowNewModal(false)}
-          onCreated={fetchBoard}
-        />
-      )}
-
-      {editingItem && (
-        <EditItemModal
-          item={editingItem}
-          onClose={() => setEditingItem(null)}
-          onSaved={fetchBoard}
-        />
-      )}
     </main>
   );
 }

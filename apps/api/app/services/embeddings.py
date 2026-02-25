@@ -135,8 +135,12 @@ def search_similar_chunks(
     user_id: str,
     limit: int = 5,
     threshold: float = 0.7,
+    brand_id: str = None,
 ) -> List[Dict[str, Any]]:
     """Search for resource chunks semantically similar to the query.
+
+    If brand_id is provided, only returns chunks from resources
+    belonging to that personal brand.
 
     Returns list of dicts with: id, resource_id, chunk_index, chunk_text,
     metadata, similarity.
@@ -153,14 +157,34 @@ def search_similar_chunks(
     admin = get_admin_client()
 
     try:
+        # Fetch extra results if we need to post-filter by brand_id
+        fetch_limit = limit * 3 if brand_id else limit
         resp = admin.rpc("match_resource_chunks", {
             "query_embedding": query_embedding,
             "match_user_id": user_id,
-            "match_count": limit,
+            "match_count": fetch_limit,
             "match_threshold": threshold,
         }).execute()
 
-        return resp.data or []
+        results = resp.data or []
+
+        # Post-filter by brand_id if specified
+        if brand_id and results:
+            # Get resource IDs that belong to this brand
+            res_resp = (
+                admin.table("resources")
+                .select("id")
+                .eq("user_id", user_id)
+                .eq("brand_id", brand_id)
+                .execute()
+            )
+            brand_resource_ids = {r["id"] for r in (res_resp.data or [])}
+            results = [
+                r for r in results
+                if r.get("resource_id") in brand_resource_ids
+            ][:limit]
+
+        return results
     except Exception as e:
         logger.error("Vector search failed: %s", e)
         return []

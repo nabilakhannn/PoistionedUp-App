@@ -1,6 +1,8 @@
-"""Workflow endpoints: create, list, get, topic selection, hook selection, approve/reject, export."""
+"""Workflow endpoints: create, list, get, topic selection, hook selection, approve/reject, export, inline execute."""
 
+import asyncio
 import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.auth import CurrentUser, get_current_user
 from app.deps import get_admin_client
+from app.services.analytics import track_event
 from app.schemas.workflow import (
     VALID_PLATFORMS,
     ContentAsset,
@@ -87,50 +90,91 @@ async def create_workflow(
             ),
         )
 
+    # ── Resolve brand_id ──
+    brand_id = body.brand_id
+
+    if not brand_id:
+        # Fallback: find the user's first active personal brand
+        default_resp = (
+            admin.table("personal_brands")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("is_active", True)
+            .order("created_at", desc=False)
+            .limit(1)
+            .execute()
+        )
+        if default_resp.data:
+            brand_id = default_resp.data[0]["id"]
+
     # ── Brand completeness gate ──
-    profile_resp = (
-        admin.table("profiles")
-        .select("profile_json")
-        .eq("user_id", user.id)
-        .execute()
-    )
-    profile_snapshot = (
-        profile_resp.data[0].get("profile_json", {}) if profile_resp.data else {}
-    )
+    profile_snapshot = {}
+
+    model_tier = ""
+    if brand_id:
+        # Fetch profile from the personal_brands table
+        brand_resp = (
+            admin.table("personal_brands")
+            .select("profile_json, model_tier")
+            .eq("id", brand_id)
+            .eq("user_id", user.id)
+            .execute()
+        )
+        if not brand_resp.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Personal brand not found.",
+            )
+        profile_snapshot = brand_resp.data[0].get("profile_json", {}) or {}
+        model_tier = brand_resp.data[0].get("model_tier", "") or ""
+    else:
+        # Legacy fallback: read from profiles table
+        legacy_resp = (
+            admin.table("profiles")
+            .select("profile_json")
+            .eq("user_id", user.id)
+            .execute()
+        )
+        profile_snapshot = (
+            legacy_resp.data[0].get("profile_json", {}) if legacy_resp.data else {}
+        )
 
     # Calculate completeness: require at least 50% of brand profile done
-    filled_sections = 0
-    total_sections = 4  # foundation, ica, offer, brand
-    for section in ["foundation", "ica", "offer", "brand"]:
-        section_data = profile_snapshot.get(section, {})
-        if section_data and len(section_data) >= 2:
-            filled_sections += 1
+    from app.services.brand_chat import calculate_completeness
 
-    completeness_pct = int((filled_sections / total_sections) * 100)
+    completeness = calculate_completeness(profile_snapshot)
+    completeness_pct = completeness["overall_percent"]
     if completeness_pct < 50:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
                 f"Brand profile is only {completeness_pct}% complete. "
-                "Complete at least 2 of 4 brand sections (Foundation, ICA, Offer, Brand) "
-                "before creating content. Go to /brand to fill them in."
+                "Complete at least 4 of 8 brand modules before creating content. "
+                "Go to /brands to fill them in."
             ),
         )
 
     # Merge platforms into settings
     merged_settings = dict(body.settings)
     merged_settings["platforms"] = body.platforms
+    if model_tier:
+        merged_settings["model_tier"] = model_tier
+
+    # Build workflow insert data
+    wf_data = {
+        "user_id": user.id,
+        "status": "queued",
+        "goal_text": body.goal_text,
+        "settings": merged_settings,
+        "profile_snapshot": profile_snapshot,
+    }
+    if brand_id:
+        wf_data["brand_id"] = brand_id
 
     # Insert workflow row
     wf_resp = (
         admin.table("workflows")
-        .insert({
-            "user_id": user.id,
-            "status": "queued",
-            "goal_text": body.goal_text,
-            "settings": merged_settings,
-            "profile_snapshot": profile_snapshot,
-        })
+        .insert(wf_data)
         .execute()
     )
 
@@ -141,27 +185,167 @@ async def create_workflow(
         "user_id": user.id,
         "workflow_id": wf["id"],
         "event_type": "workflow_created",
-        "payload": {"goal_text": body.goal_text, "platforms": body.platforms},
+        "payload": {
+            "goal_text": body.goal_text,
+            "platforms": body.platforms,
+            "brand_id": brand_id,
+        },
     }).execute()
+
+    # Track workflow creation in PostHog
+    track_event(user.id, "workflow_created", {
+        "workflow_id": wf["id"],
+        "goal_text": body.goal_text[:100],
+        "platforms": body.platforms,
+        "brand_id": brand_id or "",
+        "objective": merged_settings.get("objective", ""),
+        "content_type": merged_settings.get("content_type", ""),
+    })
 
     # No explicit enqueue needed: worker polls for status=queued rows
     return WorkflowCreated(id=wf["id"], status=wf["status"])
 
 
-@router.get("", response_model=List[WorkflowSummary])
-async def list_workflows(
+# ── Inline Pipeline Execution (serverless-compatible) ─────
+
+
+@router.post("/{workflow_id}/execute")
+async def execute_workflow_inline(
+    workflow_id: str,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """List all workflows for the authenticated user, newest first."""
+    """Execute the pipeline inline within this API request.
+
+    Works on Vercel without a separate worker process. Runs the pipeline
+    until it hits an interrupt point (topic selection, hook lab, approval)
+    or completes. Each segment fits within Vercel's 120-second timeout.
+
+    For resume support across serverless invocations, set LANGGRAPH_DB_URI
+    to a direct Postgres connection string (e.g., Supabase direct URL).
+    Without it, MemorySaver is used (only works within the same process).
+    """
     admin = get_admin_client()
 
+    # Verify ownership and get current state
     resp = (
+        admin.table("workflows")
+        .select("id, status, settings, current_step, user_id")
+        .eq("id", workflow_id)
+        .eq("user_id", user.id)
+        .execute()
+    )
+    if not resp.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workflow not found",
+        )
+
+    wf = resp.data[0]
+    current_status = wf["status"]
+    wf_settings = wf.get("settings", {}) or {}
+    resume_payload = wf_settings.get("_resume")
+
+    if current_status != "queued":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Cannot execute: workflow status is '{current_status}', "
+                "expected 'queued'. The pipeline may already be running."
+            ),
+        )
+
+    # Atomically claim the workflow (prevents worker race condition)
+    now = datetime.now(timezone.utc).isoformat()
+    claim_resp = (
+        admin.table("workflows")
+        .update({
+            "status": "running",
+            "current_step": wf.get("current_step") or "signal_research",
+            "claimed_at": now,
+        })
+        .eq("id", workflow_id)
+        .eq("status", "queued")  # Optimistic lock
+        .execute()
+    )
+
+    if not claim_resp.data:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Workflow was already claimed by another process.",
+        )
+
+    # Determine action: fresh run or resume from interrupt
+    action = "resume" if resume_payload else "run"
+
+    # Run pipeline in a thread pool (graph.invoke is synchronous)
+    from worker.executor import run_pipeline
+
+    try:
+        final_status = await asyncio.to_thread(
+            run_pipeline,
+            client=admin,
+            workflow_id=workflow_id,
+            action=action,
+            resume_payload=resume_payload,
+        )
+    except Exception as e:
+        logger.exception(
+            "Inline pipeline execution failed for workflow %s", workflow_id
+        )
+        try:
+            admin.table("workflows").update({
+                "status": "failed",
+                "error_message": str(e)[:500],
+                "claimed_at": None,
+            }).eq("id", workflow_id).execute()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Pipeline execution failed: {str(e)[:200]}",
+        )
+
+    # Clean up: clear claimed_at and resume payload
+    clean_data: Dict[str, Any] = {"claimed_at": None}
+    if resume_payload:
+        clean_settings = {
+            k: v for k, v in wf_settings.items() if k != "_resume"
+        }
+        clean_data["settings"] = clean_settings
+    admin.table("workflows").update(clean_data).eq("id", workflow_id).execute()
+
+    # Return updated workflow status
+    updated = (
+        admin.table("workflows")
+        .select("id, status, current_step, error_message")
+        .eq("id", workflow_id)
+        .execute()
+    )
+    return updated.data[0] if updated.data else {
+        "id": workflow_id,
+        "status": final_status,
+    }
+
+
+@router.get("", response_model=List[WorkflowSummary])
+async def list_workflows(
+    brand_id: Optional[str] = None,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """List all workflows for the authenticated user, newest first.
+    Pass ?brand_id= to filter by personal brand.
+    """
+    admin = get_admin_client()
+
+    query = (
         admin.table("workflows")
         .select("id, status, goal_text, current_step, active_version, settings, created_at, updated_at")
         .eq("user_id", user.id)
-        .order("created_at", desc=True)
-        .execute()
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+
+    resp = query.order("created_at", desc=True).execute()
 
     # Fetch cost totals per workflow in a single query
     wf_ids = [row["id"] for row in resp.data]
@@ -180,7 +364,8 @@ async def list_workflows(
 
     results = []
     for row in resp.data:
-        platforms = (row.get("settings") or {}).get("platforms", ["youtube"])
+        s = row.get("settings") or {}
+        platforms = s.get("platforms", ["youtube"])
         results.append(WorkflowSummary(
             id=row["id"],
             status=row["status"],
@@ -191,6 +376,8 @@ async def list_workflows(
             updated_at=row["updated_at"],
             platforms=platforms,
             estimated_cost=round(cost_map.get(row["id"], 0.0), 6),
+            objective=s.get("objective"),
+            content_type=s.get("content_type"),
         ))
     return results
 
@@ -478,6 +665,120 @@ async def restore_asset_version(
     }).execute()
 
     return new_resp.data[0] if new_resp.data else old_asset
+
+
+# ── Snapshot endpoints ────────────────────────────────────────
+
+
+@router.get("/{workflow_id}/snapshots")
+async def get_workflow_snapshots(
+    workflow_id: str,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Fetch all pipeline step snapshots for a workflow, ordered by creation time."""
+    admin = get_admin_client()
+
+    # Verify ownership
+    wf_resp = (
+        admin.table("workflows")
+        .select("id")
+        .eq("id", workflow_id)
+        .eq("user_id", user.id)
+        .execute()
+    )
+    if not wf_resp.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workflow not found",
+        )
+
+    snap_resp = (
+        admin.table("workflow_snapshots")
+        .select("id, step_id, version, state_json, created_at")
+        .eq("workflow_id", workflow_id)
+        .order("created_at", desc=False)
+        .execute()
+    )
+
+    # Return a simplified summary per step (avoid sending huge state_json)
+    snapshots = []
+    for snap in (snap_resp.data or []):
+        state = snap.get("state_json") or {}
+        # Extract a human-readable summary for each step
+        summary = _summarize_snapshot(snap["step_id"], state)
+        snapshots.append({
+            "id": snap["id"],
+            "step_id": snap["step_id"],
+            "version": snap["version"],
+            "created_at": snap["created_at"],
+            "summary": summary,
+        })
+
+    return {"snapshots": snapshots}
+
+
+def _summarize_snapshot(step_id: str, state: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract a concise summary from a snapshot's state_json for UI display."""
+    summary: Dict[str, Any] = {}
+
+    if step_id == "signal_research":
+        signals = state.get("signals", [])
+        summary["signal_count"] = len(signals)
+        summary["sources"] = list(set(
+            s.get("source", "unknown") for s in signals[:20]
+        ))
+        summary["top_signals"] = [
+            s.get("title", s.get("headline", ""))[:80]
+            for s in signals[:5]
+        ]
+
+    elif step_id == "gap_analysis":
+        topics = state.get("topic_candidates", [])
+        summary["topic_count"] = len(topics)
+        summary["top_topics"] = [
+            {"title": t.get("title", "")[:80], "score": t.get("opportunity_score", 0)}
+            for t in sorted(topics, key=lambda x: x.get("opportunity_score", 0), reverse=True)[:5]
+        ]
+
+    elif step_id == "topic_selection":
+        selected = state.get("selected_topic")
+        if isinstance(selected, dict):
+            summary["selected_topic"] = selected.get("title", "")
+        elif isinstance(selected, str):
+            summary["selected_topic"] = selected
+
+    elif step_id == "hook_lab":
+        hooks = state.get("hook_candidates", [])
+        summary["hook_count"] = len(hooks)
+        summary["hooks"] = [
+            {"text": h.get("hook_text", "")[:100], "score": h.get("total_score", 0), "type": h.get("hook_type", "")}
+            for h in sorted(hooks, key=lambda x: x.get("total_score", 0), reverse=True)[:5]
+        ]
+
+    elif step_id == "script_generation":
+        pack = state.get("content_pack", {})
+        summary["has_youtube_long"] = bool(pack.get("youtube_long"))
+        summary["youtube_shorts_count"] = len(pack.get("youtube_shorts", []))
+        summary["linkedin_posts_count"] = len(pack.get("linkedin_posts", []))
+        summary["twitter_posts_count"] = len(pack.get("twitter_posts", []))
+        summary["word_count"] = pack.get("youtube_long", {}).get("word_count", 0)
+
+    elif step_id == "editor":
+        edited = state.get("edited_pack", {})
+        summary["edited"] = bool(edited)
+        summary["word_count"] = edited.get("youtube_long", {}).get("word_count", 0)
+
+    elif step_id == "testing":
+        report = state.get("test_report", {})
+        summary["passed"] = report.get("overall_pass", False)
+        summary["checks_passed"] = report.get("checks_passed", 0)
+        summary["checks_total"] = report.get("checks_total", 0)
+        summary["flags"] = report.get("flags", [])[:5]
+
+    elif step_id == "approval":
+        summary["status"] = state.get("approval_status", "pending")
+
+    return summary
 
 
 # ── Data endpoints (topics, hooks) ────────────────────────────
@@ -1120,6 +1421,12 @@ async def _resume_workflow(
         "event_type": event_type,
         "payload": resume_payload,
     }).execute()
+
+    # Track resume events in PostHog
+    track_event(user.id, f"workflow_{event_type}", {
+        "workflow_id": workflow_id,
+        **resume_payload,
+    })
 
     return ResumeResponse(
         id=workflow_id,

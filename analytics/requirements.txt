@@ -1,0 +1,11 @@
+# OpenClaw Agent Analytics - Dependencies
+# Install: pip install -r analytics/requirements.txt
+
+# PostHog Python SDK (event tracking)
+posthog>=3.0.0,<4.0.0
+
+# Environment variable loading
+python-dotenv>=1.0.0,<2.0.0
+
+# File system monitoring (optional, falls back to polling)
+# watchdog>=4.0.0,<5.0.0

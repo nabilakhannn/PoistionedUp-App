@@ -42,15 +42,16 @@ def _get_post_or_404(admin, post_id: str, user_id: str):
     return resp.data[0]
 
 
-def _get_all_user_posts(admin, user_id: str) -> List[dict]:
+def _get_all_user_posts(admin, user_id: str, brand_id: Optional[str] = None) -> List[dict]:
     """Fetch all posts for a user (used for averages/tier calculation)."""
-    resp = (
+    query = (
         admin.table("content_posts")
         .select("*")
         .eq("user_id", user_id)
-        .order("published_at", desc=True)
-        .execute()
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+    resp = query.order("published_at", desc=True).execute()
     return resp.data if resp.data else []
 
 
@@ -111,6 +112,8 @@ async def create_content_post(
     }
 
     # Optional fields
+    if body.brand_id is not None:
+        insert_data["brand_id"] = body.brand_id
     if body.hook_used is not None:
         insert_data["hook_used"] = body.hook_used
     if body.hook_type is not None:
@@ -159,9 +162,10 @@ async def create_content_post(
 async def list_content_posts(
     platform: Optional[str] = Query(None),
     tier: Optional[str] = Query(None),
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
-    """List content posts, optionally filtered by platform or tier."""
+    """List content posts, optionally filtered by platform, tier, or brand."""
     admin = get_admin_client()
 
     query = (
@@ -169,6 +173,8 @@ async def list_content_posts(
         .select("*")
         .eq("user_id", user.id)
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
     if platform:
         query = query.eq("platform", platform)
     if tier:
@@ -203,11 +209,12 @@ async def list_content_posts(
 @router.get("/analytics", response_model=PerformanceAnalytics)
 async def get_analytics(
     platform: Optional[str] = Query(None),
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Get aggregated performance analytics."""
+    """Get aggregated performance analytics, optionally scoped to a brand."""
     admin = get_admin_client()
-    all_posts = _get_all_user_posts(admin, user.id)
+    all_posts = _get_all_user_posts(admin, user.id, brand_id=brand_id)
 
     from app.services.performance_analytics import get_analytics as compute_analytics
     analytics = compute_analytics(all_posts)

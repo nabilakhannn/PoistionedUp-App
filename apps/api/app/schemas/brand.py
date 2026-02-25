@@ -277,6 +277,10 @@ class BrandCompleteness(BaseModel):
     ica_percent: int = 0
     offer_percent: int = 0
     brand_percent: int = 0
+    authority_percent: int = 0
+    messaging_percent: int = 0
+    positioning_percent: int = 0
+    competitors_percent: int = 0
     overall_percent: int = 0
 
 
@@ -285,8 +289,12 @@ class BrandCompleteness(BaseModel):
 
 class BrandChatRequest(BaseModel):
     """POST /brand/chat request body."""
-    module: str = Field(..., pattern="^(foundation|ica|offer|brand)$")
+    module: str = Field(..., pattern="^(foundation|ica|offer|brand|authority|messaging|positioning|competitors)$")
     message: str = Field(..., min_length=1, max_length=5000)
+    brand_id: Optional[str] = Field(
+        None,
+        description="Personal brand ID to scope this chat to. If omitted, uses legacy profiles table.",
+    )
     file_context: Optional[str] = Field(
         None,
         max_length=20000,
@@ -296,6 +304,11 @@ class BrandChatRequest(BaseModel):
         None,
         max_length=255,
         description="Original filename of the attached file.",
+    )
+    attachment_type: Optional[str] = Field(
+        None,
+        pattern="^(file|link|knowledge|inspo)$",
+        description="Type of attachment: file, link, knowledge, or inspo. Controls stored badge icon.",
     )
 
 

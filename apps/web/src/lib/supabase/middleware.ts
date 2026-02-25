@@ -2,6 +2,21 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  const isPublicRoute =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup");
+
+  // If heading to a public route with no Supabase auth cookie,
+  // skip the getUser() network call entirely — the user is clearly
+  // unauthenticated, so just let the page render immediately.
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-"));
+
+  if (isPublicRoute && !hasAuthCookie) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -26,9 +41,20 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Do NOT add code between createServerClient and getUser().
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Wrap in a timeout so the middleware never hangs if Supabase is unreachable.
+  let user = null;
+  try {
+    const result = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Auth timeout")), 5000)
+      ),
+    ]);
+    user = result.data?.user ?? null;
+  } catch {
+    // Auth check failed or timed out — treat as unauthenticated
+    user = null;
+  }
 
   // Redirect unauthenticated users to /login
   if (
@@ -48,7 +74,7 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/signup"))
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/brand";
+    url.pathname = "/brands";
     return NextResponse.redirect(url);
   }
 

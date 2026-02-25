@@ -39,6 +39,30 @@ const STAGES: BrandStage[] = [
     shortDesc: "Positioning & content pillars",
     chatPath: "/brand/chat/brand",
   },
+  {
+    key: "authority",
+    label: "Authority Building",
+    shortDesc: "Credentials, proof & media",
+    chatPath: "/brand/chat/authority",
+  },
+  {
+    key: "messaging",
+    label: "Messaging",
+    shortDesc: "Key phrases & talking points",
+    chatPath: "/brand/chat/messaging",
+  },
+  {
+    key: "positioning",
+    label: "Positioning",
+    shortDesc: "Market position & category",
+    chatPath: "/brand/chat/positioning",
+  },
+  {
+    key: "competitors",
+    label: "Competitors",
+    shortDesc: "Differentiation & white space",
+    chatPath: "/brand/chat/competitors",
+  },
 ];
 
 const MODULE_LABELS: Record<string, string> = {
@@ -46,6 +70,10 @@ const MODULE_LABELS: Record<string, string> = {
   ica: "Ideal Client Avatar",
   offer: "Your Offer",
   brand: "Brand Statement",
+  authority: "Authority Building",
+  messaging: "Messaging",
+  positioning: "Positioning",
+  competitors: "Competitors",
 };
 
 export default function BrandChatPage() {
@@ -368,18 +396,18 @@ export default function BrandChatPage() {
   return (
     <main className="flex h-screen">
       {/* Left sidebar: Brand building stages */}
-      <div className="w-56 border-r border-gray-200 bg-white flex flex-col hidden md:flex">
+      <div className="w-56 border-r border-zinc-800 bg-zinc-900 flex flex-col hidden md:flex">
         <div className="px-4 pt-4 pb-2">
           <Link
             href="/brand"
-            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+            className="text-xs text-blue-400 hover:underline flex items-center gap-1"
           >
             <span>←</span> Brand Dashboard
           </Link>
-          <h2 className="text-sm font-bold text-gray-800 mt-3 mb-1">
+          <h2 className="text-sm font-bold text-zinc-200 mt-3 mb-1">
             Build Your Brand
           </h2>
-          <p className="text-xs text-gray-400 leading-tight">
+          <p className="text-xs text-zinc-500 leading-tight">
             Complete each stage to define your personal brand
           </p>
         </div>
@@ -395,8 +423,8 @@ export default function BrandChatPage() {
                 href={stage.chatPath}
                 className={`block rounded-lg px-3 py-2.5 transition-all ${
                   isCurrent
-                    ? "bg-blue-50 border border-blue-200"
-                    : "hover:bg-gray-50"
+                    ? "bg-blue-600/20 border border-blue-500/30"
+                    : "hover:bg-zinc-800"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -407,7 +435,7 @@ export default function BrandChatPage() {
                         ? "bg-blue-600 text-white"
                         : isPast
                         ? "bg-green-500 text-white"
-                        : "bg-gray-200 text-gray-500"
+                        : "bg-zinc-700 text-zinc-400"
                     }`}
                   >
                     {isPast ? "✓" : i + 1}
@@ -415,12 +443,12 @@ export default function BrandChatPage() {
                   <div className="min-w-0">
                     <div
                       className={`text-sm font-medium truncate ${
-                        isCurrent ? "text-blue-700" : "text-gray-700"
+                        isCurrent ? "text-blue-400" : "text-zinc-300"
                       }`}
                     >
                       {stage.label}
                     </div>
-                    <div className="text-xs text-gray-400 truncate">
+                    <div className="text-xs text-zinc-500 truncate">
                       {stage.shortDesc}
                     </div>
                   </div>
@@ -431,7 +459,7 @@ export default function BrandChatPage() {
         </nav>
 
         {/* Stage legend */}
-        <div className="px-4 py-3 border-t border-gray-100 text-xs text-gray-400 space-y-1">
+        <div className="px-4 py-3 border-t border-zinc-800 text-xs text-zinc-500 space-y-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
             Completed
@@ -441,7 +469,7 @@ export default function BrandChatPage() {
             In progress
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-gray-200 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-zinc-700 inline-block" />
             Not started
           </div>
         </div>
@@ -450,29 +478,29 @@ export default function BrandChatPage() {
       {/* Chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="border-b border-gray-200 px-6 py-3 flex items-center justify-between bg-white">
+        <div className="border-b border-zinc-800 px-6 py-3 flex items-center justify-between bg-zinc-900">
           <div className="flex items-center gap-3">
             {/* Mobile: stage indicator */}
-            <div className="md:hidden flex items-center gap-1.5 text-xs text-gray-400">
-              <span className="font-medium text-gray-700">
+            <div className="md:hidden flex items-center gap-1.5 text-xs text-zinc-500">
+              <span className="font-medium text-zinc-300">
                 Step {currentStageIndex + 1}/4
               </span>
               ·
             </div>
             <div>
-              <h1 className="text-lg font-semibold">{label}</h1>
-              <p className="text-xs text-gray-400">
+              <h1 className="text-lg font-semibold text-zinc-100">{label}</h1>
+              <p className="text-xs text-zinc-500">
                 Chat with AI to build your {label.toLowerCase()}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-zinc-400">
               {Math.round(progress * 100)}%
             </div>
             <button
               onClick={() => setShowExtracted(!showExtracted)}
-              className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-50 transition lg:hidden"
+              className="px-3 py-1.5 border border-zinc-700 text-zinc-400 rounded-lg text-xs font-medium hover:bg-zinc-800 transition lg:hidden"
             >
               {showExtracted ? "Hide data" : "View data"}
             </button>
@@ -487,11 +515,11 @@ export default function BrandChatPage() {
         </div>
 
         {/* Chat switcher bar */}
-        <div className="border-b border-gray-100 px-6 py-2 bg-gray-50 flex items-center justify-between">
+        <div className="border-b border-zinc-800 px-6 py-2 bg-zinc-900/50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowChatList(!showChatList)}
-              className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition"
+              className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -501,7 +529,7 @@ export default function BrandChatPage() {
                 : "No chats yet"}
             </button>
             {chatId && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-zinc-500">
                 · {chatList.find((c) => c.chat_id === chatId)?.title ||
                   `Chat ${chatList.findIndex((c) => c.chat_id === chatId) + 1 || ""}`}
               </span>
@@ -509,7 +537,7 @@ export default function BrandChatPage() {
           </div>
           <button
             onClick={handleNewChat}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition"
+            className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 transition"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -520,15 +548,15 @@ export default function BrandChatPage() {
 
         {/* Chat list dropdown */}
         {showChatList && chatList.length > 0 && (
-          <div className="border-b border-gray-200 bg-white px-6 py-3 max-h-48 overflow-y-auto">
+          <div className="border-b border-zinc-800 bg-zinc-900 px-6 py-3 max-h-48 overflow-y-auto">
             <div className="space-y-1">
               {chatList.map((chat, idx) => (
                 <div
                   key={chat.chat_id}
                   className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm cursor-pointer transition ${
                     chat.chat_id === chatId
-                      ? "bg-blue-50 border border-blue-200"
-                      : "hover:bg-gray-50"
+                      ? "bg-blue-600/20 border border-blue-500/30"
+                      : "hover:bg-zinc-800"
                   }`}
                   onClick={() => handleSwitchChat(chat.chat_id)}
                 >
@@ -539,17 +567,17 @@ export default function BrandChatPage() {
                           ? "bg-green-400"
                           : chat.status === "completed"
                           ? "bg-blue-400"
-                          : "bg-gray-300"
+                          : "bg-zinc-600"
                       }`}
                     />
-                    <span className="truncate text-gray-700">
+                    <span className="truncate text-zinc-300">
                       {chat.title || `Chat ${chatList.length - idx}`}
                     </span>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
+                    <span className="text-xs text-zinc-500 flex-shrink-0">
                       {chat.message_count} msg{chat.message_count !== 1 ? "s" : ""}
                     </span>
                     {chat.status === "completed" && (
-                      <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex-shrink-0">
+                      <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex-shrink-0">
                         saved
                       </span>
                     )}
@@ -559,7 +587,7 @@ export default function BrandChatPage() {
                       e.stopPropagation();
                       handleDeleteChat(chat.chat_id);
                     }}
-                    className="text-gray-300 hover:text-red-500 transition ml-2 flex-shrink-0"
+                    className="text-zinc-600 hover:text-red-400 transition ml-2 flex-shrink-0"
                     title="Delete this chat"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -573,7 +601,7 @@ export default function BrandChatPage() {
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-white">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-zinc-950">
           {messages.map((msg, i) => (
             <div
               key={i}
@@ -585,7 +613,7 @@ export default function BrandChatPage() {
                 className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-blue-600 text-white rounded-br-md"
-                    : "bg-gray-50 text-gray-800 rounded-bl-md border border-gray-100"
+                    : "bg-zinc-800 text-zinc-200 rounded-bl-md border border-zinc-700"
                 }`}
               >
                 {msg.role === "assistant" ? (
@@ -599,7 +627,7 @@ export default function BrandChatPage() {
 
           {sending && (
             <div className="flex justify-start">
-              <div className="bg-gray-50 border border-gray-100 px-4 py-3 rounded-2xl rounded-bl-md text-sm text-gray-400">
+              <div className="bg-zinc-800 border border-zinc-700 px-4 py-3 rounded-2xl rounded-bl-md text-sm text-zinc-400">
                 <span className="inline-flex gap-1">
                   <span className="animate-bounce">·</span>
                   <span className="animate-bounce" style={{ animationDelay: "0.1s" }}>·</span>
@@ -613,16 +641,16 @@ export default function BrandChatPage() {
         </div>
 
         {error && (
-          <div className="px-6 py-2 text-red-600 text-sm bg-red-50">
+          <div className="px-6 py-2 text-red-400 text-sm bg-red-500/10">
             {error}
           </div>
         )}
 
         {/* Input */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-white">
+        <div className="border-t border-zinc-800 px-6 py-4 bg-zinc-900">
           {/* Attachment preview (file or link) */}
           {(attachedFile || attachedLink) && (
-            <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+            <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
               {attachedLink ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -632,9 +660,9 @@ export default function BrandChatPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
               )}
-              <span className="text-blue-700 truncate flex-1">{attachedLabel}</span>
+              <span className="text-blue-300 truncate flex-1">{attachedLabel}</span>
               {attachSourceType && (
-                <span className="text-blue-400 text-xs flex-shrink-0 bg-blue-100 px-1.5 py-0.5 rounded">
+                <span className="text-blue-400 text-xs flex-shrink-0 bg-blue-500/20 px-1.5 py-0.5 rounded">
                   {attachSourceType.replace(/_/g, " ")}
                 </span>
               )}
@@ -678,7 +706,7 @@ export default function BrandChatPage() {
                   }
                 }}
                 placeholder="Paste a URL (YouTube, website, Reddit, etc.)"
-                className="flex-1 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-zinc-500"
                 autoFocus
               />
               <button
@@ -690,7 +718,7 @@ export default function BrandChatPage() {
               </button>
               <button
                 onClick={() => { setShowLinkInput(false); setLinkInputValue(""); }}
-                className="px-2 py-2 text-gray-400 hover:text-gray-600 transition"
+                className="px-2 py-2 text-zinc-500 hover:text-zinc-300 transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -713,7 +741,7 @@ export default function BrandChatPage() {
               onClick={() => fileInputRef.current?.click()}
               disabled={attachUploading || sending}
               title="Attach a file or image"
-              className="self-end w-10 h-10 rounded-full flex items-center justify-center transition-all bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 disabled:opacity-50"
+              className="self-end w-10 h-10 rounded-full flex items-center justify-center transition-all bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 disabled:opacity-50"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -726,8 +754,8 @@ export default function BrandChatPage() {
               title="Attach a link (YouTube, website, Reddit, etc.)"
               className={`self-end w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50 ${
                 showLinkInput
-                  ? "bg-blue-100 text-blue-600"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                  ? "bg-blue-500/20 text-blue-400"
+                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -744,7 +772,7 @@ export default function BrandChatPage() {
                   : "Type your answer..."
               }
               rows={2}
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
             />
             {/* Mic button */}
             {micSupported && (
@@ -754,7 +782,7 @@ export default function BrandChatPage() {
                 className={`self-end w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                   isListening
                     ? "bg-red-500 text-white animate-pulse"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
                 }`}
               >
                 <svg
@@ -790,20 +818,20 @@ export default function BrandChatPage() {
 
       {/* Right sidebar: extracted data (desktop always, mobile toggle) */}
       <div
-        className={`w-72 border-l border-gray-200 bg-gray-50 overflow-y-auto ${
+        className={`w-72 border-l border-zinc-800 bg-zinc-900 overflow-y-auto ${
           showExtracted ? "block" : "hidden lg:block"
         }`}
       >
         <div className="px-4 py-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-1">
+          <h2 className="text-sm font-semibold text-zinc-200 mb-1">
             Extracted Profile Data
           </h2>
-          <p className="text-xs text-gray-400 mb-3">
+          <p className="text-xs text-zinc-500 mb-3">
             Fields auto-fill as you chat
           </p>
 
           {/* Progress bar */}
-          <div className="w-full bg-gray-200 rounded-full h-1.5 mb-4">
+          <div className="w-full bg-zinc-800 rounded-full h-1.5 mb-4">
             <div
               className="bg-blue-600 h-1.5 rounded-full transition-all"
               style={{ width: `${progress * 100}%` }}
@@ -812,22 +840,22 @@ export default function BrandChatPage() {
 
           {/* Extracted fields */}
           {Object.keys(extracted).length === 0 ? (
-            <p className="text-xs text-gray-400 italic">
+            <p className="text-xs text-zinc-500 italic">
               Answer questions and your profile will build itself here.
             </p>
           ) : (
             <div className="space-y-3">
               {Object.entries(extracted).map(([key, value]) => (
                 <div key={key} className="text-sm">
-                  <div className="font-medium text-gray-500 text-xs uppercase tracking-wide mb-0.5">
+                  <div className="font-medium text-zinc-500 text-xs uppercase tracking-wide mb-0.5">
                     {key.replace(/[._]/g, " ")}
                   </div>
-                  <div className="text-gray-800 bg-white rounded px-2 py-1.5 border border-gray-200 text-xs leading-relaxed">
+                  <div className="text-zinc-200 bg-zinc-800 rounded px-2 py-1.5 border border-zinc-700 text-xs leading-relaxed">
                     {typeof value === "object"
                       ? Array.isArray(value)
                         ? value.map((v, i) => (
                             <div key={i} className="flex items-start gap-1">
-                              <span className="text-gray-400">•</span>
+                              <span className="text-zinc-500">•</span>
                               <span>{String(v)}</span>
                             </div>
                           ))
@@ -914,7 +942,7 @@ function FormattedMessage({ content }: { content: string }) {
       flushParagraph();
       elements.push(
         <div key={`b-${i}`} className="flex items-start gap-2 ml-1 mb-1">
-          <span className="text-blue-400 font-bold mt-0.5 text-xs">•</span>
+          <span className="text-blue-300 font-bold mt-0.5 text-xs">•</span>
           <span>{bulletMatch[1]}</span>
         </div>
       );
@@ -927,7 +955,7 @@ function FormattedMessage({ content }: { content: string }) {
       flushParagraph();
       elements.push(
         <div key={`n-${i}`} className="flex items-start gap-2 ml-1 mb-1">
-          <span className="text-blue-500 font-semibold text-xs min-w-[1rem]">
+          <span className="text-blue-400 font-semibold text-xs min-w-[1rem]">
             {numMatch[1]}.
           </span>
           <span>{numMatch[2]}</span>

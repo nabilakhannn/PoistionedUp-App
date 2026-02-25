@@ -67,75 +67,51 @@ const stages: Stage[] = [
   },
   {
     number: 5,
-    key: "positioning",
-    title: "Positioning & Competitors",
-    question: "How do you stand out?",
-    description:
-      "Competitor research, content gap analysis, and your unique perspective.",
-    chatPath: null,
-    editPath: null,
-    percentKey: null,
-    ready: false,
-  },
-  {
-    number: 6,
-    key: "profile",
-    title: "LinkedIn Profile",
-    question: "How do you show up?",
-    description:
-      "17-point profile audit: headline, about section, featured, and more.",
-    chatPath: null,
-    editPath: null,
-    percentKey: null,
-    ready: false,
-  },
-  {
-    number: 7,
-    key: "content_strategy",
-    title: "Content Strategy",
-    question: "What will you post?",
-    description:
-      "Content pillars, Radio Framework balance, calendar, and idea bank.",
-    chatPath: null,
-    editPath: null,
-    percentKey: null,
-    ready: false,
-  },
-  {
-    number: 8,
-    key: "writing",
-    title: "Writing & Hooks",
-    question: "How will you write?",
-    description:
-      "Hook library, writing assistant, post templates, and anti-AI checklist.",
-    chatPath: null,
-    editPath: null,
-    percentKey: null,
-    ready: false,
-  },
-  {
-    number: 9,
     key: "authority",
     title: "Authority Building",
     question: "How do you build trust?",
     description:
-      "Authority flywheel, framing score, social proof, and signature style.",
-    chatPath: null,
+      "Your credentials, certifications, case studies, testimonials, media features, and social proof.",
+    chatPath: "/brand/chat/authority",
     editPath: null,
-    percentKey: null,
-    ready: false,
+    percentKey: "authority_percent",
+    ready: true,
   },
   {
-    number: 10,
-    key: "monetization",
-    title: "Growth & Monetization",
-    question: "How do you convert?",
+    number: 6,
+    key: "messaging",
+    title: "Messaging",
+    question: "What do you say and how?",
     description:
-      "DM sequences, engagement strategy, launch planner, and lead generation.",
-    chatPath: null,
+      "Key phrases, talking points, content themes, brand voice, and signature expressions.",
+    chatPath: "/brand/chat/messaging",
     editPath: null,
-    percentKey: null,
-    ready: false,
+    percentKey: "messaging_percent",
+    ready: true,
+  },
+  {
+    number: 7,
+    key: "positioning",
+    title: "Positioning",
+    question: "Where do you stand in the market?",
+    description:
+      "Market position, competitive angle, category design, and your unique wedge.",
+    chatPath: "/brand/chat/positioning",
+    editPath: null,
+    percentKey: "positioning_percent",
+    ready: true,
+  },
+  {
+    number: 8,
+    key: "competitors",
+    title: "Competitors",
+    question: "Who else is playing and how are you different?",
+    description:
+      "Competitor analysis, differentiation strategy, white space opportunities, and your unique edge.",
+    chatPath: "/brand/chat/competitors",
+    editPath: null,
+    percentKey: "competitors_percent",
+    ready: true,
   },
 ];
 
@@ -157,15 +133,15 @@ export default function BrandDashboard() {
   const overallPercent = completeness?.overall_percent ?? 0;
 
   return (
-    <main className="max-w-4xl mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-2">Your Personal Brand</h1>
-      <p className="text-gray-600 mb-8">
+    <main className="max-w-4xl mx-auto p-8 bg-zinc-950 text-zinc-100 min-h-screen">
+      <h1 className="text-3xl font-bold mb-2 text-zinc-100">Your Personal Brand</h1>
+      <p className="text-zinc-400 mb-8">
         Build your brand step by step. Complete each stage in order — each one
         builds on the last.
       </p>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4 mb-6 text-red-700 text-sm">
+        <div className="bg-red-500/10 border border-red-500/20 rounded p-4 mb-6 text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -173,12 +149,12 @@ export default function BrandDashboard() {
       {completeness && (
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-zinc-300">
               Overall progress
             </span>
-            <span className="text-sm text-gray-500">{overallPercent}%</span>
+            <span className="text-sm text-zinc-500">{overallPercent}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-zinc-800 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all"
               style={{ width: `${overallPercent}%` }}
@@ -190,7 +166,7 @@ export default function BrandDashboard() {
       {/* Learning Path */}
       <div className="relative">
         {/* Vertical connector line */}
-        <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gray-200" />
+        <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-zinc-800" />
 
         <div className="space-y-4">
           {stages.map((stage) => {
@@ -208,10 +184,10 @@ export default function BrandDashboard() {
                     isComplete
                       ? "bg-green-600 border-green-600 text-white"
                       : isStarted
-                      ? "bg-yellow-50 border-yellow-500 text-yellow-700"
+                      ? "bg-yellow-500/20 border-yellow-500 text-yellow-400"
                       : stage.ready
-                      ? "bg-white border-gray-300 text-gray-600"
-                      : "bg-gray-50 border-gray-200 text-gray-400"
+                      ? "bg-zinc-900 border-zinc-700 text-zinc-400"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-500"
                   }`}
                 >
                   {isComplete ? (
@@ -227,8 +203,8 @@ export default function BrandDashboard() {
                 <div
                   className={`flex-1 rounded-lg border p-5 ${
                     stage.ready
-                      ? "bg-white border-gray-200"
-                      : "bg-gray-50 border-gray-100"
+                      ? "bg-zinc-900 border-zinc-800"
+                      : "bg-zinc-900/50 border-zinc-800/50"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-1">
@@ -236,7 +212,7 @@ export default function BrandDashboard() {
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold">{stage.title}</h2>
                         {!stage.ready && (
-                          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
+                          <span className="text-xs bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded">
                             Coming soon
                           </span>
                         )}
@@ -249,10 +225,10 @@ export default function BrandDashboard() {
                       <span
                         className={`text-sm font-medium px-2 py-1 rounded ${
                           isComplete
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-green-500/20 text-green-400"
                             : isStarted
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : "bg-zinc-800 text-zinc-500"
                         }`}
                       >
                         {pct}%
@@ -260,19 +236,19 @@ export default function BrandDashboard() {
                     )}
                   </div>
 
-                  <p className="text-gray-500 text-sm mb-3">
+                  <p className="text-zinc-400 text-sm mb-3">
                     {stage.description}
                   </p>
 
                   {stage.ready && stage.percentKey && completeness && (
-                    <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+                    <div className="w-full bg-zinc-800 rounded-full h-1.5 mb-4">
                       <div
                         className={`h-1.5 rounded-full transition-all ${
                           isComplete
                             ? "bg-green-500"
                             : isStarted
                             ? "bg-yellow-500"
-                            : "bg-gray-300"
+                            : "bg-zinc-700"
                         }`}
                         style={{ width: `${pct}%` }}
                       />
@@ -292,7 +268,7 @@ export default function BrandDashboard() {
                       {stage.editPath && (
                         <Link
                           href={stage.editPath}
-                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                          className="px-4 py-2 border border-zinc-700 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-800 transition"
                         >
                           Edit manually
                         </Link>

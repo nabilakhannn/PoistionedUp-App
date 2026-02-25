@@ -6,24 +6,11 @@ import json
 import logging
 from typing import Any, Dict
 
-from worker.graph.llm import get_llm_client, parse_json_response, set_tracking_context
+from worker.graph.context import fetch_relevant_resources as _fetch_relevant_resources
+from worker.graph.llm import get_llm_client, get_model_for_step, parse_json_response, set_tracking_context, safe_node
 from worker.graph.prompts import script_generation as prompts
 
 logger = logging.getLogger("worker.graph.nodes.script_generation")
-
-
-def _fetch_relevant_resources(query: str, user_id: str) -> str:
-    """Fetch relevant resource chunks via semantic search. Graceful fallback."""
-    if not user_id:
-        return "No user context available for resource search."
-    try:
-        from app.services.embeddings import search_similar_chunks, format_chunks_as_context
-        chunks = search_similar_chunks(query, user_id, limit=5)
-        context = format_chunks_as_context(chunks)
-        return context if context else "No relevant resources found."
-    except Exception as e:
-        logger.debug("Resource retrieval unavailable: %s", e)
-        return "No relevant resources found."
 
 
 def _format_brand_context(profile: Dict[str, Any]) -> str:
@@ -131,9 +118,11 @@ def _fetch_performance_context(user_id: str, platform: str = "") -> str:
         return ""
 
 
+@safe_node
 def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
     """Generate the full Content Pack for all selected platforms."""
-    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "script_generation")
+    _tier = state.get("settings", {}).get("model_tier", "")
+    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "script_generation", _tier)
 
     topic = state.get("selected_topic", {})
     hook = state.get("selected_hook", {})
@@ -205,7 +194,7 @@ def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
                     gold_resources=gold_resources,
                 )},
             ],
-            model="gpt-4o",
+            model=get_model_for_step("script_generation"),
             temperature=0.7,
             max_tokens=8192,
             response_format={"type": "json_object"},
@@ -228,7 +217,7 @@ def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
                     brand_context=brand_context,
                 )},
             ],
-            model="gpt-4o",
+            model=get_model_for_step("script_generation"),
             temperature=0.8,
             response_format={"type": "json_object"},
         )
@@ -244,7 +233,7 @@ def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
                     profile=json.dumps(profile, indent=2),
                 )},
             ],
-            model="gpt-4o",
+            model=get_model_for_step("script_generation"),
             temperature=0.7,
             response_format={"type": "json_object"},
         )
@@ -272,7 +261,7 @@ def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
                     offer_context=offer_context,
                 )},
             ],
-            model="gpt-4o",
+            model=get_model_for_step("script_generation"),
             temperature=0.7,
             response_format={"type": "json_object"},
         )
@@ -292,7 +281,7 @@ def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
                     brand_context=brand_context,
                 )},
             ],
-            model="gpt-4o",
+            model=get_model_for_step("script_generation"),
             temperature=0.7,
             response_format={"type": "json_object"},
         )
@@ -313,7 +302,7 @@ def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
                     brand_context=brand_context,
                 )},
             ],
-            model="gpt-4o",
+            model=get_model_for_step("script_generation"),
             temperature=0.8,
             response_format={"type": "json_object"},
         )

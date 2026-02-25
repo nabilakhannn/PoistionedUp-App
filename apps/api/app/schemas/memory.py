@@ -16,6 +16,7 @@ class AgentMemoryCreate(BaseModel):
     source: Optional[str] = None                     # auto, user_edit, metrics, synthesis
     related_post_ids: Optional[List[str]] = None
     status: Optional[str] = None                     # defaults to 'active' in DB
+    brand_id: Optional[str] = None
 
 
 class AgentMemoryUpdate(BaseModel):
@@ -38,6 +39,7 @@ class AgentMemorySummary(BaseModel):
     platform: Optional[str] = None
     category: Optional[str] = None
     source: Optional[str] = None
+    brand_id: Optional[str] = None
     last_used_at: Optional[str] = None
     created_at: str
 

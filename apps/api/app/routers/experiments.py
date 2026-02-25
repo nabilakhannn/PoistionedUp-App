@@ -36,6 +36,7 @@ def _row_to_summary(row: dict) -> ExperimentSummary:
         variant_b=row["variant_b"],
         platform=row["platform"],
         status=row["status"],
+        brand_id=row.get("brand_id"),
         target_posts=row.get("target_posts", 4),
         variant_a_count=len(row.get("variant_a_posts", []) or []),
         variant_b_count=len(row.get("variant_b_posts", []) or []),
@@ -58,6 +59,7 @@ def _row_to_detail(row: dict) -> ExperimentDetail:
         variant_b=row["variant_b"],
         platform=row["platform"],
         status=row["status"],
+        brand_id=row.get("brand_id"),
         target_posts=row.get("target_posts", 4),
         variant_a_posts=[str(p) for p in (row.get("variant_a_posts", []) or [])],
         variant_b_posts=[str(p) for p in (row.get("variant_b_posts", []) or [])],
@@ -90,6 +92,7 @@ async def create_experiment(
             variant_b=body.variant_b,
             platform=body.platform,
             target_posts=body.target_posts,
+            brand_id=body.brand_id,
         )
         return _row_to_summary(row)
     except Exception as e:
@@ -100,11 +103,12 @@ async def create_experiment(
 async def list_experiments(
     status_filter: Optional[str] = Query(None, alias="status"),
     platform: Optional[str] = Query(None),
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     """List experiments with optional filters."""
     from app.services.experiments import list_experiments as svc_list
-    rows = svc_list(user.id, status=status_filter, platform=platform)
+    rows = svc_list(user.id, status=status_filter, platform=platform, brand_id=brand_id)
     return [_row_to_summary(r) for r in rows]
 
 
@@ -112,11 +116,12 @@ async def list_experiments(
 
 @router.post("/experiments/auto-propose", response_model=List[ExperimentSummary])
 async def auto_propose(
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     """Auto-propose experiments based on performance data."""
     from app.services.experiments import auto_propose_experiments
-    rows = auto_propose_experiments(user.id)
+    rows = auto_propose_experiments(user.id, brand_id=brand_id)
     return [_row_to_summary(r) for r in rows]
 
 
@@ -242,12 +247,13 @@ async def delete_experiment(
 
 @router.post("/voice/analyze-self", response_model=SelfVoiceAnalysisResponse)
 async def analyze_self_voice(
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     """Analyze the user's own published content to build their Voice DNA."""
     from app.services.self_voice import analyze_self_voice as svc_analyze
     try:
-        voice_dna = svc_analyze(user.id)
+        voice_dna = svc_analyze(user.id, brand_id=brand_id)
         return SelfVoiceAnalysisResponse(
             voice_dna=SelfVoiceDNA(**voice_dna),
             message=f"Voice DNA extracted from {voice_dna.get('posts_analyzed', 0)} posts.",
@@ -258,11 +264,12 @@ async def analyze_self_voice(
 
 @router.get("/voice/baseline", response_model=Optional[SelfVoiceDNA])
 async def get_voice_baseline(
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     """Get the user's stored self-voice DNA."""
     from app.services.self_voice import get_voice_baseline as svc_baseline
-    result = svc_baseline(user.id)
+    result = svc_baseline(user.id, brand_id=brand_id)
     if not result:
         return None
     return SelfVoiceDNA(**result)
@@ -271,9 +278,10 @@ async def get_voice_baseline(
 @router.post("/voice/drift-check", response_model=VoiceDriftResult)
 async def check_drift(
     text: str = Body(..., embed=True),
+    brand_id: Optional[str] = Body(None, embed=True),
     user: CurrentUser = Depends(get_current_user),
 ):
     """Check how closely generated text matches the user's natural voice."""
     from app.services.self_voice import check_voice_drift
-    result = check_voice_drift(user.id, text)
+    result = check_voice_drift(user.id, text, brand_id=brand_id)
     return VoiceDriftResult(**result)

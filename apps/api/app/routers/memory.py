@@ -35,6 +35,7 @@ def _row_to_summary(row: dict) -> AgentMemorySummary:
         platform=row.get("platform"),
         category=row.get("category"),
         source=row.get("source"),
+        brand_id=row.get("brand_id"),
         last_used_at=row.get("last_used_at"),
         created_at=row["created_at"],
     )
@@ -51,6 +52,7 @@ def _row_to_detail(row: dict) -> AgentMemoryDetail:
         platform=row.get("platform"),
         category=row.get("category"),
         source=row.get("source"),
+        brand_id=row.get("brand_id"),
         evidence=row.get("evidence", []),
         related_post_ids=row.get("related_post_ids", []),
         supersedes_id=row.get("supersedes_id"),
@@ -81,6 +83,7 @@ async def create_memory(
         source=body.source,
         related_post_ids=body.related_post_ids,
         status=body.status,
+        brand_id=body.brand_id,
     )
 
     if not row:
@@ -97,6 +100,7 @@ async def list_memories(
     memory_type: Optional[str] = Query(None),
     memory_status: Optional[str] = Query(None, alias="status"),
     platform: Optional[str] = Query(None),
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     """List agent memories with optional filters."""
@@ -107,6 +111,7 @@ async def list_memories(
         memory_type=memory_type,
         status=memory_status,
         platform=platform,
+        brand_id=brand_id,
     )
 
     return [_row_to_summary(r) for r in rows]
@@ -114,12 +119,13 @@ async def list_memories(
 
 @router.get("/pending", response_model=List[AgentMemorySummary])
 async def list_pending_memories(
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     """List memories pending user approval (lessons)."""
     from app.services.agent_memory import list_memories as svc_list
 
-    rows = svc_list(user_id=user.id, status="pending_approval")
+    rows = svc_list(user_id=user.id, status="pending_approval", brand_id=brand_id)
     return [_row_to_summary(r) for r in rows]
 
 
@@ -222,6 +228,7 @@ async def approve_memory(
 
 @router.post("/synthesize", response_model=MemorySynthesisResponse)
 async def synthesize_memories(
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     """Consolidate observations into strategic lessons.
@@ -232,7 +239,7 @@ async def synthesize_memories(
     from app.services.agent_memory import synthesize_memories as svc_synth
 
     try:
-        result = svc_synth(user.id)
+        result = svc_synth(user.id, brand_id=brand_id)
     except Exception as e:
         logger.error("Memory synthesis failed: %s", e)
         raise HTTPException(

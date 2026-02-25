@@ -12,7 +12,7 @@ import json
 import logging
 from typing import Any, Dict
 
-from worker.graph.llm import get_llm_client, parse_json_response, set_tracking_context
+from worker.graph.llm import get_llm_client, get_model_for_step, parse_json_response, set_tracking_context, safe_node
 from worker.graph.prompts import signal_research as prompts
 
 logger = logging.getLogger("worker.graph.nodes.signal_research")
@@ -142,6 +142,7 @@ def _fetch_live_research(
         return ""
 
 
+@safe_node
 def signal_research(state: Dict[str, Any]) -> Dict[str, Any]:
     """Research signals across configured sources.
 
@@ -150,7 +151,8 @@ def signal_research(state: Dict[str, Any]) -> Dict[str, Any]:
     2. Pass live data + creator profile to LLM
     3. LLM analyzes and ranks signals using REAL market data
     """
-    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "signal_research")
+    _tier = state.get("settings", {}).get("model_tier", "")
+    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "signal_research", _tier)
 
     goal_text = state["goal_text"]
     profile = state.get("profile_snapshot", {})
@@ -190,7 +192,7 @@ def signal_research(state: Dict[str, Any]) -> Dict[str, Any]:
             {"role": "system", "content": prompts.SYSTEM},
             {"role": "user", "content": user_prompt},
         ],
-        model="gpt-4o",
+        model=get_model_for_step("signal_research"),
         temperature=0.7,
         response_format={"type": "json_object"},
     )

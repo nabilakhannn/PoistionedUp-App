@@ -1,31 +1,95 @@
 import app.openai_compat_patch  # noqa: F401  -- must be first to patch before any OpenAI usage
 
+import json
 import logging
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
-from app.routers import brand, collections, experiments, memory, oauth, performance, research, resources, schedule, usage, workflows
+from app.middleware import RateLimitMiddleware
+from app.routers import advisor, agent_bridge, brand, brands, collections, content_chat, experiments, inspo, memory, mission_control, oauth, performance, picker, research, resources, schedule, strategist, training, usage, workflows
 
-# ── Structured logging setup ─────────────────────────────
 
-logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper(), logging.DEBUG),
-    format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+# ── Structured JSON logging ──────────────────────────────
 
+
+class StructuredJSONFormatter(logging.Formatter):
+    """Outputs log records as single-line JSON for production ingestion.
+
+    Includes timestamp, level, logger name, message, and any extra
+    context fields (workflow_id, step_id, user_id, request_id).
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_entry = {
+            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+        }
+
+        # Attach correlation IDs if present
+        for key in ("workflow_id", "step_id", "user_id", "request_id"):
+            val = getattr(record, key, None)
+            if val:
+                log_entry[key] = val
+
+        # Include exception info if present
+        if record.exc_info and record.exc_info[0] is not None:
+            log_entry["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_entry, default=str)
+
+
+def _setup_logging() -> None:
+    """Configure root logger.
+
+    - Production (Vercel / LOG_LEVEL=INFO): structured JSON for log aggregation
+    - Local dev (LOG_LEVEL=DEBUG or running outside Vercel): human-readable text
+    """
+    level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    root = logging.getLogger()
+    root.setLevel(level)
+
+    # Clear any existing handlers to avoid duplicate lines
+    root.handlers.clear()
+
+    is_production = (
+        os.environ.get("VERCEL") == "1"
+        or settings.log_level.upper() == "INFO"
+    )
+
+    handler = logging.StreamHandler()
+    handler.setLevel(level)
+
+    if is_production:
+        handler.setFormatter(StructuredJSONFormatter())
+    else:
+        handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s [%(name)s] %(levelname)s %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+    root.addHandler(handler)
+
+
+_setup_logging()
 logger = logging.getLogger("app")
 
 
 # ── Request logging middleware ────────────────────────────
 
-_REDACT_HEADERS = {"authorization", "cookie", "x-api-key"}
+_REDACT_HEADERS = {"authorization", "cookie", "x-api-key", "x-agent-key"}
 _REDACT_PARAMS = {"code", "token", "access_token", "refresh_token", "state"}
 
 
@@ -68,12 +132,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # Skip noisy health/docs checks from logs
         if request.url.path not in ("/health", "/docs", "/openapi.json", "/favicon.ico"):
             logger.info(
-                "req=%s %s %s -> %s (%sms)",
-                request_id,
+                "%s %s -> %s (%sms)",
                 request.method,
                 path,
                 response.status_code,
                 duration_ms,
+                extra={"request_id": request_id},
             )
 
         response.headers["X-Request-ID"] = request_id
@@ -94,12 +158,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Middleware order matters: request logging runs before CORS
+# Middleware execution order (bottom added first, so listed in reverse):
+#   1. RateLimitMiddleware — reject over-limit requests early
+#   2. RequestLoggingMiddleware — log all requests (including 429s)
+#   3. CORSMiddleware — handle CORS headers (added below routers)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 app.include_router(workflows.router)
 app.include_router(resources.router)
 app.include_router(brand.router)
+app.include_router(brands.router)
 app.include_router(collections.router)
 app.include_router(performance.router)
 app.include_router(memory.router)
@@ -107,14 +176,23 @@ app.include_router(experiments.router)
 app.include_router(research.router)
 app.include_router(usage.router)
 app.include_router(schedule.router)
+app.include_router(inspo.router)
+app.include_router(picker.router)
 app.include_router(oauth.router)
+app.include_router(advisor.router)
+app.include_router(content_chat.router)
+app.include_router(strategist.router)
+app.include_router(training.router)
+app.include_router(mission_control.router)
+app.include_router(agent_bridge.router)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
+    max_age=3600,
 )
 
 
@@ -145,7 +223,34 @@ async def health_check():
         health["db"] = "connected"
     except Exception as e:
         health["db"] = "error"
-        health["db_error"] = str(e)[:200]
         health["status"] = "degraded"
+        logger.warning("Health check DB error: %s", str(e)[:200])
 
     return health
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all unhandled exceptions and return structured error response."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    
+    logger.error(
+        "Unhandled exception in %s %s: %s",
+        request.method,
+        request.url.path,
+        str(exc),
+        exc_info=exc,
+        extra={"request_id": request_id},
+    )
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "type": "error",
+            "error": {
+                "type": "internal_server_error",
+                "message": "An internal server error occurred",
+            },
+            "request_id": request_id,
+        },
+    )

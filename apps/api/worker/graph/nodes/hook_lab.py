@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 from langgraph.types import interrupt
 
-from worker.graph.llm import get_llm_client, parse_json_response, set_tracking_context
+from worker.graph.llm import get_llm_client, get_model_for_step, parse_json_response, set_tracking_context, safe_node
 from worker.graph.prompts import hook_lab as prompts
 
 logger = logging.getLogger("worker.graph.nodes.hook_lab")
@@ -63,9 +63,11 @@ def _fetch_performance_context(user_id: str, platform: str = "") -> str:
         return ""
 
 
+@safe_node
 def hook_lab(state: Dict[str, Any]) -> Dict[str, Any]:
     """Generate 7 hook candidates, then pause for user to pick one."""
-    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "hook_lab")
+    _tier = state.get("settings", {}).get("model_tier", "")
+    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "hook_lab", _tier)
 
     topic = state.get("selected_topic", {})
     profile = state.get("profile_snapshot", {})
@@ -102,7 +104,7 @@ def hook_lab(state: Dict[str, Any]) -> Dict[str, Any]:
                 profile=json.dumps(profile, indent=2),
             )},
         ],
-        model="gpt-4o",
+        model=get_model_for_step("hook_lab"),
         temperature=0.8,
         response_format={"type": "json_object"},
     )

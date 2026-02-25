@@ -1,0 +1,213 @@
+{
+  "$schema": "https://docs.openclaw.ai/schema/openclaw.json",
+  "_comment": "PositionedUp Content Engine — OpenClaw Gateway Configuration (Hardened v2)",
+
+  "gateway": {
+    "mode": "local",
+    "bind": "loopback",
+    "port": 3838,
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    }
+  },
+
+  "discovery": {
+    "mdns": { "mode": "off" }
+  },
+
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+
+  "logging": {
+    "redactSensitive": "tools"
+  },
+
+  "defaultModel": {
+    "provider": "openai",
+    "model": "gpt-4o-mini"
+  },
+
+  "tools": {
+    "profile": "messaging",
+    "deny": ["gateway", "cron", "sessions_spawn", "sessions_send"],
+    "alsoAllow": ["lobster"],
+    "fs": {
+      "workspaceOnly": true
+    },
+    "exec": {
+      "security": "deny",
+      "ask": "always",
+      "applyPatch": {
+        "workspaceOnly": true
+      }
+    },
+    "elevated": {
+      "enabled": false
+    },
+    "subagents": {
+      "tools": {
+        "deny": ["gateway", "cron", "exec", "process", "browser"]
+      }
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "non-main",
+        "scope": "agent",
+        "workspaceAccess": "rw"
+      },
+      "heartbeat": {
+        "every": "15m",
+        "target": "last",
+        "activeHours": { "start": "07:00", "end": "23:00" }
+      },
+      "subagents": {
+        "maxSpawnDepth": 2,
+        "maxChildrenPerAgent": 3,
+        "maxConcurrent": 4,
+        "runTimeoutSeconds": 900,
+        "archiveAfterMinutes": 60,
+        "model": { "provider": "openai", "model": "gpt-4o-mini" },
+        "allowAgents": ["trend-analyzer", "copywriter", "visual-designer", "distributor", "analytics"]
+      }
+    },
+    "list": [
+      {
+        "id": "jarvis",
+        "name": "Jarvis (Orchestrator)",
+        "default": true,
+        "workspace": "./agents/jarvis",
+        "model": { "provider": "openai", "model": "gpt-4o" },
+        "tools": {
+          "allow": ["read", "write", "edit", "sessions_list", "sessions_history", "sessions_send", "sessions_spawn", "session_status", "subagents", "message", "agents_list", "lobster"],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "image"]
+        },
+        "subagents": {
+          "allowAgents": ["*"]
+        },
+        "channels": ["telegram"]
+      },
+      {
+        "id": "trend-analyzer",
+        "name": "Trend Analyzer",
+        "workspace": "./agents/trend-analyzer",
+        "model": { "provider": "openai", "model": "gpt-4o-mini" },
+        "tools": {
+          "allow": ["read", "write", "edit", "web_search", "web_fetch"],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "image"]
+        },
+        "channels": []
+      },
+      {
+        "id": "copywriter",
+        "name": "Copywriter",
+        "workspace": "./agents/copywriter",
+        "model": { "provider": "openai", "model": "gpt-4o" },
+        "tools": {
+          "allow": ["read", "write", "edit"],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "web_search", "web_fetch", "image"]
+        },
+        "channels": []
+      },
+      {
+        "id": "visual-designer",
+        "name": "Visual Designer",
+        "workspace": "./agents/visual-designer",
+        "model": { "provider": "openai", "model": "gpt-4o" },
+        "tools": {
+          "allow": ["read", "write", "edit", "image"],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "web_search", "web_fetch"]
+        },
+        "channels": []
+      },
+      {
+        "id": "distributor",
+        "name": "Distributor",
+        "workspace": "./agents/distributor",
+        "model": { "provider": "openai", "model": "gpt-4o-mini" },
+        "tools": {
+          "allow": ["read", "write", "edit", "message"],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "web_search", "web_fetch", "image"]
+        },
+        "channels": []
+      },
+      {
+        "id": "analytics",
+        "name": "Analytics",
+        "workspace": "./agents/analytics",
+        "model": { "provider": "openai", "model": "gpt-4o-mini" },
+        "tools": {
+          "allow": ["read", "write", "edit", "web_fetch"],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "image"]
+        },
+        "channels": []
+      }
+    ],
+
+    "routing": {
+      "default": "jarvis"
+    }
+  },
+
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "dmPolicy": "allowlist",
+      "allowFrom": ["${TELEGRAM_OWNER_CHAT_ID}"],
+      "groups": {
+        "*": { "requireMention": true }
+      }
+    }
+  },
+
+  "cron": [
+    {
+      "name": "Weekly Trend Research",
+      "schedule": { "kind": "cron", "expr": "0 10 * * 6", "tz": "America/New_York" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "WEEKLY RESEARCH TRIGGER. Create a trend research task in task_board.md BACKLOG. Assign to trend-analyzer. Priority P1."
+      },
+      "agentId": "jarvis"
+    },
+    {
+      "name": "Weekly Analytics Report",
+      "schedule": { "kind": "cron", "expr": "0 20 * * 0", "tz": "America/New_York" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "WEEKLY REPORT TRIGGER. Create a performance report task. Assign to analytics. Priority P1."
+      },
+      "agentId": "jarvis"
+    },
+    {
+      "name": "Weekly Competitor Intelligence",
+      "schedule": { "kind": "cron", "expr": "0 6 * * 1", "tz": "America/New_York" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "COMPETITOR SCAN TRIGGER. Create a competitor analysis task. Assign to trend-analyzer. Use NotebookLM for comparison. Priority P1."
+      },
+      "agentId": "jarvis"
+    }
+  ],
+
+  "env": {
+    "required": [
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_OWNER_CHAT_ID",
+      "OPENAI_API_KEY",
+      "OPENCLAW_GATEWAY_TOKEN"
+    ],
+    "optional": [
+      "FACEBOOK_PAGE_ACCESS_TOKEN",
+      "INSTAGRAM_ACCESS_TOKEN"
+    ]
+  }
+}

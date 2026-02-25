@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────────
+# OpenClaw Production Docker Compose — PositionedUp Squad
+# For: Hostinger VPS / Hetzner / Any Ubuntu VPS
+# ─────────────────────────────────────────────────────────
+services:
+  openclaw-gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: positionedup-openclaw:latest
+    container_name: openclaw-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - HOME=/home/openclaw
+      - NODE_ENV=production
+      - TERM=xterm-256color
+    volumes:
+      # Persist OpenClaw config (tokens, sessions, auth)
+      - openclaw-config:/home/openclaw/.openclaw
+      # Persist workspace (agent files, drafts, research, assets)
+      - openclaw-workspace:/home/openclaw/.openclaw/workspace
+    # Use host networking to avoid Docker bridge DNS/firewall issues on VPS
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  openclaw-config:
+    driver: local
+  openclaw-workspace:
+    driver: local

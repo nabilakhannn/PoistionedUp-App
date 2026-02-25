@@ -37,6 +37,7 @@ def create_memory(
     related_post_ids: Optional[List[str]] = None,
     status: Optional[str] = None,
     generate_embedding: bool = True,
+    brand_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create a new agent memory and optionally compute its embedding.
 
@@ -52,6 +53,8 @@ def create_memory(
         "confidence": confidence,
     }
 
+    if brand_id:
+        insert_data["brand_id"] = brand_id
     if platform:
         insert_data["platform"] = platform
     if category:
@@ -96,6 +99,7 @@ def list_memories(
     memory_type: Optional[str] = None,
     status: Optional[str] = None,
     platform: Optional[str] = None,
+    brand_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """List memories with optional filters."""
     from app.deps import get_admin_client
@@ -106,6 +110,8 @@ def list_memories(
         .select("*")
         .eq("user_id", user_id)
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
     if memory_type:
         query = query.eq("memory_type", memory_type)
     if status:
@@ -209,9 +215,11 @@ def get_relevant_memories(
     platform: Optional[str] = None,
     limit: int = 10,
     threshold: float = 0.6,
+    brand_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Find memories relevant to the current context using semantic search.
 
+    If brand_id is provided, filters results to only memories for that brand.
     Falls back to keyword-based retrieval if embedding search fails.
     Updates last_used_at for retrieved memories.
     """
@@ -229,14 +237,23 @@ def get_relevant_memories(
     admin = get_admin_client()
 
     try:
+        # Fetch extra if we need to post-filter by brand
+        fetch_limit = limit * 3 if brand_id else limit
         resp = admin.rpc("match_agent_memories", {
             "query_embedding": query_embedding,
             "match_user_id": user_id,
-            "match_count": limit,
+            "match_count": fetch_limit,
             "match_threshold": threshold,
         }).execute()
 
         memories = resp.data or []
+
+        # Filter by brand_id if specified
+        if brand_id and memories:
+            memories = [
+                m for m in memories
+                if not m.get("brand_id") or m["brand_id"] == brand_id
+            ][:limit]
 
         # Filter by platform if specified
         if platform and memories:
@@ -583,3 +600,205 @@ def synthesize_memories(user_id: str) -> Dict[str, Any]:
             else "No new patterns detected from current observations."
         ),
     }
+
+
+# ── Auto-Record After Workflow Approval ──────────────────
+
+def record_workflow_memories(
+    user_id: str,
+    workflow_id: str,
+    state: Dict[str, Any],
+    brand_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Auto-create memories after a workflow is approved.
+
+    Extracts learnable signals from the completed pipeline:
+      - Which topic the user chose (and why it scored well)
+      - Which hook style they picked
+      - What platforms they targeted
+      - Any approval feedback they gave
+      - The content structure that got approved
+
+    Returns list of created memory dicts.
+    """
+    created = []
+
+    selected_topic = state.get("selected_topic")
+    selected_hook = state.get("selected_hook")
+    goal_text = state.get("goal_text", "")
+    settings = state.get("settings", {})
+    platforms = settings.get("platforms", [])
+    approval_feedback = state.get("rejection_feedback", "")
+    objective = settings.get("objective", "")
+    content_type = settings.get("content_type", "")
+
+    # 1. Record the topic choice as an observation
+    if selected_topic:
+        topic_title = selected_topic.get("title", "")
+        novelty = selected_topic.get("novelty_angle", "")
+        score = selected_topic.get("opportunity_score", 0)
+
+        topic_content = (
+            f"User approved content about \"{topic_title}\""
+        )
+        if novelty:
+            topic_content += f" with the angle: {novelty}"
+        if score:
+            topic_content += f" (opportunity score: {score}/100)"
+
+        try:
+            mem = create_memory(
+                user_id=user_id,
+                memory_type="observation",
+                content=topic_content,
+                confidence=0.6,
+                category=selected_topic.get("audience_pain", ""),
+                source="workflow_approval",
+                related_post_ids=[workflow_id],
+                brand_id=brand_id,
+            )
+            if mem:
+                created.append(mem)
+        except Exception as e:
+            logger.warning("Failed to record topic memory: %s", e)
+
+    # 2. Record the hook style preference
+    if selected_hook:
+        hook_text = selected_hook.get("hook_text", "")
+        hook_type = selected_hook.get("hook_type", "")
+        hook_score = selected_hook.get("total_score", 0)
+
+        platform_str = ", ".join(platforms) if platforms else "general"
+        hook_content = (
+            f"User chose a {hook_type} hook for {platform_str} content: "
+            f"\"{hook_text[:120]}\""
+        )
+        if hook_score:
+            hook_content += f" (scored {hook_score}/100)"
+
+        try:
+            mem = create_memory(
+                user_id=user_id,
+                memory_type="preference",
+                content=hook_content,
+                confidence=0.65,
+                platform=platforms[0] if platforms else None,
+                source="workflow_approval",
+                related_post_ids=[workflow_id],
+                brand_id=brand_id,
+            )
+            if mem:
+                created.append(mem)
+        except Exception as e:
+            logger.warning("Failed to record hook memory: %s", e)
+
+    # 3. Record content objective + type combo if set
+    if objective and content_type:
+        combo_content = (
+            f"User created {content_type} content with a {objective} objective"
+        )
+        if goal_text:
+            combo_content += f" about: {goal_text[:100]}"
+
+        try:
+            mem = create_memory(
+                user_id=user_id,
+                memory_type="observation",
+                content=combo_content,
+                confidence=0.5,
+                source="workflow_approval",
+                related_post_ids=[workflow_id],
+                brand_id=brand_id,
+            )
+            if mem:
+                created.append(mem)
+        except Exception as e:
+            logger.warning("Failed to record objective memory: %s", e)
+
+    # 4. Record approval feedback as a preference (if user gave feedback)
+    if approval_feedback and approval_feedback.strip():
+        try:
+            mem = create_memory(
+                user_id=user_id,
+                memory_type="preference",
+                content=f"User feedback on approved content: {approval_feedback.strip()[:300]}",
+                confidence=0.75,
+                source="workflow_approval",
+                related_post_ids=[workflow_id],
+                brand_id=brand_id,
+            )
+            if mem:
+                created.append(mem)
+        except Exception as e:
+            logger.warning("Failed to record feedback memory: %s", e)
+
+    # 5. Record content structure pattern from the approved pack
+    pack = state.get("edited_pack") or state.get("content_pack")
+    if pack:
+        _record_structure_memory(user_id, workflow_id, pack, platforms, brand_id, created)
+
+    logger.info(
+        "Recorded %d memories from workflow %s approval",
+        len(created), workflow_id,
+    )
+    return created
+
+
+def _record_structure_memory(
+    user_id: str,
+    workflow_id: str,
+    pack: Dict[str, Any],
+    platforms: List[str],
+    brand_id: Optional[str],
+    created: List[Dict[str, Any]],
+) -> None:
+    """Record a content_pattern memory about the approved content structure."""
+    structure_parts = []
+
+    yt_long = pack.get("youtube_long", {})
+    if yt_long:
+        sections = yt_long.get("sections", [])
+        headings = [s.get("heading", "") for s in sections if s.get("heading")]
+        if headings:
+            structure_parts.append(
+                f"YouTube script with {len(sections)} sections: {', '.join(headings[:5])}"
+            )
+
+    shorts_count = len(pack.get("youtube_shorts", []))
+    if shorts_count:
+        structure_parts.append(f"{shorts_count} YouTube Shorts")
+
+    li_count = len(pack.get("linkedin_posts", []))
+    if li_count:
+        structure_parts.append(f"{li_count} LinkedIn posts")
+
+    tw_count = len(pack.get("twitter_posts", []))
+    if tw_count:
+        structure_parts.append(f"{tw_count} Twitter posts")
+
+    sf_count = len(pack.get("short_form_scripts", []))
+    if sf_count:
+        structure_parts.append(f"{sf_count} short-form scripts")
+
+    if not structure_parts:
+        return
+
+    structure_content = (
+        "Approved content pack included: " + ", ".join(structure_parts)
+    )
+
+    try:
+        mem = create_memory(
+            user_id=user_id,
+            memory_type="content_pattern",
+            content=structure_content,
+            confidence=0.55,
+            platform=platforms[0] if platforms else None,
+            source="workflow_approval",
+            related_post_ids=[workflow_id],
+            brand_id=brand_id,
+        )
+        if mem:
+            created.append(mem)
+    except Exception as e:
+        logger.warning("Failed to record structure memory: %s", e)

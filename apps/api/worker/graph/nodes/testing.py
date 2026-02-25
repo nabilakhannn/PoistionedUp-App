@@ -6,29 +6,18 @@ import json
 import logging
 from typing import Any, Dict
 
-from worker.graph.llm import get_llm_client, get_model_for_step, parse_json_response, set_tracking_context
+from worker.graph.context import fetch_relevant_resources as _fetch_relevant_resources
+from worker.graph.llm import get_llm_client, get_model_for_step, parse_json_response, set_tracking_context, safe_node
 from worker.graph.prompts import testing as prompts
 
 logger = logging.getLogger("worker.graph.nodes.testing")
 
 
-def _fetch_relevant_resources(query: str, user_id: str) -> str:
-    """Fetch relevant resource chunks via semantic search. Graceful fallback."""
-    if not user_id:
-        return "No user context available for resource search."
-    try:
-        from app.services.embeddings import search_similar_chunks, format_chunks_as_context
-        chunks = search_similar_chunks(query, user_id, limit=5)
-        context = format_chunks_as_context(chunks)
-        return context if context else "No relevant resources found."
-    except Exception as e:
-        logger.debug("Resource retrieval unavailable: %s", e)
-        return "No relevant resources found."
-
-
+@safe_node
 def testing(state: Dict[str, Any]) -> Dict[str, Any]:
     """Run quality checks on the edited content pack across all platforms."""
-    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "testing")
+    _tier = state.get("settings", {}).get("model_tier", "")
+    set_tracking_context(state.get("workflow_id", ""), state.get("user_id", ""), "testing", _tier)
 
     edited_pack = state.get("edited_pack", state.get("content_pack", {}))
     profile = state.get("profile_snapshot", {})

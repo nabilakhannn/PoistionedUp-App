@@ -22,6 +22,7 @@ class ContentPostCreate(BaseModel):
     published_at: Optional[str] = None                # ISO datetime string
     day_of_week: Optional[str] = None
     tags: Optional[List[str]] = None
+    brand_id: Optional[str] = None
 
 
 class ContentPostUpdateMetrics(BaseModel):

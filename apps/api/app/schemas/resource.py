@@ -20,6 +20,7 @@ class ResourceCreateNote(BaseModel):
     tags: List[str] = Field(default_factory=list)
     is_gold: bool = False
     collection_id: Optional[str] = None
+    brand_id: Optional[str] = None
 
 
 class ResourceUpdate(BaseModel):
@@ -92,6 +93,7 @@ class ChannelImportRequest(BaseModel):
         description="If true, extract transcripts for each video. If false, just import metadata.",
     )
     collection_id: Optional[str] = None
+    brand_id: Optional[str] = None
 
 
 class ChannelVideoSummary(BaseModel):

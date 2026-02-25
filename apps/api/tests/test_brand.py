@@ -319,9 +319,10 @@ class TestCompleteness:
                 "content_pillars": ["Branding", "Growth"],
             },
         })
-        # Foundation: 0%, ICA: 100%, Offer: 0%, Brand: 100%
-        # 2 of 4 modules >= 50% -> overall = 50%
-        assert result["overall_percent"] == 50
+        # Foundation: 0%, ICA: 100%, Offer: 0%, Brand: 100%,
+        # Authority: 0%, Messaging: 0%, Positioning: 0%, Competitors: 0%
+        # 2 of 8 modules >= 50% -> overall = 25%
+        assert result["overall_percent"] == 25
 
     def test_foundation_completeness(self):
         from app.services.brand_chat import calculate_completeness

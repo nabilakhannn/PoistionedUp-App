@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { identifyUser, trackEvent } from "@/lib/posthog";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -31,7 +32,11 @@ export default function SignupPage() {
 
     // email confirmations are disabled — user is logged in immediately
     if (data.session) {
-      window.location.href = "/brand";
+      identifyUser(data.session.user.id, {
+        email: data.session.user.email,
+      });
+      trackEvent("user_signed_up", { method: "email" });
+      window.location.href = "/brands";
     } else {
       setError("Signup succeeded but no session created. Please try again.");
       setLoading(false);
@@ -39,19 +44,19 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gray-50">
+    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-zinc-950">
       <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-bold text-center mb-2">Create Account</h1>
-        <p className="text-gray-500 text-center text-sm mb-8">
+        <h1 className="text-3xl font-bold text-center mb-2 text-zinc-100">Create Account</h1>
+        <p className="text-zinc-400 text-center text-sm mb-8">
           Get started with PositionedUp
         </p>
 
         <form
           onSubmit={handleSignup}
-          className="bg-white rounded-lg shadow p-6 space-y-4"
+          className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg p-6 space-y-4"
         >
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded p-3 text-red-700 text-sm">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-300 text-sm">
               {error}
             </div>
           )}
@@ -59,7 +64,7 @@ export default function SignupPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-zinc-300 mb-1"
             >
               Email
             </label>
@@ -70,7 +75,7 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="you@example.com"
             />
           </div>
@@ -78,7 +83,7 @@ export default function SignupPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-zinc-300 mb-1"
             >
               Password
             </label>
@@ -90,7 +95,7 @@ export default function SignupPage() {
               required
               autoComplete="new-password"
               minLength={6}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="At least 6 characters"
             />
           </div>
@@ -98,17 +103,17 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition"
           >
             {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-zinc-500 mt-6">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="text-blue-600 hover:underline font-medium"
+            className="text-blue-400 hover:text-blue-300 font-medium transition"
           >
             Sign in
           </Link>

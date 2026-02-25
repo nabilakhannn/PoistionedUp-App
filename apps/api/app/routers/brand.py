@@ -19,6 +19,7 @@ from app.schemas.brand import (
     BrandSuggestRequest,
     BrandSuggestResponse,
 )
+from app.services.analytics import track_event
 import logging
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ router = APIRouter(prefix="/brand", tags=["brand"])
 # ── Helpers ──────────────────────────────────────────────────
 
 
-VALID_MODULES = ("foundation", "ica", "offer", "brand")
+VALID_MODULES = ("foundation", "ica", "offer", "brand", "authority", "messaging", "positioning", "competitors")
 
 
 def _validate_module(module: str):
@@ -52,29 +53,55 @@ def _validate_module(module: str):
         )
 
 
-def _get_profile_json(admin, user_id: str) -> Dict[str, Any]:
-    """Fetch profile_json for a user. Returns empty dict if no profile."""
-    resp = (
-        admin.table("profiles")
-        .select("profile_json")
-        .eq("user_id", user_id)
-        .execute()
-    )
+def _get_profile_json(admin, user_id: str, brand_id: Optional[str] = None) -> Dict[str, Any]:
+    """Fetch profile_json for a user or a specific personal brand.
+
+    If brand_id is provided, fetches from personal_brands table.
+    Otherwise falls back to the legacy profiles table.
+    Returns empty dict if no profile found.
+    """
+    if brand_id:
+        resp = (
+            admin.table("personal_brands")
+            .select("profile_json")
+            .eq("id", brand_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+    else:
+        resp = (
+            admin.table("profiles")
+            .select("profile_json")
+            .eq("user_id", user_id)
+            .execute()
+        )
     if resp.data:
         return resp.data[0].get("profile_json", {}) or {}
     return {}
 
 
-def _update_profile_section(admin, user_id: str, section: str, data: Dict[str, Any]):
-    """Update a specific section within profile_json."""
-    current = _get_profile_json(admin, user_id)
+def _update_profile_section(
+    admin, user_id: str, section: str, data: Dict[str, Any],
+    brand_id: Optional[str] = None,
+):
+    """Update a specific section within profile_json.
+
+    If brand_id is provided, updates the personal_brands row.
+    Otherwise updates the legacy profiles row.
+    """
+    current = _get_profile_json(admin, user_id, brand_id)
     current[section] = data
 
-    # Upsert profile (creates if not exists)
-    admin.table("profiles").upsert({
-        "user_id": user_id,
-        "profile_json": current,
-    }).execute()
+    if brand_id:
+        admin.table("personal_brands").update({
+            "profile_json": current,
+        }).eq("id", brand_id).eq("user_id", user_id).execute()
+    else:
+        # Upsert profile (creates if not exists)
+        admin.table("profiles").upsert({
+            "user_id": user_id,
+            "profile_json": current,
+        }).execute()
 
 
 def _get_llm_client():
@@ -88,11 +115,15 @@ def _get_llm_client():
 
 @router.get("", response_model=BrandProfile)
 async def get_brand(
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Get complete brand profile (Foundation + ICA + Offer + Brand Statement)."""
+    """Get complete brand profile (Foundation + ICA + Offer + Brand Statement).
+
+    Pass ?brand_id= to get profile for a specific personal brand.
+    """
     admin = get_admin_client()
-    profile = _get_profile_json(admin, user.id)
+    profile = _get_profile_json(admin, user.id, brand_id)
     return BrandProfile(
         foundation=profile.get("foundation", {}),
         ica=profile.get("ica", {}),
@@ -104,66 +135,74 @@ async def get_brand(
 @router.patch("/foundation")
 async def update_foundation(
     body: Dict[str, Any],
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
     """Update Foundation fields (beliefs, IT factor, achievements, stories)."""
     admin = get_admin_client()
-    current = _get_profile_json(admin, user.id)
+    current = _get_profile_json(admin, user.id, brand_id)
     current_foundation = current.get("foundation", {})
     merged = deep_merge(current_foundation, body)
-    _update_profile_section(admin, user.id, "foundation", merged)
+    _update_profile_section(admin, user.id, "foundation", merged, brand_id)
     return {"message": "Foundation updated", "foundation": merged}
 
 
 @router.patch("/ica")
 async def update_ica(
     body: Dict[str, Any],
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
     """Update ICA fields (manual form edit)."""
     admin = get_admin_client()
-    current = _get_profile_json(admin, user.id)
+    current = _get_profile_json(admin, user.id, brand_id)
     current_ica = current.get("ica", {})
     merged = deep_merge(current_ica, body)
-    _update_profile_section(admin, user.id, "ica", merged)
+    _update_profile_section(admin, user.id, "ica", merged, brand_id)
     return {"message": "ICA updated", "ica": merged}
 
 
 @router.patch("/offer")
 async def update_offer(
     body: Dict[str, Any],
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
     """Update Offer fields (manual form edit)."""
     admin = get_admin_client()
-    current = _get_profile_json(admin, user.id)
+    current = _get_profile_json(admin, user.id, brand_id)
     current_offer = current.get("offer", {})
     merged = deep_merge(current_offer, body)
-    _update_profile_section(admin, user.id, "offer", merged)
+    _update_profile_section(admin, user.id, "offer", merged, brand_id)
     return {"message": "Offer updated", "offer": merged}
 
 
 @router.patch("/statement")
 async def update_statement(
     body: Dict[str, Any],
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
     """Update Brand Statement + IT Factor."""
     admin = get_admin_client()
-    current = _get_profile_json(admin, user.id)
+    current = _get_profile_json(admin, user.id, brand_id)
     current_brand = current.get("brand", {})
     merged = deep_merge(current_brand, body)
-    _update_profile_section(admin, user.id, "brand", merged)
+    _update_profile_section(admin, user.id, "brand", merged, brand_id)
     return {"message": "Brand statement updated", "brand": merged}
 
 
 @router.get("/completeness", response_model=BrandCompleteness)
 async def get_completeness(
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Get completion percentage for each brand module."""
+    """Get completion percentage for each brand module.
+
+    Pass ?brand_id= for a specific personal brand's completeness.
+    """
     admin = get_admin_client()
-    profile = _get_profile_json(admin, user.id)
+    profile = _get_profile_json(admin, user.id, brand_id)
     result = calculate_completeness(profile)
     return BrandCompleteness(**result)
 
@@ -400,6 +439,22 @@ async def extract_link_context(
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
 
+    # SSRF protection: block private/internal URLs and IP ranges
+    from urllib.parse import urlparse
+    import ipaddress
+    parsed = urlparse(url)
+    hostname = (parsed.hostname or "").lower()
+    _BLOCKED_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]", "metadata.google.internal"}
+    _BLOCKED_SUFFIXES = (".local", ".internal", ".localhost", ".test")
+    if hostname in _BLOCKED_HOSTS or any(hostname.endswith(s) for s in _BLOCKED_SUFFIXES):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Private/internal URLs are not allowed.")
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Private/internal URLs are not allowed.")
+    except ValueError:
+        pass  # hostname is a domain name, not an IP — that's fine
+
     from app.services.ingestion import detect_platform, extract_text_from_url
 
     try:
@@ -445,35 +500,58 @@ async def chat(
     body: BrandChatRequest,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Send a message to the brand discovery AI. Creates a new chat if needed."""
+    """Send a message to the brand discovery AI. Creates a new chat if needed.
+
+    If brand_id is provided, the chat is scoped to that personal brand.
+    Profile data and context are pulled from the brand's profile_json.
+    """
     admin = get_admin_client()
 
-    # Find or create active chat for this module
-    chat_resp = (
+    # ── Validate brand ownership if brand_id provided ──
+    brand_row = None
+    model_tier = ""
+    if body.brand_id:
+        brand_resp = (
+            admin.table("personal_brands")
+            .select("id, user_id, profile_json, model_tier")
+            .eq("id", body.brand_id)
+            .eq("user_id", user.id)
+            .execute()
+        )
+        if not brand_resp.data:
+            raise HTTPException(status_code=404, detail="Brand not found")
+        brand_row = brand_resp.data[0]
+        model_tier = brand_row.get("model_tier", "") or ""
+
+    # Find or create active chat for this module (scoped by brand_id if provided)
+    query = (
         admin.table("brand_chats")
         .select("*")
         .eq("user_id", user.id)
         .eq("module", body.module)
         .eq("status", "active")
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
     )
+    if body.brand_id:
+        query = query.eq("brand_id", body.brand_id)
+    chat_resp = query.order("created_at", desc=True).limit(1).execute()
 
     if chat_resp.data:
         chat_row = chat_resp.data[0]
     else:
         # Create new chat with opening message
         opening = get_opening_message(body.module)
+        insert_data = {
+            "user_id": user.id,
+            "module": body.module,
+            "messages": [{"role": "assistant", "content": opening}],
+            "extracted": {},
+            "status": "active",
+        }
+        if body.brand_id:
+            insert_data["brand_id"] = body.brand_id
         new_chat = (
             admin.table("brand_chats")
-            .insert({
-                "user_id": user.id,
-                "module": body.module,
-                "messages": [{"role": "assistant", "content": opening}],
-                "extracted": {},
-                "status": "active",
-            })
+            .insert(insert_data)
             .execute()
         )
         chat_row = new_chat.data[0]
@@ -520,20 +598,27 @@ async def chat(
     messages = list(chat_row.get("messages", []))
     stored_msg = body.message
     if body.file_name:
-        # Use link icon for URLs, paperclip for files
-        is_url = body.file_name.startswith(("http://", "https://"))
-        icon = "🔗" if is_url else "📎"
+        # Pick the correct badge icon based on attachment_type
+        att_type = body.attachment_type or ""
+        if att_type == "knowledge":
+            icon = "📗"
+        elif att_type == "inspo":
+            icon = "💡"
+        elif att_type == "link" or body.file_name.startswith(("http://", "https://")):
+            icon = "🔗"
+        else:
+            icon = "📎"
         stored_msg = f"{body.message}\n\n{icon} {body.file_name}"
     messages.append({"role": "user", "content": stored_msg})
 
     # Retrieve relevant context from user's uploaded resources
-    resource_context = get_relevant_context(body.message, user.id)
+    resource_context = get_relevant_context(body.message, user.id, brand_id=body.brand_id)
 
-    # Retrieve performance context (what's worked for this user)
+    # Retrieve performance context (what's worked for this user/brand)
     perf_context = ""
     try:
         from app.services.brand_chat import _fetch_performance_context
-        perf_context = _fetch_performance_context(user.id)
+        perf_context = _fetch_performance_context(user.id, brand_id=body.brand_id)
     except Exception:
         pass
 
@@ -541,14 +626,18 @@ async def chat(
     mem_context = ""
     try:
         from app.services.brand_chat import _fetch_memory_context
-        mem_context = _fetch_memory_context(user.id)
+        mem_context = _fetch_memory_context(user.id, brand_id=body.brand_id)
     except Exception:
         pass
 
     # Retrieve real-time research context (live web, YouTube, Reddit)
     research_context = ""
     try:
-        profile = _get_profile_json(admin, user.id)
+        # Use brand profile if brand_id provided, otherwise legacy profiles table
+        if brand_row:
+            profile = brand_row.get("profile_json", {}) or {}
+        else:
+            profile = _get_profile_json(admin, user.id)
         research_context = _fetch_research_context(body.message, profile)
     except Exception as e:
         logger.debug("Research context fetch failed: %s", e)
@@ -573,9 +662,14 @@ async def chat(
             sum(len(m.get("content", "")) for m in llm_messages),
         )
 
+    # Determine which model to use based on the brand's tier
+    from worker.graph.llm import get_model_for_chat
+    chat_model = get_model_for_chat(model_tier)
+
     try:
         response = llm.chat(
             messages=llm_messages,
+            model=chat_model,
             temperature=0.7,
             max_tokens=2000,
             response_format={"type": "json_object"},
@@ -585,11 +679,12 @@ async def chat(
         if "429" in error_msg or "quota" in error_msg.lower() or "rate" in error_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="OpenAI API quota exceeded. Please check your billing at https://platform.openai.com/billing",
+                detail="LLM API quota exceeded. Please check your billing or switch to a lower-cost model tier.",
             )
+        logger.error("LLM call failed: %s", error_msg[:500])
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"AI service error: {error_msg[:200]}",
+            detail="AI service temporarily unavailable. Please try again.",
         )
 
     reply, new_extracted = parse_chat_response(response["content"])
@@ -609,6 +704,14 @@ async def chat(
 
     progress = estimate_progress(body.module, merged_extracted)
 
+    # Track brand chat message
+    track_event(user.id, "brand_chat_message", {
+        "module": body.module,
+        "brand_id": body.brand_id or "",
+        "progress": progress,
+        "has_attachment": bool(body.file_context),
+    })
+
     return BrandChatResponse(
         reply=reply,
         extracted_so_far=merged_extracted,
@@ -620,21 +723,26 @@ async def chat(
 @router.get("/chats/{module}", response_model=BrandChatListResponse)
 async def list_chats(
     module: str,
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """List all chats for a module (active + completed, not archived)."""
+    """List all chats for a module (active + completed, not archived).
+
+    Pass ?brand_id= to filter by personal brand.
+    """
     _validate_module(module)
     admin = get_admin_client()
 
-    resp = (
+    query = (
         admin.table("brand_chats")
         .select("id, module, title, status, messages, created_at, updated_at")
         .eq("user_id", user.id)
         .eq("module", module)
         .neq("status", "archived")
-        .order("created_at", desc=True)
-        .execute()
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+    resp = query.order("created_at", desc=True).execute()
 
     chats = []
     for row in resp.data or []:
@@ -656,9 +764,13 @@ async def list_chats(
 async def get_chat_history(
     module: str,
     chat_id: Optional[str] = None,
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Get chat history for a module. Pass ?chat_id= to load a specific chat."""
+    """Get chat history for a module. Pass ?chat_id= to load a specific chat.
+
+    Pass ?brand_id= to scope to a personal brand.
+    """
     _validate_module(module)
     admin = get_admin_client()
 
@@ -674,16 +786,16 @@ async def get_chat_history(
         )
     else:
         # Load the most recent active chat
-        resp = (
+        query = (
             admin.table("brand_chats")
             .select("*")
             .eq("user_id", user.id)
             .eq("module", module)
             .eq("status", "active")
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
         )
+        if brand_id:
+            query = query.eq("brand_id", brand_id)
+        resp = query.order("created_at", desc=True).limit(1).execute()
 
     if not resp.data:
         return BrandChatHistory(module=module)
@@ -701,23 +813,30 @@ async def get_chat_history(
 @router.post("/chat/{module}/new", response_model=BrandChatHistory)
 async def start_new_chat(
     module: str,
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Start a fresh chat for a module. Old active chats stay but are no longer the 'current' one."""
+    """Start a fresh chat for a module. Old active chats stay but are no longer the 'current' one.
+
+    Pass ?brand_id= to associate the new chat with a personal brand.
+    """
     _validate_module(module)
     admin = get_admin_client()
 
     opening = get_opening_message(module)
+    insert_data = {
+        "user_id": user.id,
+        "module": module,
+        "messages": [{"role": "assistant", "content": opening}],
+        "extracted": {},
+        "status": "active",
+        "title": None,
+    }
+    if brand_id:
+        insert_data["brand_id"] = brand_id
     new_chat = (
         admin.table("brand_chats")
-        .insert({
-            "user_id": user.id,
-            "module": module,
-            "messages": [{"role": "assistant", "content": opening}],
-            "extracted": {},
-            "status": "active",
-            "title": None,
-        })
+        .insert(insert_data)
         .execute()
     )
 
@@ -786,24 +905,29 @@ async def rename_chat(
 @router.post("/chat/{module}/complete", response_model=BrandChatCompleteResponse)
 async def complete_chat(
     module: str,
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Mark a chat as complete and merge extracted data into the profile."""
+    """Mark a chat as complete and merge extracted data into the profile.
+
+    If brand_id is provided (query param), merges into personal_brands.profile_json.
+    Otherwise falls back to the legacy profiles.profile_json.
+    """
     _validate_module(module)
 
     admin = get_admin_client()
 
-    # Find active chat
-    resp = (
+    # Find active chat (scoped by brand_id if provided)
+    query = (
         admin.table("brand_chats")
         .select("*")
         .eq("user_id", user.id)
         .eq("module", module)
         .eq("status", "active")
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
     )
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+    resp = query.order("created_at", desc=True).limit(1).execute()
 
     if not resp.data:
         raise HTTPException(
@@ -814,16 +938,40 @@ async def complete_chat(
     chat_row = resp.data[0]
     extracted = chat_row.get("extracted", {})
 
-    # Merge into profile
-    current_profile = _get_profile_json(admin, user.id)
-    current_section = current_profile.get(module, {})
-    merged = deep_merge(current_section, extracted)
+    # Determine where to merge: brand profile or legacy profile
+    effective_brand_id = brand_id or chat_row.get("brand_id")
 
-    current_profile[module] = merged
-    admin.table("profiles").upsert({
-        "user_id": user.id,
-        "profile_json": current_profile,
-    }).execute()
+    if effective_brand_id:
+        # ── Merge into personal_brands.profile_json ──
+        brand_resp = (
+            admin.table("personal_brands")
+            .select("profile_json")
+            .eq("id", effective_brand_id)
+            .eq("user_id", user.id)
+            .execute()
+        )
+        if not brand_resp.data:
+            raise HTTPException(status_code=404, detail="Brand not found")
+
+        current_profile = brand_resp.data[0].get("profile_json", {}) or {}
+        current_section = current_profile.get(module, {})
+        merged = deep_merge(current_section, extracted)
+        current_profile[module] = merged
+
+        admin.table("personal_brands").update({
+            "profile_json": current_profile,
+        }).eq("id", effective_brand_id).execute()
+    else:
+        # ── Legacy: merge into profiles.profile_json ──
+        current_profile = _get_profile_json(admin, user.id)
+        current_section = current_profile.get(module, {})
+        merged = deep_merge(current_section, extracted)
+
+        current_profile[module] = merged
+        admin.table("profiles").upsert({
+            "user_id": user.id,
+            "profile_json": current_profile,
+        }).execute()
 
     # Mark chat as completed
     admin.table("brand_chats").update({
@@ -831,6 +979,13 @@ async def complete_chat(
     }).eq("id", chat_row["id"]).execute()
 
     field_count = _count_fields(extracted)
+
+    # Track brand module completion
+    track_event(user.id, "brand_module_completed", {
+        "module": module,
+        "brand_id": effective_brand_id or "",
+        "merged_fields": field_count,
+    })
 
     return BrandChatCompleteResponse(
         message=f"Chat completed. {field_count} fields merged into your {module} profile.",
@@ -844,17 +999,35 @@ async def complete_chat(
 @router.post("/suggest", response_model=BrandSuggestResponse)
 async def suggest_field(
     body: BrandSuggestRequest,
+    brand_id: Optional[str] = None,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Given a field path and current context, suggest a value."""
+    """Given a field path and current context, suggest a value.
+
+    Pass ?brand_id= to use a specific personal brand's profile as context.
+    """
     admin = get_admin_client()
 
-    # Get current profile for context
-    profile = _get_profile_json(admin, user.id)
+    # Get current profile for context (brand-aware)
+    profile = _get_profile_json(admin, user.id, brand_id)
     context = body.context or profile
 
-    # Retrieve relevant resources for richer suggestions
-    resource_context = get_relevant_context(body.field, user.id)
+    # Get model tier for this brand
+    suggest_tier = ""
+    if brand_id:
+        tier_resp = (
+            admin.table("personal_brands")
+            .select("model_tier")
+            .eq("id", brand_id)
+            .eq("user_id", user.id)
+            .limit(1)
+            .execute()
+        )
+        if tier_resp.data:
+            suggest_tier = tier_resp.data[0].get("model_tier", "") or ""
+
+    # Retrieve relevant resources for richer suggestions (brand-scoped)
+    resource_context = get_relevant_context(body.field, user.id, brand_id=brand_id)
 
     # Build prompt
     llm = _get_llm_client()
@@ -866,6 +1039,9 @@ async def suggest_field(
             "\n\nRelevant knowledge from the user's uploaded resources:\n"
             + resource_context
         )
+
+    from worker.graph.llm import get_model_for_chat
+    suggest_model = get_model_for_chat(suggest_tier)
 
     try:
         response = llm.chat(
@@ -881,6 +1057,7 @@ async def suggest_field(
                     ),
                 },
             ],
+            model=suggest_model,
             temperature=0.7,
             max_tokens=500,
         )
@@ -889,11 +1066,12 @@ async def suggest_field(
         if "429" in error_msg or "quota" in error_msg.lower() or "rate" in error_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="OpenAI API quota exceeded. Please check your billing at https://platform.openai.com/billing",
+                detail="LLM API quota exceeded. Please check your billing or switch to a lower-cost model tier.",
             )
+        logger.error("LLM call failed: %s", error_msg[:500])
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"AI service error: {error_msg[:200]}",
+            detail="AI service temporarily unavailable. Please try again.",
         )
 
     return BrandSuggestResponse(

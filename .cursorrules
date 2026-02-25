@@ -1,0 +1,821 @@
+# PositionedUp - Complete App Reference
+
+> This file documents every feature, pattern, decision, and gotcha in the PositionedUp codebase.
+> Use it to understand the full system before making UI/UX or architectural changes.
+
+---
+
+## 1. WHAT THIS APP IS
+
+PositionedUp is a personal branding and content automation platform. Users:
+1. Build a "brand brain" through guided AI coaching (8 modules)
+2. Organize knowledge (reference library) and inspiration (Pinterest-style boards)
+3. Generate platform-specific content (YouTube scripts, LinkedIn posts, etc.) via an 8-node AI pipeline
+4. Track performance and the AI learns from results over time
+
+The system remembers, learns, and improves with every interaction through 6 cognitive layers.
+
+**Product Name:** PositionedUp
+**Live Frontend:** https://web-tau-dun-23.vercel.app
+**Live Backend:** https://api-iota-puce.vercel.app
+**Supabase Project:** `uswwbfmnfgxgfthvbrqt`
+
+---
+
+## 2. TECH STACK
+
+| Layer | Technology | Location |
+|-------|-----------|----------|
+| Frontend | Next.js 15.5.12, Tailwind CSS, TypeScript | `apps/web/` |
+| Backend API | FastAPI, Python 3.9 | `apps/api/app/` |
+| Content Pipeline | LangGraph (8-node state machine) | `apps/api/worker/graph/` |
+| Database | Supabase Postgres + pgvector + RLS | `infra/supabase/migrations/` |
+| Auth | Supabase Auth (JWT, email/password) | `apps/api/app/auth.py` |
+| LLM | OpenAI GPT-4o (creative), GPT-4o-mini (review/analysis) | via `openai` SDK |
+| Search | DuckDuckGo (`ddgs`) + optional Tavily | `apps/api/app/services/web_search.py` |
+| Transcription | YouTube captions + OpenAI Whisper fallback | `apps/api/app/services/ingestion.py` |
+| OCR | GPT-4 Vision (scanned PDFs, images) | `apps/api/app/routers/brand.py` |
+| Analytics | PostHog (optional) | `apps/web/src/lib/posthog.ts` |
+| Testing | Pytest (backend), Playwright (E2E) | `apps/api/tests/`, `apps/web/tests/` |
+| Deployment | Vercel (frontend + backend serverless) | `apps/web/vercel.json`, `apps/api/vercel.json` |
+
+### LLM Model Routing & Costs
+
+The app uses smart model routing. Current configuration in `apps/api/worker/graph/llm.py`:
+
+| Context | Model | Input Cost/1K | Output Cost/1K |
+|---------|-------|--------------|----------------|
+| Pipeline: Signal Research | GPT-4o | $0.0025 | $0.01 |
+| Pipeline: Gap Analysis | GPT-4o | $0.0025 | $0.01 |
+| Pipeline: Topic Selection | GPT-4o | $0.0025 | $0.01 |
+| Pipeline: Hook Lab | GPT-4o | $0.0025 | $0.01 |
+| Pipeline: Script Generation | GPT-4o | $0.0025 | $0.01 |
+| Pipeline: Editor | GPT-4o-mini | $0.00015 | $0.0006 |
+| Pipeline: Testing | GPT-4o-mini | $0.00015 | $0.0006 |
+| Pipeline: Approval | GPT-4o-mini | $0.00015 | $0.0006 |
+| Brand Chat (all modules) | GPT-4o (default) | $0.0025 | $0.01 |
+| Content Chat (manual mode) | GPT-4o (default) | $0.0025 | $0.01 |
+| OCR (image text extraction) | GPT-4o | $0.0025 | $0.01 |
+| Voice DNA Analysis | GPT-4o | $0.0025 | $0.01 |
+| Performance Analytics | GPT-4o | $0.0025 | $0.01 |
+| Agent Memory Synthesis | GPT-4o-mini | $0.00015 | $0.0006 |
+| Voice Drift Detection | GPT-4o-mini | $0.00015 | $0.0006 |
+| Advisor Suggestions | GPT-4o-mini | $0.00015 | $0.0006 |
+
+**Cost Governance (3 layers):**
+1. `max_tokens_per_step` (default 32K) - clamps single LLM calls
+2. `max_tokens_per_workflow` (default 200K) - cumulative workflow tokens
+3. `max_tokens_per_user_per_day` (default 500K, ~$5/day ceiling) - cumulative daily user tokens
+
+---
+
+## 3. REPO STRUCTURE
+
+```
+apps/
+  api/                          # Python backend
+    app/
+      main.py                   # FastAPI app entry, all routers registered
+      config.py                 # Settings from .env via pydantic_settings
+      auth.py                   # Supabase JWT auth, CurrentUser dependency
+      deps.py                   # get_admin_client() (Supabase service role)
+      routers/
+        brand.py                # Brand chat, file upload, link extract, OCR
+        brands.py               # Personal brands CRUD + section updates
+        collections.py          # Content collections
+        content_chat.py         # Manual content chat (canvas mode)
+        experiments.py          # A/B testing endpoints
+        inspo.py                # Inspo boards + items CRUD
+        memory.py               # Agent memory endpoints
+        oauth.py                # OAuth (Google, Notion) callbacks
+        performance.py          # Analytics endpoints
+        picker.py               # Unified resource picker search
+        research.py             # Web research + feed aggregation
+        resources.py            # Knowledge resource CRUD + ingestion
+        schedule.py             # Content scheduling
+        usage.py                # Token/cost tracking
+        workflows.py            # Content pipeline trigger/status/execute
+      services/
+        agent_memory.py         # Long-term memory synthesis
+        brand_chat.py           # Chat logic, MODULE_QUESTIONS, build_chat_messages()
+        embeddings.py           # pgvector semantic search
+        experiments.py          # Experiment lifecycle
+        google_docs.py          # Google Docs export
+        ingestion.py            # PDF/DOCX/CSV/URL extraction, Whisper, chunking
+        notion_export.py        # Notion export
+        performance_analytics.py # Content performance analysis
+        research.py             # Research aggregation
+        self_voice.py           # Voice drift detection
+        voice_analysis.py       # Voice DNA extraction
+        web_search.py           # DuckDuckGo + Tavily wrappers
+      schemas/                  # Pydantic models for all endpoints
+    worker/
+      graph/
+        pipeline.py             # LangGraph graph definition + checkpointer
+        state.py                # Pipeline state schema
+        llm.py                  # LLM client wrapper + cost tracking
+        nodes/                  # 8 pipeline node implementations
+        prompts/                # Prompt templates + writing_style.py
+      executor.py               # Runs the pipeline
+      lifecycle.py              # Workflow state transitions
+      main.py                   # Worker entry point (polling loop)
+    tests/                      # ~698 Pytest tests
+    requirements.txt
+    vercel.json                 # Vercel serverless config
+    api/index.py                # Vercel entry point
+
+  web/                          # Next.js frontend
+    src/
+      app/
+        brands/                 # Brand management pages
+          page.tsx              # List all brands
+          new/page.tsx          # Create new brand
+          [brandId]/
+            page.tsx            # Brand builder (8 module cards)
+            chat/[module]/page.tsx  # Guided AI coaching chat
+        brand/                  # Legacy (pre-multi-brand) pages
+        knowledge/              # Resource library
+          page.tsx              # Collections list
+          [id]/page.tsx         # Collection detail + YouTube channel import
+        inspo/                  # Inspiration boards
+          page.tsx              # Board list
+          [boardId]/page.tsx    # Board detail + items
+        content/                # Content creation hub
+          page.tsx              # Dashboard (card grid + stats)
+          new/page.tsx          # Automation pipeline form
+          chat/page.tsx         # Manual chat (3-panel canvas)
+          [id]/page.tsx         # Workflow detail (3-panel composer)
+          [id]/components/      # Composer sub-components
+          components/           # Dashboard sub-components
+        research/               # TrendJacker-style research feed
+          page.tsx
+          components/           # Feed cards, skeleton cards
+        schedule/page.tsx       # Content calendar (board + calendar views)
+        performance/page.tsx    # Analytics (4 tabs: Posts, Analytics, Voice DNA, Log Post)
+        memory/page.tsx         # Agent memory viewer
+        experiments/page.tsx    # A/B testing UI
+        usage/page.tsx          # Token usage + cost tracker
+        login/page.tsx
+        signup/page.tsx
+        layout.tsx              # Root layout (BrandProvider + NavBar)
+        nav-bar.tsx             # Sidebar navigation + brand selector
+        page.tsx                # Root redirect to /brands
+        error.tsx               # Global error boundary
+        not-found.tsx           # 404 page
+        loading.tsx             # Route transition loading
+      components/
+        resource-picker.tsx     # Unified Knowledge + Inspo search modal
+        icons.tsx               # Shared icon components
+      lib/
+        api.ts                  # Barrel re-export (backward compat)
+        api/                    # Modular API client (15 domain files)
+          client.ts             # apiFetch core + auth helpers
+          brand.ts              # brandApi, personalBrandsApi
+          knowledge.ts          # collectionsApi, resourcesApi, channelApi
+          inspo.ts              # inspoApi
+          content.ts            # contentApi (workflows + pipeline execute)
+          content-chat.ts       # contentChatApi (manual chat)
+          research.ts           # researchApi (feed + platform searches)
+          performance.ts        # performanceApi, voiceApi
+          memory.ts             # memoryApi
+          experiments.ts        # experimentsApi
+          schedule.ts           # scheduleApi
+          picker.ts             # pickerApi
+          oauth.ts              # oauthApi
+          usage.ts              # usageApi
+          advisor.ts            # advisorApi
+          index.ts              # Barrel re-export
+        brand-context.tsx       # BrandContext provider (multi-brand state)
+        supabase/               # Supabase client helpers
+        posthog.ts              # PostHog analytics (trackEvent helper)
+    tests/                      # Playwright E2E tests
+    playwright.config.ts
+
+infra/
+  supabase/
+    migrations/                 # 17 SQL migration files (001-017)
+
+docs/
+  compound/
+    project-log.md              # Full build log (48 slices)
+    architecture.md             # System architecture
+    patterns/                   # Pattern files
+    validate-checklists.md      # Security, UX, cost checklists
+
+.cursor/rules/                  # AI coding rules
+  compound-engineering.mdc      # Compound Engineering methodology
+  project-context.mdc           # Full project context (always applied)
+  prd.mdc                       # Product Requirements Document
+  human-writing-style.mdc       # AI writing style enforcement
+  api-patterns.mdc              # Backend API patterns
+  frontend-patterns.mdc         # Frontend patterns
+  database-schema.mdc           # DB schema reference
+  deployment-status.mdc         # Deployment status + troubleshooting
+```
+
+---
+
+## 4. NAVIGATION & PAGES
+
+### Sidebar Navigation (left, fixed)
+```
+Brands -> Knowledge -> Inspo -> Content -> Research -> Schedule -> Performance -> Usage
+```
+
+The NavBar is a fixed left sidebar (`w-60`) on desktop and a slide-out drawer on mobile. It includes a brand selector dropdown at the top.
+
+### All Frontend Routes
+
+| Route | Purpose | Status |
+|-------|---------|--------|
+| `/` | Redirects to `/brands` | Working |
+| `/brands` | List all personal brands | Working |
+| `/brands/new` | Create a new brand | Working |
+| `/brands/[brandId]` | Brand builder (8 module cards with progress) | Working |
+| `/brands/[brandId]/chat/[module]` | Guided AI coaching chat for a module | Working |
+| `/knowledge` | Knowledge library (collections of resources) | Working |
+| `/knowledge/[id]` | Collection detail + YouTube channel import | Working |
+| `/inspo` | Inspo boards list | Working |
+| `/inspo/[boardId]` | Board detail with items | Working |
+| `/content` | Content dashboard (card grid, stats, filters) | Working |
+| `/content/new` | Create content via automation pipeline | Working |
+| `/content/chat` | Manual content chat (3-panel canvas) | Working |
+| `/content/[id]` | Workflow detail (3-panel composer + pipeline) | Working |
+| `/research` | TrendJacker-style research feed | Working |
+| `/schedule` | Content calendar (board + calendar views) | Working |
+| `/performance` | Performance analytics (4 tabs) | Working |
+| `/memory` | Agent memory viewer | Working |
+| `/experiments` | A/B testing UI | Working |
+| `/usage` | Token usage + cost tracker | Working |
+| `/login` | Email/password login | Working |
+| `/signup` | Email/password signup | Working |
+
+---
+
+## 5. FEATURE DETAILS
+
+### 5.1 Personal Branding (Brand Brain)
+
+The brand profile is the foundation. Content generation requires >= 50% brand completeness (4 of 8 modules filled).
+
+**8 Modules (guided AI chat for each):**
+
+| Module | Key | What It Captures |
+|--------|-----|-----------------|
+| Foundation | `foundation` | Core identity, values, mission, origin story, expertise |
+| ICA | `ica` | Target audience demographics, pain points, desires |
+| Offer | `offer` | Product structure (MAGIC/Grand Slam framework), pricing |
+| Brand Statement | `brand` | Positioning statement, unique mechanism, promise |
+| Authority Building | `authority` | Credentials, social proof, case studies |
+| Messaging | `messaging` | Key phrases, talking points, content themes, voice |
+| Positioning | `positioning` | Market position, competitive angle, category design |
+| Competitors | `competitors` | Competitor analysis, differentiation, white space |
+
+**Multi-brand support:** One user can have multiple brand profiles. Brand selector in sidebar. Each brand has isolated chats, resources, content, memory.
+
+**Brand Chat Flow:**
+1. User goes to `/brands/[brandId]/chat/foundation`
+2. AI coach asks guided questions from `MODULE_QUESTIONS`
+3. User responds (text, voice mic, file upload, link, or resource picker)
+4. Backend injects: module system prompt, writing style rules, resource context, performance data, agent memory, research context, file/link/picker attachments
+5. AI responds with structured JSON (response + extracted data)
+6. "Done, review form" extracts structured brand data into `profile_json`
+
+### 5.2 Knowledge (Resource Library)
+
+User's reference library. Everything the AI draws from for content generation.
+
+**Sections:** My Story, Hooks, Titles, Scripts
+
+**Input Methods:**
+- Manual text entry
+- File upload: PDF, DOCX, TXT, MD, CSV
+- Image upload: PNG, JPG, GIF, WEBP (OCR via GPT-4 Vision)
+- YouTube links (captions first, Whisper fallback)
+- TikTok/Facebook video links (Whisper via yt-dlp)
+- Reddit (post + top comments), Twitter/X (tweet + metrics)
+- Substack articles, LinkedIn articles, any website (trafilatura)
+- YouTube channel import (NotebookLM-style: imports all videos, extracts transcripts in background)
+
+**Features:**
+- Custom tags, Gold marking (high-priority for AI retrieval)
+- Full-text + semantic search (pgvector embeddings)
+- Re-extract transcripts for failed extractions
+- Resource Picker: attach any resource to any chat in 1-2 clicks
+
+### 5.3 Inspo Boards
+
+Pinterest-style inspiration system. Multi-board with items that feed into the AI pipeline.
+
+**Key Feature - Source Tagging with Intent:**
+- **Source Tag:** Where it came from (auto-detected from URL)
+- **Intent Note:** Why the user saved it and what the AI should learn from it
+
+When attached to chat, the AI receives content + source tag + intent note as structured context.
+
+### 5.4 Content Creation (Two Modes)
+
+**Mode 1: Manual Chat (Canvas Workspace)**
+- Route: `/content/chat`
+- 3-panel layout: Left (chat history + settings), Middle (chat), Right (content editor/preview)
+- AI generates content in markdown, right panel renders it
+- Copy All, Export .md, section-by-section editing
+- Settings: objective, type, platforms, tone, length, pillars
+
+**Mode 2: Automation Pipeline (8-Node LangGraph)**
+- Route: `/content/new` (create) -> `/content/[id]` (interact)
+- Pipeline: `signal_research -> gap_analysis -> topic_selection (INTERRUPT) -> hook_lab (INTERRUPT) -> script_generation -> editor -> testing -> approval (INTERRUPT)`
+- 3 interrupt points where user makes choices
+- Each node injects: brand profile, knowledge, performance data, agent memory, experiments, voice DNA, live research
+- Inline execution via `POST /workflows/{id}/execute` (Vercel-compatible, no worker needed)
+- Frontend auto-executes on create and after each user interaction
+
+**Content Settings:**
+- Objective: Personal Branding, Sales, UGC, Ads, Entertainment
+- Type: Educational, Storytelling, Opinion, How-to, News, Contrarian
+- Platforms: YouTube, LinkedIn, Twitter/X, TikTok, Instagram
+- Tone: Conversational, Professional, Authoritative, Casual, Bold, Inspirational
+- Length: Short, Medium, Long, Extra Long
+- Content Pillars: from brand profile
+
+**Workflow Statuses:**
+`queued` -> `running` -> `awaiting_topic` -> `awaiting_hook` -> `awaiting_approval` -> `completed`/`approved`/`rejected`/`failed`
+
+### 5.5 Research Feed (TrendJacker-style)
+
+- Route: `/research`
+- Multi-platform feed: All, Reddit, LinkedIn, YouTube, TikTok
+- Card grid layout with search bar, sort options (relevance, views, recent)
+- Saved topic chips (session only)
+- Backend aggregates from DuckDuckGo/Tavily, YouTube trends, Reddit, LinkedIn (via site: scoping), TikTok (via site: scoping)
+
+### 5.6 Schedule
+
+- Board view (Kanban: Draft -> Scheduled -> Published -> Archived)
+- Calendar view (monthly/weekly)
+- Import from completed workflows
+- Export-only for MVP (no direct publishing yet)
+
+### 5.7 Performance Tracker
+
+4 tabs: Posts, Analytics, Voice DNA, Log Post
+
+- Engagement rates, performance tiers (viral, strong, average, underperforming)
+- Hook type breakdown (which hooks work)
+- Voice DNA extraction from approved content
+- Voice drift detection (is AI maintaining brand voice?)
+- Performance data feeds back into content pipeline
+
+### 5.8 Agent Brain (6 Cognitive Layers)
+
+```
+Layer 1: Memory (agent_memory.py) - observations, preferences, lessons, patterns
+Layer 2: Performance (performance_analytics.py) - engagement rates, content patterns
+Layer 3: Experiments (experiments.py) - A/B tests, auto-conclude with significance
+Layer 4: Voice Identity (self_voice.py + voice_analysis.py) - voice DNA, drift detection
+Layer 5: Content Pipeline (worker/graph/nodes/) - 8-node LangGraph with checkpoints
+Layer 6: Live Research (web_search.py + research.py) - DuckDuckGo, YouTube, Reddit
+```
+
+**Compound Learning Loop:**
+```
+Content Created -> Published -> Performance Tracked -> Patterns Detected
+     ^                                                        |
+     |                                                        v
+     +---- Agent Memory Updated ---- Experiments Proposed ----+
+     |                                                        |
+     +---- Voice DNA Refined ------- Pipeline Improved -------+
+```
+
+### 5.9 Usage Tracking
+
+- LLM token usage per workflow step
+- Estimated cost per workflow
+- Daily/monthly usage totals
+- Per-user daily caps (configurable)
+- Cost breakdown by model
+
+### 5.10 Export Options
+
+From completed workflows:
+- Copy to clipboard
+- Download as .md
+- Google Docs export (requires OAuth setup)
+- Notion export (requires OAuth setup)
+- Import to Schedule
+
+---
+
+## 6. DATABASE SCHEMA
+
+All tables in Supabase Postgres with Row Level Security (RLS). 17 migrations in `infra/supabase/migrations/`.
+
+### Core Tables
+
+| Table | Purpose | Key Columns |
+|-------|---------|------------|
+| `profiles` | User profiles (PK is `user_id`, NOT `id`) | `user_id`, `profile_json` |
+| `personal_brands` | Brand profiles per user | `id`, `user_id`, `name`, `profile_json`, `is_active` (NOT `is_default`) |
+| `resources` | Knowledge items | `id`, `user_id`, `brand_id`, `title`, `body`, `resource_type`, `section`, `tags`, `is_gold`, `source_url` |
+| `resource_chunks` | Embeddings for semantic search | `id`, `resource_id`, `chunk_text`, `embedding` (vector 1536) |
+| `collections` | Resource groupings | `id`, `user_id`, `brand_id`, `name` |
+| `inspo_boards` | Inspiration boards | `id`, `user_id`, `brand_id`, `name` |
+| `inspo_items` | Board items | `id`, `board_id`, `user_id`, `brand_id`, `title`, `content`, `source_tag`, `intent_note`, `is_starred` |
+| `brand_chats` | Chat history | `id`, `user_id`, `brand_id`, `module`, `messages` (jsonb), `title`, `extracted` (jsonb) |
+| `workflows` | Content pipelines | `id`, `user_id`, `brand_id`, `status`, `current_step`, `settings` (jsonb), `error_message`, `claimed_at` |
+| `workflow_snapshots` | Pipeline step snapshots | `id`, `workflow_id`, `step_id`, `snapshot_data` (jsonb) |
+| `content_assets` | Generated content | `id`, `workflow_id`, `type` (NOT `asset_type`), `content_json` (NOT `body`), `version`, `is_latest`, `status`, `feedback` |
+| `content_posts` | Performance tracking | `id`, `user_id`, `brand_id`, `title`, `platform`, `views`, `likes`, `comments`, `shares`, `engagement_rate`, `performance_tier` |
+| `agent_memory` | AI memories | `id`, `user_id`, `brand_id`, `memory_type`, `content`, `embedding` (vector 1536) |
+| `agent_experiments` | A/B tests | `id`, `user_id`, `brand_id`, `hypothesis`, `status`, `variant_a`, `variant_b`, `results` |
+| `scheduled_items` | Calendar items | `id`, `user_id`, `brand_id`, `scheduled_at` (NOT `scheduled_date`) |
+| `usage_costs` | Token/cost tracking | `id`, `workflow_id`, `user_id`, `step_id`, `model_name`, `input_tokens`, `output_tokens`, `estimated_cost` |
+| `audit_events` | Audit trail | `id`, `user_id`, `event_type`, `payload` |
+
+### CRITICAL Schema Gotchas
+
+- `profiles` PK is `user_id`, NOT `id`. No `email` or `current_brand_id` columns.
+- `personal_brands` uses `is_active`, NOT `is_default`. Supabase silently returns empty for non-existent filter columns.
+- `content_assets` uses `type` and `content_json`, NOT `asset_type` and `body`. No `title` column.
+- `scheduled_items` uses `scheduled_at`, NOT `scheduled_date`.
+- `agent_experiments` uses `variable` and `winner`, NOT `experiment_type` and `winner_variant`.
+- `brand_chats.module` CHECK constraint allows: foundation, ica, offer, brand, authority, messaging, positioning, competitors, content.
+
+---
+
+## 7. API ENDPOINTS
+
+### Backend Routers
+
+| Router File | Prefix | Key Endpoints |
+|-------------|--------|---------------|
+| `brand.py` | `/brand` | `GET /brand` (profile), `POST /brand/chat` (send message), `GET /brand/chats/{module}` (list chats), `POST /brand/chat/{module}/new` (new chat), `POST /brand/chat/{module}/complete` (extract data), `POST /brand/suggest` (field suggestion) |
+| `brands.py` | `/brands` | CRUD for personal brands + section updates |
+| `resources.py` | `/resources` | CRUD + file ingestion, `POST /resources/channel` (YouTube import), `POST /resources/re-extract` (retry transcripts) |
+| `collections.py` | `/collections` | Collection CRUD |
+| `inspo.py` | `/inspo` | Board + item CRUD, URL extraction |
+| `content_chat.py` | `/content-chat` | `POST /content-chat/message` (send), `GET /content-chat/chats` (list), `GET /content-chat/chats/{id}` (detail) |
+| `workflows.py` | `/workflows` | `POST /workflows` (create), `GET /workflows/{id}` (status), `POST /workflows/{id}/execute` (inline pipeline), `POST /workflows/{id}/topics` (select topic), `POST /workflows/{id}/hooks` (select hook), `POST /workflows/{id}/approval` (approve/reject), `GET /workflows/{id}/snapshots`, `GET /workflows/{id}/assets` |
+| `research.py` | `/research` | `POST /research/run`, `POST /research/feed` (aggregated), `POST /research/reddit`, `POST /research/youtube`, `POST /research/linkedin`, `POST /research/tiktok` |
+| `picker.py` | `/picker` | `GET /picker/search`, `GET /picker/content/{source}/{id}` |
+| `performance.py` | `/performance` | Analytics endpoints, voice baseline, drift check |
+| `memory.py` | `/memory` | Agent memory CRUD + search |
+| `experiments.py` | `/experiments` | A/B test lifecycle |
+| `schedule.py` | `/schedule` | Calendar CRUD, `POST /schedule/import/{workflow_id}` |
+| `usage.py` | `/usage` | Token/cost summaries |
+| `oauth.py` | `/oauth` | Google/Notion OAuth flows + status |
+
+### Authentication
+
+- Supabase Auth with email/password
+- JWT tokens: `Authorization: Bearer <token>`
+- Backend: `get_current_user` dependency validates JWT
+- Frontend: `@supabase/ssr` for cookie-based sessions
+- `apiFetch()` in `client.ts` automatically attaches auth headers
+
+### Config
+
+- `.env` at project root (never committed)
+- `apps/api/app/config.py` loads via pydantic_settings into `settings` object
+- ALWAYS use `settings.openai_api_key`, NEVER `os.environ.get()`
+
+---
+
+## 8. FRONTEND PATTERNS
+
+### Dark Theme (zinc-900/950 everywhere)
+
+All pages use a consistent dark theme:
+- Page background: `bg-zinc-950`
+- Cards: `bg-zinc-900 border border-zinc-800`
+- Inputs: `bg-zinc-800 border border-zinc-700`
+- Text hierarchy: `text-zinc-100` (headings), `text-zinc-300` (body), `text-zinc-400/500` (muted)
+- Primary buttons: `bg-blue-600 hover:bg-blue-500 text-white`
+- Active nav: `bg-blue-600/20 text-blue-400`
+- Root `<body>`: `bg-zinc-950 text-zinc-100`
+
+### Component Extraction Pattern
+
+Large page components are decomposed:
+- Constants/types in sibling `constants.ts`
+- Utility functions in `utils.ts`
+- React components in `components/` subfolder
+
+Examples:
+- `research/constants.ts` + `research/utils.ts` + `research/components/feed-card.tsx`
+- `content/dashboard-constants.ts` + `content/components/stat-card.tsx`
+- `content/chat/components/canvas-utils.ts` + `content/chat/components/canvas-section.tsx`
+
+### API Client (Modular)
+
+15 domain-specific modules under `apps/web/src/lib/api/`:
+```tsx
+// Direct import (preferred)
+import { contentApi } from "@/lib/api/content";
+// Barrel import (backward compat)
+import { contentApi } from "@/lib/api";
+```
+
+### Brand Context
+
+```tsx
+const { brandId, currentBrand, brands, loading, selectBrand } = useBrand();
+```
+Pass `brandId` to all API calls. `BrandProvider` wraps entire app in `layout.tsx`.
+
+### UX Rules (Non-Negotiable)
+
+1. **One clear CTA per screen** - no decision paralysis
+2. **No dead-end empty states** - always show what goes here + how to start + action button
+3. **Progress + readiness gates** - brand completeness score gates content generation (>= 50%)
+4. **Resource Picker everywhere** - attach Knowledge or Inspo items to any chat
+5. **Automation is observable** - step-by-step status, inputs shown, snapshots inspectable
+
+### Key Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| NavBar | `app/nav-bar.tsx` | Sidebar navigation + brand selector |
+| BrandProvider | `lib/brand-context.tsx` | Multi-brand state management |
+| ResourcePicker | `components/resource-picker.tsx` | Unified Knowledge + Inspo search modal |
+| ExportBar | `content/[id]/components/export-bar.tsx` | Copy/download/export completed content |
+| PipelineStepper | `content/[id]/components/pipeline-stepper.tsx` | Visual pipeline progress |
+| ContentPreview | `content/[id]/components/content-preview.tsx` | Rendered content with inline editing |
+| ComposerSkeleton | `content/[id]/components/composer-skeleton.tsx` | 3-panel loading state |
+
+### Chat Input Types (3 buttons next to textarea)
+
+| Button | Icon | What It Does |
+|--------|------|-------------|
+| File upload | Paperclip | Reads file client-side (PDF, DOCX, TXT, CSV, images) |
+| Link input | Chain-link | Backend extracts content from any URL |
+| Resource Picker | Book | Opens modal to search Knowledge + Inspo items |
+
+---
+
+## 9. BACKEND PATTERNS
+
+### Python 3.9 Constraints
+
+- No `match/case` (3.10+)
+- No union `|` syntax (3.10+), use `Optional[str]`
+- No `typing.TypeAlias` (3.10+)
+- Always `from typing import Optional, List, Dict, Union`
+
+### Router Pattern
+
+```python
+from fastapi import APIRouter, Depends, HTTPException
+from app.auth import get_current_user, CurrentUser
+from app.deps import get_admin_client
+
+router = APIRouter(prefix="/your-prefix", tags=["your-tag"])
+
+@router.get("/endpoint")
+async def your_endpoint(user: CurrentUser = Depends(get_current_user)):
+    sb = get_admin_client()
+    result = sb.table("table").select("*").eq("user_id", user.id).execute()
+    return result.data
+```
+
+### Brand-Aware Pattern
+
+All content endpoints accept optional `brand_id`. Filter by it when provided.
+
+### Brand Resolution
+
+```python
+# CORRECT
+active = sb.table("personal_brands").select("id").eq("user_id", user.id).eq("is_active", True).limit(1).execute()
+# WRONG: profiles.current_brand_id does not exist
+# WRONG: personal_brands.is_default does not exist
+```
+
+### AI Feature Prompts
+
+1. Import `HUMAN_WRITING_RULES` from `worker.graph.prompts.writing_style`
+2. Append to system prompt
+3. If user-facing, also append `AI_TELLS_CHECKLIST`
+4. Use `settings.openai_api_key` for the key
+
+### Human Writing Style Rules (Enforced on ALL AI output)
+
+**Hard bans:**
+- No em dashes, no fake em dashes with spaced hyphens
+- No semicolons
+- No "it is not just X, it is Y" reversals
+- No neat sets of three for rhythm
+- No corporate filler (elevate, delve, robust, innovative, groundbreaking, etc.)
+- No overpromises
+
+**Required signals:**
+- One personal anchor detail
+- One concrete reference to the specific topic
+- Normal spoken language
+- Real connective logic (because, so, but, which, while)
+
+### Error Handling
+
+- `HTTPException` for client errors (400, 404, 409)
+- External API calls degrade gracefully (search, transcription, OCR)
+- Never expose stack traces to client
+
+---
+
+## 10. CONTENT PIPELINE DETAILS
+
+### 8-Node LangGraph Pipeline
+
+```
+signal_research -> gap_analysis -> topic_selection (INTERRUPT)
+-> hook_lab (INTERRUPT) -> script_generation -> editor
+-> testing -> approval (INTERRUPT)
+```
+
+| Node | What It Does | Model | Pauses? |
+|------|-------------|-------|---------|
+| Signal Research | Web/YouTube/Reddit trend search | GPT-4o | No |
+| Gap Analysis | Score + rank 10 topic candidates | GPT-4o | No |
+| Topic Selection | User picks topic from candidates | - | YES |
+| Hook Lab | Generate 7 hook variants with scores | GPT-4o | YES |
+| Script Generation | Full content pack using format expert | GPT-4o | No |
+| Editor | Refine for voice, clarity, structure | GPT-4o-mini | No |
+| Testing | Quality gate: structure, duplication, risk | GPT-4o-mini | No |
+| Approval | User reviews, approves/rejects | - | YES |
+
+### Pipeline Context Injection (every step)
+
+- Brand profile (from selected brand)
+- Relevant Knowledge resources (semantic search)
+- Performance data (what worked before)
+- Agent memory (learned preferences)
+- Experiment context (active A/B tests)
+- Self-voice DNA (write in user's voice)
+- Live research (trending topics)
+
+### Inline Execution (Vercel-Compatible)
+
+`POST /workflows/{id}/execute` runs the pipeline inline (no worker needed):
+- Each segment fits within Vercel's 120-second timeout
+- Uses `asyncio.to_thread()` for the synchronous pipeline
+- Optimistic locking prevents race conditions
+- Frontend auto-calls after create and each user interaction
+- Falls back to MemorySaver for checkpointing if no PostgreSQL URI set
+
+---
+
+## 11. DEPLOYMENT
+
+### Vercel Projects
+
+| Project | Type | URL |
+|---------|------|-----|
+| `web` | Next.js 15.5.12 | https://web-tau-dun-23.vercel.app |
+| `api` | Python Serverless (FastAPI) | https://api-iota-puce.vercel.app |
+
+### Environment Variables
+
+**Frontend (Vercel `web`):**
+- `NEXT_PUBLIC_API_URL` = `https://api-iota-puce.vercel.app`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_POSTHOG_KEY` (optional)
+
+**Backend (Vercel `api`):**
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `OPENAI_API_KEY`
+- `CORS_ORIGINS` = `https://web-tau-dun-23.vercel.app,http://localhost:3000`
+- `LOG_LEVEL` = `INFO`
+- `TAVILY_API_KEY` (optional, better search quality)
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (optional, for Google Docs export)
+- `NOTION_CLIENT_ID`, `NOTION_CLIENT_SECRET` (optional, for Notion export)
+- `LANGGRAPH_DB_URI` (optional, for persistent pipeline checkpoints)
+
+### Deploy Commands
+
+```bash
+cd apps/web && vercel --prod    # Frontend
+cd apps/api && vercel --prod    # Backend
+```
+
+### Local Development
+
+```bash
+# Backend API (terminal 1)
+cd apps/api && python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Frontend (terminal 2)
+cd apps/web && npm run dev
+
+# Pipeline Worker (terminal 3, optional - only for background pipeline execution)
+cd apps/api && python3 -m worker.main
+
+# Tests
+cd apps/api && python3 -m pytest tests/ -v
+cd apps/web && npx playwright test
+```
+
+---
+
+## 12. KNOWN GOTCHAS & BUGS FIXED
+
+### Critical Schema Mismatches (caused production bugs)
+- `content_assets`: DB has `type` and `content_json`, NOT `asset_type` and `body`
+- `scheduled_items`: DB has `scheduled_at`, NOT `scheduled_date`
+- `agent_experiments`: DB has `variable` and `winner`
+- `profiles`: PK is `user_id`, no `id`/`email`/`current_brand_id`
+- `personal_brands`: `is_active`, NOT `is_default`
+
+### Frontend Pitfalls
+- NEVER use `usePostHog()` from `posthog-js/react` (crashes). Use `trackEvent` from `@/lib/posthog`
+- NEVER use `waitForLoadState("networkidle")` in Playwright tests (infinite timeout with Supabase)
+- Stale `.next` cache: `predev` script auto-clears. `build` script clears `.next` AND `node_modules/.cache`
+- `marked` npm package required for content canvas markdown rendering
+
+### Backend Pitfalls
+- Python 3.9 only (no match/case, no `|` unions)
+- `pydantic_settings` does NOT export to `os.environ`. Always use `settings.xyz`
+- `youtube-transcript-api` v1.x: instance methods, not class methods
+- `PostgresSaver.from_conn_string()` returns a context manager (must enter it)
+- DuckDuckGo rate limits - system degrades gracefully
+- Legacy brand profiles (flat keys) need mapping in `calculate_completeness()`
+
+### OAuth Exports
+- Google Docs and Notion exports require OAuth credentials in `.env`
+- Without them, buttons show "Not configured yet" (friendly error)
+- Copy to clipboard and Download .md work without any config
+
+---
+
+## 13. BUILD HISTORY (48 Slices)
+
+| Slice | What Was Built |
+|-------|---------------|
+| 1-7 | Repo scaffold, Supabase schema, FastAPI CRUD, LangGraph pipeline, resource ingestion |
+| 8 | Foundation brand chat module |
+| 9 | Enhanced ICA + MAGIC/Grand Slam offer frameworks |
+| 10 | pgvector semantic search for resources |
+| 11 | Collections + Voice DNA extraction |
+| 12 | Performance feedback loop |
+| 13 | Agent memory (long-term learning) |
+| 14 | Experiments + voice drift detection |
+| 15 | Supabase Auth integration |
+| 16 | Chat management (new/switch/delete chats) |
+| 17 | Human writing style enforcement |
+| 18 | Real-time research engine (DuckDuckGo, YouTube, Reddit) |
+| 19 | File attachment in chat (PDF, DOCX, TXT, CSV) |
+| 20 | Universal content ingestion (scanned PDF OCR, images, links, video transcription) |
+| 21 | Multi-brand architecture |
+| 22 | Inspo Boards (source tagging with intent) |
+| 23 | Resource Picker (unified Knowledge + Inspo search) |
+| 24 | Vercel deployment, PostHog analytics, Next.js 15.5.12 |
+| 25 | Brand Modules 5-8 wired end-to-end |
+| 26 | Gap Audit and Test Fixes |
+| 27 | End-to-End Polish (error boundary, 404, loading, redirects) |
+| 28 | Composer Phase 3 (expandable steps, snapshots, inline editing, copy buttons) |
+| 29 | Composer Phase 4 (skeleton loading, panel error boundaries, mobile responsive) |
+| 30 | Observability + Rate Limits (token caps, structured logging, usage dashboard) |
+| 31 | Performance Dashboard + Voice Drift UI |
+| 32-34 | Dark Theme Consistency across all pages |
+| 35-40 | Sidebar Nav, PostHog fix, Playwright hardening, YouTube import, cache prevention |
+| 41 | YouTube Transcript Extraction Fix + Re-extract feature |
+| 42 | Content Chat + Content Settings (manual mode) |
+| 43 | Content Studio Canvas (3-panel workspace) |
+| 44 | TrendJacker Research Feed + Content Card Grid |
+| 45 | Frontend Modularization (API client split, component extraction) |
+| 46 | Pipeline Worker Fix + Schema Alignment |
+| 47 | Comprehensive Audit + Bug Fixes |
+| 48 | Inline Pipeline Execution (Vercel serverless compatible) |
+
+---
+
+## 14. WHAT IS NOT IN SCOPE (MVP)
+
+- Direct social media publishing (export-only)
+- Multi-seat team roles/permissions
+- Fine-tuning custom AI models
+- Instagram/TikTok direct posting
+- LinkedIn Profile builder
+- Growth and Monetization features
+
+---
+
+## 15. DEVELOPMENT METHODOLOGY
+
+### Compound Engineering + Ralph Loop
+
+Every code change follows:
+1. **PLAN**: Check patterns, read rules, identify slice, list files
+2. **WORK (Ralph Loop)**: Run -> Read error -> Patch -> Rerun (max 5 tries, then STOP)
+3. **REVIEW**: What changed, tests pass, manual verify, risks
+4. **COMPOUND**: Update .cursor/rules/, update project-log.md, save patterns
+
+### Slice Convention
+
+Each feature is a numbered "slice" (currently at 48). Slices are independent, testable, ordered by dependency, and named descriptively.
+
+### Testing
+
+- Backend: ~698 Pytest tests, mock auth via `app.dependency_overrides`
+- Frontend E2E: Playwright tests (login-dependent tests skip without `TEST_EMAIL` env var)
+- TypeScript: `tsc --noEmit` for type checking

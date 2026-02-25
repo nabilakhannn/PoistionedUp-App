@@ -25,26 +25,56 @@ logger = logging.getLogger("worker.graph.pipeline")
 
 # Module-level checkpointer singleton (lazy init)
 _checkpointer: Optional[Any] = None
+_checkpointer_cm: Optional[Any] = None  # Keep reference to context manager
 
 
 def get_checkpointer() -> Any:
-    """Get or create the PostgresSaver checkpointer.
+    """Get or create the pipeline checkpointer.
 
-    Uses the direct Postgres connection (not the pooler) because
-    the checkpointer uses LISTEN/NOTIFY. Import is deferred so
-    modules that only use build_graph() don't need psycopg.
+    Tries PostgresSaver first (for durable checkpoints across restarts).
+    Falls back to MemorySaver if no Postgres connection is available.
+
+    Note: newer langgraph-checkpoint-postgres versions return a
+    context manager from from_conn_string(). We enter it manually
+    and keep the reference alive at module level.
     """
-    global _checkpointer
-    if _checkpointer is None:
-        from langgraph.checkpoint.postgres import PostgresSaver
+    global _checkpointer, _checkpointer_cm
+    if _checkpointer is not None:
+        return _checkpointer
 
-        from app.config import settings
+    from app.config import settings
 
-        db_uri = settings.langgraph_db_uri
-        logger.info("Initializing PostgresSaver with %s", db_uri[:30] + "...")
-        _checkpointer = PostgresSaver.from_conn_string(db_uri)
-        _checkpointer.setup()
-        logger.info("PostgresSaver ready (checkpoint tables created)")
+    db_uri = settings.langgraph_db_uri
+
+    # Try PostgresSaver first
+    if db_uri and db_uri.strip():
+        try:
+            from langgraph.checkpoint.postgres import PostgresSaver
+
+            logger.info("Initializing PostgresSaver with %s", db_uri[:30] + "...")
+
+            cm = PostgresSaver.from_conn_string(db_uri)
+
+            # Newer versions return a context manager, older return the instance
+            if hasattr(cm, "__enter__"):
+                _checkpointer_cm = cm
+                _checkpointer = cm.__enter__()
+            else:
+                _checkpointer = cm
+
+            _checkpointer.setup()
+            logger.info("PostgresSaver ready (checkpoint tables created)")
+            return _checkpointer
+        except Exception as e:
+            logger.warning(
+                "PostgresSaver init failed (%s), falling back to MemorySaver", e
+            )
+
+    # Fallback: in-memory checkpointer (no persistence across restarts)
+    from langgraph.checkpoint.memory import MemorySaver
+
+    logger.info("Using MemorySaver (in-memory checkpoints, no persistence)")
+    _checkpointer = MemorySaver()
     return _checkpointer
 
 
