@@ -1,8 +1,13 @@
 # ─────────────────────────────────────────────────────────
 # OpenClaw Production Docker Compose — PositionedUp Squad
 # For: Hostinger VPS / Hetzner / Any Ubuntu VPS
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.yml up -d --build
+#   docker compose -f deploy/docker-compose.yml logs -f
 # ─────────────────────────────────────────────────────────
 services:
+  # ── OpenClaw Gateway (agent runtime) ─────────────────
   openclaw-gateway:
     build:
       context: ..
@@ -17,14 +22,12 @@ services:
       - NODE_ENV=production
       - TERM=xterm-256color
     volumes:
-      # Persist OpenClaw config (tokens, sessions, auth)
       - openclaw-config:/home/openclaw/.openclaw
-      # Persist workspace (agent files, drafts, research, assets)
       - openclaw-workspace:/home/openclaw/.openclaw/workspace
-    # Use host networking to avoid Docker bridge DNS/firewall issues on VPS
-    network_mode: host
+    ports:
+      - "127.0.0.1:18789:18789"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:18789/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -35,8 +38,54 @@ services:
         max-size: "50m"
         max-file: "5"
 
+  # ── Caddy Reverse Proxy (HTTPS + security headers) ──
+  # Only enable if you have a domain pointed to this VPS.
+  # Comment out this entire service if using SSH tunnel only.
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+      - caddy-logs:/var/log/caddy
+    environment:
+      - OPENCLAW_DOMAIN=${OPENCLAW_DOMAIN:-agents.positionedup.com}
+      - ACME_EMAIL=${ACME_EMAIL:-admin@positionedup.com}
+    depends_on:
+      openclaw-gateway:
+        condition: service_healthy
+    profiles:
+      - https
+
+  # ── Watchtower (auto-update containers) ──────────────
+  # Checks for new image versions every 6 hours
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=21600
+      - WATCHTOWER_LABEL_ENABLE=false
+    profiles:
+      - auto-update
+
 volumes:
   openclaw-config:
     driver: local
   openclaw-workspace:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
+    driver: local
+  caddy-logs:
     driver: local

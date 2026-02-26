@@ -8,13 +8,13 @@ Usage:
     from analytics import AgentTracker
 
     tracker = AgentTracker.create()
-    tracker.task_created(agent_id="jarvis", task_id="PU-001", title="Research trends")
-    tracker.heartbeat_pulse(agent_id="jarvis", backlog=3, in_progress=1)
+    tracker.task_created(agent_id="jumbo", task_id="PU-001", title="Research trends")
+    tracker.heartbeat_pulse(agent_id="jumbo", backlog=3, in_progress=1)
     tracker.llm_call(agent_id="copywriter", model="claude-sonnet", input_tokens=500, ...)
 
 CLI (for agents to call via shell):
-    python -m analytics track task_created --agent jarvis --task PU-001 --title "Research"
-    python -m analytics track heartbeat --agent jarvis --status ok
+    python -m analytics track task_created --agent jumbo --task PU-001 --title "Research"
+    python -m analytics track heartbeat --agent jumbo --status ok
     python -m analytics report summary
 
 Daemon (continuous file monitoring):

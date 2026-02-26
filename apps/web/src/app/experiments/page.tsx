@@ -13,10 +13,10 @@ import { useBrand } from "@/lib/brand-context";
 
 const STATUS_COLORS: Record<string, string> = {
   proposed: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30",
-  approved: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+  approved: "bg-primary/20 text-primary border border-primary/30",
   running: "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30",
   completed: "bg-green-500/20 text-green-300 border border-green-500/30",
-  cancelled: "bg-zinc-700 text-zinc-400 border border-zinc-600",
+  cancelled: "bg-muted text-muted-foreground border border-border",
 };
 
 const WINNER_LABELS: Record<string, string> = {
@@ -183,15 +183,15 @@ export default function ExperimentsPage() {
   const completed = experiments.filter((e) => e.status === "completed" || e.status === "cancelled");
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 transition">
+            <Link href="/" className="text-sm text-primary hover:text-primary/80 transition">
               &larr; Home
             </Link>
             <h1 className="text-2xl font-bold mt-1">Experiments & Voice</h1>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               A/B test content strategies and maintain your authentic voice
             </p>
           </div>
@@ -213,7 +213,7 @@ export default function ExperimentsPage() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-zinc-800">
+        <div className="flex gap-1 mb-6 border-b border-border">
           {[
             { key: "experiments" as const, label: `Experiments (${experiments.length})` },
             { key: "voice" as const, label: "Voice DNA & Drift" },
@@ -225,7 +225,7 @@ export default function ExperimentsPage() {
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
                 tab === t.key
                   ? "border-indigo-500 text-indigo-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {t.label}
@@ -239,17 +239,17 @@ export default function ExperimentsPage() {
             {loading ? (
               <div className="animate-pulse space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                    <div className="h-4 bg-zinc-800 rounded w-1/3 mb-2" />
-                    <div className="h-3 bg-zinc-800 rounded w-2/3" />
+                  <div key={i} className="bg-card border border-border rounded-lg p-4">
+                    <div className="h-4 bg-accent rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-accent rounded w-2/3" />
                   </div>
                 ))}
               </div>
             ) : experiments.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-4xl mb-3">🧪</div>
-                <p className="text-lg mb-2 text-zinc-300">No experiments yet</p>
-                <p className="text-sm text-zinc-500 max-w-md mx-auto">
+                <p className="text-lg mb-2 text-foreground">No experiments yet</p>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
                   Create an experiment manually or click &quot;Auto-Propose&quot; to let the agent
                   suggest experiments based on your performance data.
                 </p>
@@ -269,15 +269,15 @@ export default function ExperimentsPage() {
                             <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_COLORS[exp.status]}`}>
                               {exp.status}
                             </span>
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-800 text-zinc-400">
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-accent text-muted-foreground">
                               {exp.platform}
                             </span>
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-800 text-zinc-400">
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-accent text-muted-foreground">
                               {exp.variable}
                             </span>
                           </div>
-                          <p className="text-sm text-zinc-200 mb-2">{exp.hypothesis}</p>
-                          <p className="text-xs text-zinc-500 mb-3">
+                          <p className="text-sm text-foreground mb-2">{exp.hypothesis}</p>
+                          <p className="text-xs text-muted-foreground mb-3">
                             Testing: &quot;{exp.variant_a}&quot; vs &quot;{exp.variant_b}&quot;
                             ({exp.target_posts} posts per variant)
                           </p>
@@ -290,7 +290,7 @@ export default function ExperimentsPage() {
                             </button>
                             <button
                               onClick={() => handleDelete(exp.id)}
-                              className="px-4 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg text-sm hover:bg-zinc-700 transition"
+                              className="px-4 py-1.5 bg-accent text-foreground rounded-lg text-sm hover:bg-accent/80 transition"
                             >
                               Dismiss
                             </button>
@@ -309,39 +309,39 @@ export default function ExperimentsPage() {
                     </h2>
                     <div className="space-y-3">
                       {active.map((exp) => (
-                        <div key={exp.id} className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
+                        <div key={exp.id} className="p-4 bg-card border border-border rounded-lg">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_COLORS[exp.status]}`}>
                               {exp.status}
                             </span>
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-800 text-zinc-400">
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-accent text-muted-foreground">
                               {exp.platform}
                             </span>
                           </div>
-                          <p className="text-sm font-medium text-zinc-200 mb-2">{exp.hypothesis}</p>
+                          <p className="text-sm font-medium text-foreground mb-2">{exp.hypothesis}</p>
                           <div className="grid grid-cols-2 gap-4 mb-3">
-                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                              <p className="text-xs font-medium text-blue-300">Variant A: {exp.variant_a}</p>
+                            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                              <p className="text-xs font-medium text-primary">Variant A: {exp.variant_a}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <div className="flex-1 bg-zinc-700 rounded-full h-2">
+                                <div className="flex-1 bg-muted rounded-full h-2">
                                   <div
-                                    className="bg-blue-500 h-2 rounded-full transition-all"
+                                    className="bg-primary h-2 rounded-full transition-all"
                                     style={{ width: `${Math.min(100, (exp.variant_a_count / exp.target_posts) * 100)}%` }}
                                   />
                                 </div>
-                                <span className="text-xs text-blue-400">{exp.variant_a_count}/{exp.target_posts}</span>
+                                <span className="text-xs text-primary">{exp.variant_a_count}/{exp.target_posts}</span>
                               </div>
                             </div>
-                            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                              <p className="text-xs font-medium text-purple-300">Variant B: {exp.variant_b}</p>
+                            <div className="p-3 bg-chart-2/10 border border-chart-2/20 rounded-lg">
+                              <p className="text-xs font-medium text-chart-2">Variant B: {exp.variant_b}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <div className="flex-1 bg-zinc-700 rounded-full h-2">
+                                <div className="flex-1 bg-muted rounded-full h-2">
                                   <div
-                                    className="bg-purple-500 h-2 rounded-full transition-all"
+                                    className="bg-chart-2 h-2 rounded-full transition-all"
                                     style={{ width: `${Math.min(100, (exp.variant_b_count / exp.target_posts) * 100)}%` }}
                                   />
                                 </div>
-                                <span className="text-xs text-purple-400">{exp.variant_b_count}/{exp.target_posts}</span>
+                                <span className="text-xs text-chart-2">{exp.variant_b_count}/{exp.target_posts}</span>
                               </div>
                             </div>
                           </div>
@@ -356,7 +356,7 @@ export default function ExperimentsPage() {
                             )}
                             <button
                               onClick={() => handleCancel(exp.id)}
-                              className="px-4 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg text-sm hover:bg-zinc-700 transition"
+                              className="px-4 py-1.5 bg-accent text-foreground rounded-lg text-sm hover:bg-accent/80 transition"
                             >
                               Cancel
                             </button>
@@ -370,12 +370,12 @@ export default function ExperimentsPage() {
                 {/* Completed */}
                 {completed.length > 0 && (
                   <div>
-                    <h2 className="text-sm font-semibold text-zinc-400 mb-3">
+                    <h2 className="text-sm font-semibold text-muted-foreground mb-3">
                       Completed ({completed.length})
                     </h2>
                     <div className="space-y-3">
                       {completed.map((exp) => (
-                        <div key={exp.id} className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
+                        <div key={exp.id} className="p-4 bg-card border border-border rounded-lg">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_COLORS[exp.status]}`}>
                               {exp.status}
@@ -383,27 +383,27 @@ export default function ExperimentsPage() {
                             {exp.winner && (
                               <span className={`px-2 py-0.5 text-xs rounded-full ${
                                 exp.winner === "inconclusive"
-                                  ? "bg-zinc-700 text-zinc-400"
+                                  ? "bg-muted text-muted-foreground"
                                   : "bg-green-500/20 text-green-300 border border-green-500/30"
                               }`}>
                                 {WINNER_LABELS[exp.winner] || exp.winner}
                               </span>
                             )}
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-800 text-zinc-400">
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-accent text-muted-foreground">
                               {exp.platform}
                             </span>
                           </div>
-                          <p className="text-sm text-zinc-200 mb-1">{exp.hypothesis}</p>
+                          <p className="text-sm text-foreground mb-1">{exp.hypothesis}</p>
                           {exp.conclusion && (
-                            <p className="text-sm text-zinc-400 mb-2">{exp.conclusion}</p>
+                            <p className="text-sm text-muted-foreground mb-2">{exp.conclusion}</p>
                           )}
-                          <div className="flex items-center gap-4 text-xs text-zinc-500">
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>A: {exp.variant_a} ({exp.variant_a_count} posts{exp.variant_a_avg_engagement != null ? `, ${(exp.variant_a_avg_engagement * 100).toFixed(2)}%` : ""})</span>
                             <span>B: {exp.variant_b} ({exp.variant_b_count} posts{exp.variant_b_avg_engagement != null ? `, ${(exp.variant_b_avg_engagement * 100).toFixed(2)}%` : ""})</span>
                           </div>
                           <button
                             onClick={() => handleDelete(exp.id)}
-                            className="mt-2 text-xs text-zinc-600 hover:text-red-400 transition"
+                            className="mt-2 text-xs text-muted-foreground hover:text-red-400 transition"
                           >
                             Delete
                           </button>
@@ -421,9 +421,9 @@ export default function ExperimentsPage() {
         {tab === "voice" && (
           <div className="space-y-6">
             {/* Self-Voice DNA */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-card border border-border rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-zinc-100">Your Voice DNA</h2>
+                <h2 className="text-lg font-semibold text-card-foreground">Your Voice DNA</h2>
                 <button
                   onClick={handleAnalyzeVoice}
                   disabled={voiceLoading}
@@ -436,48 +436,48 @@ export default function ExperimentsPage() {
               {!voiceDna ? (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-3">🎙️</div>
-                  <p className="text-lg mb-2 text-zinc-300">No voice profile yet</p>
-                  <p className="text-sm text-zinc-500 max-w-md mx-auto">
+                  <p className="text-lg mb-2 text-foreground">No voice profile yet</p>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
                     You need at least 10 published posts logged in the Performance section.
                     Click &quot;Analyze My Voice&quot; to extract your natural writing style.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     Based on {voiceDna.posts_analyzed} published posts
                   </p>
 
                   <div className="grid grid-cols-2 gap-4">
                     {voiceDna.tone && (
-                      <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                        <p className="text-xs font-medium text-zinc-500 mb-1">Tone</p>
-                        <p className="text-sm text-zinc-200">{voiceDna.tone}</p>
+                      <div className="bg-accent/50 border border-border rounded-lg p-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Tone</p>
+                        <p className="text-sm text-foreground">{voiceDna.tone}</p>
                       </div>
                     )}
                     {voiceDna.sentence_style && (
-                      <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                        <p className="text-xs font-medium text-zinc-500 mb-1">Sentence Style</p>
-                        <p className="text-sm text-zinc-200">{voiceDna.sentence_style}</p>
+                      <div className="bg-accent/50 border border-border rounded-lg p-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Sentence Style</p>
+                        <p className="text-sm text-foreground">{voiceDna.sentence_style}</p>
                       </div>
                     )}
                     {voiceDna.vocabulary_level && (
-                      <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                        <p className="text-xs font-medium text-zinc-500 mb-1">Vocabulary</p>
-                        <p className="text-sm text-zinc-200">{voiceDna.vocabulary_level}</p>
+                      <div className="bg-accent/50 border border-border rounded-lg p-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Vocabulary</p>
+                        <p className="text-sm text-foreground">{voiceDna.vocabulary_level}</p>
                       </div>
                     )}
                     {voiceDna.content_structure && (
-                      <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                        <p className="text-xs font-medium text-zinc-500 mb-1">Structure</p>
-                        <p className="text-sm text-zinc-200">{voiceDna.content_structure}</p>
+                      <div className="bg-accent/50 border border-border rounded-lg p-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Structure</p>
+                        <p className="text-sm text-foreground">{voiceDna.content_structure}</p>
                       </div>
                     )}
                   </div>
 
                   {voiceDna.hook_patterns.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-zinc-500 mb-2">Hook Patterns</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Hook Patterns</p>
                       <div className="flex gap-2 flex-wrap">
                         {voiceDna.hook_patterns.map((p, i) => (
                           <span key={i} className="px-2.5 py-1 text-xs bg-sky-500/15 text-sky-300 border border-sky-500/20 rounded-full">{p}</span>
@@ -488,7 +488,7 @@ export default function ExperimentsPage() {
 
                   {voiceDna.signature_phrases.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-zinc-500 mb-2">Signature Phrases</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Signature Phrases</p>
                       <div className="flex gap-2 flex-wrap">
                         {voiceDna.signature_phrases.map((p, i) => (
                           <span key={i} className="px-2.5 py-1 text-xs bg-amber-500/15 text-amber-300 border border-amber-500/20 rounded-full">&quot;{p}&quot;</span>
@@ -499,7 +499,7 @@ export default function ExperimentsPage() {
 
                   {voiceDna.personality_traits.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-zinc-500 mb-2">Personality Traits</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Personality Traits</p>
                       <div className="flex gap-2 flex-wrap">
                         {voiceDna.personality_traits.map((p, i) => (
                           <span key={i} className="px-2.5 py-1 text-xs bg-violet-500/15 text-violet-300 border border-violet-500/20 rounded-full">{p}</span>
@@ -510,8 +510,8 @@ export default function ExperimentsPage() {
 
                   {voiceDna.sample_hooks.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-zinc-500 mb-2">Your Best Hooks</p>
-                      <ul className="text-sm text-zinc-300 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Your Best Hooks</p>
+                      <ul className="text-sm text-foreground space-y-1">
                         {voiceDna.sample_hooks.map((h, i) => (
                           <li key={i} className="pl-3 border-l-2 border-indigo-500 italic">&ldquo;{h}&rdquo;</li>
                         ))}
@@ -523,9 +523,9 @@ export default function ExperimentsPage() {
             </div>
 
             {/* Drift Check */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h2 className="text-lg font-semibold mb-2 text-zinc-100">Voice Drift Check</h2>
-              <p className="text-sm text-zinc-400 mb-4">
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h2 className="text-lg font-semibold mb-2 text-card-foreground">Voice Drift Check</h2>
+              <p className="text-sm text-muted-foreground mb-4">
                 Paste AI-generated content below to check if it matches your natural voice.
               </p>
               <textarea
@@ -533,7 +533,7 @@ export default function ExperimentsPage() {
                 onChange={(e) => setDriftText(e.target.value)}
                 rows={5}
                 placeholder="Paste AI-generated text here..."
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-1 focus:ring-indigo-500 mb-3 resize-none"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-ring mb-3 resize-none"
               />
               <button
                 onClick={handleDriftCheck}
@@ -543,13 +543,13 @@ export default function ExperimentsPage() {
                 {driftChecking ? "Checking..." : "Check Drift"}
               </button>
               {!voiceDna && (
-                <p className="text-xs text-zinc-600 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Analyze your voice first before checking drift.
                 </p>
               )}
 
               {driftResult && (
-                <div className="mt-4 bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 space-y-3">
+                <div className="mt-4 bg-accent/50 border border-border rounded-lg p-4 space-y-3">
                   <div className="flex items-center gap-3">
                     <span className={`text-2xl font-bold ${
                       driftResult.drift_score <= 0.3 ? "text-green-400" :
@@ -566,12 +566,12 @@ export default function ExperimentsPage() {
                          driftResult.drift_score <= 0.6 ? "Medium Drift - Some differences" :
                          "High Drift - Significant divergence"}
                       </p>
-                      <p className="text-xs text-zinc-500">0% = perfect match, 100% = completely different</p>
+                      <p className="text-xs text-muted-foreground">0% = perfect match, 100% = completely different</p>
                     </div>
                   </div>
 
                   {/* Visual gauge */}
-                  <div className="w-full h-3 bg-zinc-700 rounded-full overflow-hidden">
+                  <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         driftResult.drift_score <= 0.3 ? "bg-green-500" :
@@ -583,11 +583,11 @@ export default function ExperimentsPage() {
 
                   {driftResult.details.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-zinc-500 mb-1">Observations:</p>
-                      <ul className="text-sm text-zinc-300 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Observations:</p>
+                      <ul className="text-sm text-foreground space-y-1">
                         {driftResult.details.map((d, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <span className="text-zinc-600 mt-0.5">&#8226;</span>
+                            <span className="text-muted-foreground mt-0.5">&#8226;</span>
                             {d}
                           </li>
                         ))}
@@ -596,9 +596,9 @@ export default function ExperimentsPage() {
                   )}
 
                   {driftResult.recommendation && (
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                      <p className="text-xs font-medium text-blue-400 mb-1">Recommendation:</p>
-                      <p className="text-sm text-zinc-300">{driftResult.recommendation}</p>
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                      <p className="text-xs font-medium text-primary mb-1">Recommendation:</p>
+                      <p className="text-sm text-foreground">{driftResult.recommendation}</p>
                     </div>
                   )}
                 </div>
@@ -611,32 +611,32 @@ export default function ExperimentsPage() {
         {tab === "create" && (
           <form
             onSubmit={handleCreate}
-            className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl space-y-4"
+            className="bg-card border border-border p-6 rounded-xl space-y-4"
           >
-            <h2 className="text-lg font-semibold text-zinc-100">Create an Experiment</h2>
-            <p className="text-sm text-zinc-400">
+            <h2 className="text-lg font-semibold text-card-foreground">Create an Experiment</h2>
+            <p className="text-sm text-muted-foreground">
               Define an A/B test for your content. What do you want to test?
             </p>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1">Hypothesis</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Hypothesis</label>
               <input
                 type="text"
                 value={newHypothesis}
                 onChange={(e) => setNewHypothesis(e.target.value)}
                 placeholder='e.g., "Story hooks outperform question hooks on YouTube"'
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
                 required
               />
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">Variable</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Variable</label>
                 <select
                   value={newVariable}
                   onChange={(e) => setNewVariable(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground focus:ring-2 focus:ring-ring"
                 >
                   {VARIABLES.map((v) => (
                     <option key={v} value={v}>{v.replace(/_/g, " ")}</option>
@@ -644,24 +644,24 @@ export default function ExperimentsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">Variant A</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Variant A</label>
                 <input
                   type="text"
                   value={newVariantA}
                   onChange={(e) => setNewVariantA(e.target.value)}
                   placeholder='e.g., "story"'
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">Variant B</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Variant B</label>
                 <input
                   type="text"
                   value={newVariantB}
                   onChange={(e) => setNewVariantB(e.target.value)}
                   placeholder='e.g., "question"'
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
                   required
                 />
               </div>
@@ -669,11 +669,11 @@ export default function ExperimentsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">Platform</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Platform</label>
                 <select
                   value={newPlatform}
                   onChange={(e) => setNewPlatform(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground focus:ring-2 focus:ring-ring"
                 >
                   {PLATFORMS.map((p) => (
                     <option key={p} value={p}>{p}</option>
@@ -681,7 +681,7 @@ export default function ExperimentsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Posts per variant ({newTargetPosts})
                 </label>
                 <input

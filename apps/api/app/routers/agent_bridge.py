@@ -57,7 +57,8 @@ async def get_agent_caller(
     if not settings.agent_api_key:
         raise HTTPException(503, "Agent API not configured. Set AGENT_API_KEY in env.")
 
-    if x_agent_key != settings.agent_api_key:
+    import hmac
+    if not hmac.compare_digest(x_agent_key, settings.agent_api_key):
         raise HTTPException(401, "Invalid agent API key")
 
     if not x_user_id:

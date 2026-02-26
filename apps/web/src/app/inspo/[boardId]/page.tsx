@@ -170,9 +170,9 @@ export default function BoardDetail() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <main className="min-h-screen bg-background text-card-foreground">
         <div className="max-w-5xl mx-auto p-8">
-          <div className="text-center py-16 text-zinc-500">Loading board...</div>
+          <div className="text-center py-16 text-muted-foreground">Loading board...</div>
         </div>
       </main>
     );
@@ -180,11 +180,11 @@ export default function BoardDetail() {
 
   if (!board) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <main className="min-h-screen bg-background text-card-foreground">
         <div className="max-w-5xl mx-auto p-8">
           <div className="text-center py-16">
-            <h2 className="text-xl font-semibold text-zinc-300 mb-2">Board not found</h2>
-            <Link href="/inspo" className="text-blue-400 hover:text-blue-300">
+            <h2 className="text-xl font-semibold text-foreground mb-2">Board not found</h2>
+            <Link href="/inspo" className="text-primary hover:text-primary/80">
               Back to boards
             </Link>
           </div>
@@ -197,7 +197,7 @@ export default function BoardDetail() {
   const allTags = getAllTags();
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-5xl mx-auto p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -205,23 +205,23 @@ export default function BoardDetail() {
             <div className="flex items-center gap-2 mb-1">
               <Link
                 href="/inspo"
-                className="text-zinc-500 hover:text-zinc-300 text-sm transition"
+                className="text-muted-foreground hover:text-foreground text-sm transition"
               >
                 Boards
               </Link>
-              <span className="text-zinc-700">/</span>
+              <span className="text-border">/</span>
             </div>
-            <h1 className="text-3xl font-bold text-zinc-100">{board.name}</h1>
+            <h1 className="text-3xl font-bold text-card-foreground">{board.name}</h1>
             {board.description && (
-              <p className="text-zinc-400 mt-1">{board.description}</p>
+              <p className="text-muted-foreground mt-1">{board.description}</p>
             )}
-            <p className="text-zinc-500 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               {board.item_count} {board.item_count === 1 ? "item" : "items"}
             </p>
           </div>
           <button
             onClick={() => setShowAdd(!showAdd)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
           >
             + Add Item
           </button>
@@ -238,8 +238,8 @@ export default function BoardDetail() {
 
         {/* Add item form */}
         {showAdd && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-            <h3 className="font-semibold mb-4 text-zinc-100">Add Inspiration</h3>
+          <div className="bg-card border border-border rounded-xl p-6 mb-6">
+            <h3 className="font-semibold mb-4 text-card-foreground">Add Inspiration</h3>
             <div className="space-y-4">
               {/* Content type selector */}
               <div className="flex gap-2 flex-wrap">
@@ -249,8 +249,8 @@ export default function BoardDetail() {
                     onClick={() => setContentType(type)}
                     className={`px-3 py-1.5 rounded-lg text-sm transition ${
                       contentType === type
-                        ? "bg-blue-600/20 text-blue-400 font-medium border border-blue-500/30"
-                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border border-zinc-700"
+                        ? "bg-primary/20 text-primary font-medium border border-primary/30"
+                        : "bg-accent text-muted-foreground hover:bg-accent border border-border"
                     }`}
                   >
                     {CONTENT_TYPE_ICONS[type]} {CONTENT_TYPE_LABELS[type]}
@@ -265,7 +265,7 @@ export default function BoardDetail() {
                   placeholder="Paste URL (YouTube, Reddit, Twitter, any website...)"
                   value={sourceUrl}
                   onChange={(e) => setSourceUrl(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                   autoFocus
                 />
               )}
@@ -280,7 +280,7 @@ export default function BoardDetail() {
                 value={contentText}
                 onChange={(e) => setContentText(e.target.value)}
                 rows={contentType === "text" ? 4 : 2}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
                 autoFocus={contentType === "text"}
               />
 
@@ -290,12 +290,12 @@ export default function BoardDetail() {
                 placeholder="Source tag (e.g., Alex Hormozi, YouTube)"
                 value={sourceTag}
                 onChange={(e) => setSourceTag(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
               />
 
               {/* Intent note (critical for AI) */}
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   What should the AI learn from this?
                 </label>
                 <textarea
@@ -303,9 +303,9 @@ export default function BoardDetail() {
                   value={intentNote}
                   onChange={(e) => setIntentNote(e.target.value)}
                   rows={2}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
                 />
-                <p className="text-xs text-zinc-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   This tells the AI what to derive when this item is attached to a chat or pipeline step.
                 </p>
               </div>
@@ -316,7 +316,7 @@ export default function BoardDetail() {
                 placeholder="Tags (comma-separated, e.g., hooks, retention, intro)"
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
               />
 
               <div className="flex gap-2">
@@ -327,7 +327,7 @@ export default function BoardDetail() {
                     (contentType === "text" && !contentText.trim()) ||
                     (contentType === "link" && !sourceUrl.trim())
                   }
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition disabled:opacity-50"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition disabled:opacity-50"
                 >
                   {adding ? "Adding..." : "Add to Board"}
                 </button>
@@ -340,7 +340,7 @@ export default function BoardDetail() {
                     setIntentNote("");
                     setTags("");
                   }}
-                  className="px-4 py-2 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg text-sm transition"
+                  className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg text-sm transition"
                 >
                   Cancel
                 </button>
@@ -357,7 +357,7 @@ export default function BoardDetail() {
               className={`px-3 py-1.5 rounded-lg text-sm transition ${
                 starredOnly
                   ? "bg-yellow-500/20 text-yellow-300 font-medium border border-yellow-500/30"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border border-zinc-700"
+                  : "bg-accent text-muted-foreground hover:bg-accent border border-border"
               }`}
             >
               ⭐ {starredOnly ? "Starred" : "All"}
@@ -367,7 +367,7 @@ export default function BoardDetail() {
               <select
                 value={filterTag}
                 onChange={(e) => setFilterTag(e.target.value)}
-                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-300"
+                className="bg-accent border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
               >
                 <option value="">All tags</option>
                 {allTags.map((tag) => (
@@ -384,7 +384,7 @@ export default function BoardDetail() {
                   setStarredOnly(false);
                   setFilterTag("");
                 }}
-                className="text-zinc-500 hover:text-zinc-300 text-sm transition"
+                className="text-muted-foreground hover:text-foreground text-sm transition"
               >
                 Clear filters
               </button>
@@ -394,12 +394,12 @@ export default function BoardDetail() {
 
         {/* Items list */}
         {filteredItems.length === 0 ? (
-          <div className="text-center py-16 bg-zinc-900 rounded-xl border border-dashed border-zinc-700">
+          <div className="text-center py-16 bg-card rounded-xl border border-dashed border-border">
             <div className="text-5xl mb-4">✨</div>
-            <h3 className="text-lg font-semibold text-zinc-200 mb-2">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
               {board.items.length === 0 ? "No items yet" : "No items match filters"}
             </h3>
-            <p className="text-zinc-500 mb-4 max-w-md mx-auto">
+            <p className="text-muted-foreground mb-4 max-w-md mx-auto">
               {board.items.length === 0
                 ? "Add your first inspiration. Paste a link, write a note, or upload a screenshot."
                 : "Try removing your filters to see all items."}
@@ -407,7 +407,7 @@ export default function BoardDetail() {
             {board.items.length === 0 && (
               <button
                 onClick={() => setShowAdd(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
               >
                 + Add First Item
               </button>
@@ -418,25 +418,25 @@ export default function BoardDetail() {
             {filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition group"
+                className="bg-card border border-border rounded-xl p-4 hover:border-border transition group"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     {/* Type badge + source tag */}
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-accent text-muted-foreground px-2 py-0.5 rounded-full">
                         {CONTENT_TYPE_ICONS[item.content_type]}{" "}
                         {CONTENT_TYPE_LABELS[item.content_type]}
                       </span>
                       {item.source_tag && (
-                        <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
                           {item.source_tag}
                         </span>
                       )}
                       {item.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="text-xs bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full cursor-pointer hover:bg-zinc-700 hover:text-zinc-300 transition"
+                          className="text-xs bg-accent text-muted-foreground px-2 py-0.5 rounded-full cursor-pointer hover:bg-accent hover:text-foreground transition"
                           onClick={() => setFilterTag(tag)}
                         >
                           #{tag}
@@ -450,7 +450,7 @@ export default function BoardDetail() {
                         href={item.source_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 text-sm block mb-2 truncate transition"
+                        className="text-primary hover:text-primary/80 text-sm block mb-2 truncate transition"
                       >
                         {item.source_url}
                       </a>
@@ -458,7 +458,7 @@ export default function BoardDetail() {
 
                     {/* Content text preview */}
                     {item.content_text && (
-                      <p className="text-zinc-300 text-sm mb-2 whitespace-pre-wrap line-clamp-4">
+                      <p className="text-foreground text-sm mb-2 whitespace-pre-wrap line-clamp-4">
                         {item.content_text}
                       </p>
                     )}
@@ -473,7 +473,7 @@ export default function BoardDetail() {
                           type="text"
                           value={editSourceTag}
                           onChange={(e) => setEditSourceTag(e.target.value)}
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 mb-2"
+                          className="w-full bg-accent border border-border rounded px-2 py-1 text-sm text-card-foreground mb-2"
                         />
                         <label className="block text-xs font-medium text-amber-400 mb-1">
                           What should the AI learn?
@@ -482,7 +482,7 @@ export default function BoardDetail() {
                           value={editIntentNote}
                           onChange={(e) => setEditIntentNote(e.target.value)}
                           rows={2}
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 resize-none"
+                          className="w-full bg-accent border border-border rounded px-2 py-1 text-sm text-card-foreground resize-none"
                         />
                         <div className="flex gap-2 mt-2">
                           <button
@@ -493,7 +493,7 @@ export default function BoardDetail() {
                           </button>
                           <button
                             onClick={() => setEditingItem(null)}
-                            className="px-3 py-1 bg-zinc-700 text-zinc-300 rounded text-xs hover:bg-zinc-600"
+                            className="px-3 py-1 bg-muted text-foreground rounded text-xs hover:bg-accent"
                           >
                             Cancel
                           </button>
@@ -513,7 +513,7 @@ export default function BoardDetail() {
                     )}
 
                     {/* Timestamp */}
-                    <p className="text-xs text-zinc-600 mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                       Added {new Date(item.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -525,7 +525,7 @@ export default function BoardDetail() {
                       className={`p-1.5 rounded transition ${
                         item.is_starred
                           ? "text-yellow-400"
-                          : "text-zinc-600 hover:text-yellow-400 opacity-0 group-hover:opacity-100"
+                          : "text-muted-foreground hover:text-yellow-400 opacity-0 group-hover:opacity-100"
                       }`}
                       title={item.is_starred ? "Unstar" : "Star"}
                     >
@@ -538,7 +538,7 @@ export default function BoardDetail() {
                         setEditIntentNote(item.intent_note || "");
                         setEditSourceTag(item.source_tag || "");
                       }}
-                      className="p-1.5 rounded text-zinc-600 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"
+                      className="p-1.5 rounded text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition"
                       title="Edit intent note"
                     >
                       ✏️
@@ -554,7 +554,7 @@ export default function BoardDetail() {
                         </button>
                         <button
                           onClick={() => setDeletingItem(null)}
-                          className="px-2 py-1 bg-zinc-700 text-zinc-300 rounded text-xs hover:bg-zinc-600"
+                          className="px-2 py-1 bg-muted text-foreground rounded text-xs hover:bg-accent"
                         >
                           No
                         </button>
@@ -562,7 +562,7 @@ export default function BoardDetail() {
                     ) : (
                       <button
                         onClick={() => setDeletingItem(item.id)}
-                        className="p-1.5 rounded text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
+                        className="p-1.5 rounded text-muted-foreground hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
                         title="Delete"
                       >
                         🗑
@@ -579,7 +579,7 @@ export default function BoardDetail() {
         <div className="mt-8 text-center">
           <Link
             href="/inspo"
-            className="text-zinc-500 hover:text-zinc-300 text-sm transition"
+            className="text-muted-foreground hover:text-foreground text-sm transition"
           >
             ← Back to all boards
           </Link>

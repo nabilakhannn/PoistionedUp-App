@@ -13,8 +13,8 @@ PostHog SDK directly. This makes testing trivial (inject a mock client).
 
 Usage:
     tracker = AgentTracker.create()
-    tracker.task_created(agent_id="jarvis", task_id="PU-001", title="Research trends")
-    tracker.heartbeat_pulse(agent_id="jarvis", backlog=3)
+    tracker.task_created(agent_id="jumbo", task_id="PU-001", title="Research trends")
+    tracker.heartbeat_pulse(agent_id="jumbo", backlog=3)
     tracker.llm_call(agent_id="copywriter", model="opus", input_tokens=500, ...)
     tracker.flush()
 """
@@ -47,8 +47,8 @@ class AgentTracker:
 
     Example:
         tracker = AgentTracker.create()
-        tracker.task_created("jarvis", "PU-001", "Weekly trend research")
-        tracker.heartbeat_pulse("jarvis", backlog=3, in_progress=1)
+        tracker.task_created("jumbo", "PU-001", "Weekly trend research")
+        tracker.heartbeat_pulse("jumbo", backlog=3, in_progress=1)
         tracker.llm_call("copywriter", "claude-opus", 1200, 800, 0.04)
         tracker.flush()
     """
@@ -449,7 +449,7 @@ class AgentTracker:
         self,
         agent_id: str,
         role: str,
-        parent_agent: str = "jarvis",
+        parent_agent: str = "jumbo",
         model: str = "",
         tools: Optional[List[str]] = None,
     ) -> None:
@@ -501,7 +501,7 @@ class AgentTracker:
         self,
         agent_id: str,
         reason: str,
-        target_agent: str = "jarvis",
+        target_agent: str = "jumbo",
     ) -> None:
         """Track an escalation to orchestrator or human."""
         props = CommunicationProperties(

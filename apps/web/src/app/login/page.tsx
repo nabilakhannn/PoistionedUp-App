@@ -44,16 +44,16 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-zinc-950">
+    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background">
       <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-bold text-center mb-2 text-zinc-100">Welcome Back</h1>
-        <p className="text-zinc-400 text-center text-sm mb-8">
+        <h1 className="text-3xl font-bold text-center mb-2 text-card-foreground">Welcome Back</h1>
+        <p className="text-muted-foreground text-center text-sm mb-8">
           Sign in to PositionedUp
         </p>
 
         <form
           onSubmit={handleLogin}
-          className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg p-6 space-y-4"
+          className="bg-card border border-border rounded-xl shadow-lg p-6 space-y-4"
         >
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-300 text-sm">
@@ -64,7 +64,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-zinc-300 mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Email
             </label>
@@ -75,7 +75,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               placeholder="you@example.com"
             />
           </div>
@@ -83,7 +83,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-zinc-300 mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Password
             </label>
@@ -95,7 +95,7 @@ export default function LoginPage() {
               required
               autoComplete="current-password"
               minLength={6}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               placeholder="Your password"
             />
           </div>
@@ -103,17 +103,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition"
+            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-zinc-500 mt-6">
+        <p className="text-center text-sm text-muted-foreground mt-6">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="text-blue-400 hover:text-blue-300 font-medium transition"
+            className="text-primary hover:text-primary/80 font-medium transition"
           >
             Sign up
           </Link>

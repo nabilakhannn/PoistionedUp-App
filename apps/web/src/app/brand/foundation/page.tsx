@@ -61,18 +61,18 @@ export default function FoundationPage() {
     <main className="max-w-3xl mx-auto p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link href="/brand" className="text-sm text-blue-600 hover:underline">
+          <Link href="/brand" className="text-sm text-primary hover:underline">
             Back to Brand
           </Link>
           <h1 className="text-2xl font-bold mt-1">Foundation</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Who are you? What makes you different? This is where your brand starts.
           </p>
         </div>
         <button
           onClick={save}
           disabled={saving}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
         >
           {saving ? "Saving..." : saved ? "Saved" : "Save"}
         </button>
@@ -86,7 +86,7 @@ export default function FoundationPage() {
 
       {/* Market Beliefs */}
       <Section title="Your Non-Negotiable Beliefs">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           What do you believe about your market that most people get wrong?
           Strong opinions attract the right people and repel the wrong ones.
           List 3-5 beliefs.
@@ -137,7 +137,7 @@ export default function FoundationPage() {
 
       {/* Professional Achievements */}
       <Section title="Professional Achievements">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Social proof and authority builders. List as many as you can: client
           results, revenue milestones, certifications, media features, viral
           posts, etc.
@@ -151,7 +151,7 @@ export default function FoundationPage() {
 
       {/* Personal Achievements */}
       <Section title="Personal Achievements &amp; Backstory">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           What makes people relate to you as a human, not just a business owner?
           Failures, turning points, beliefs, personal milestones.
         </p>
@@ -164,7 +164,7 @@ export default function FoundationPage() {
 
       {/* Macro Story */}
       <Section title="Your Macro Story">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           The big story of your career journey. How did you get from where you
           started to where you are now? This is the highlight reel people will
           remember.
@@ -179,7 +179,7 @@ export default function FoundationPage() {
 
       {/* Micro Stories */}
       <Section title="Micro Stories">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Small, everyday moments that show what you&apos;re about. A
           conversation with a client, a lesson learned last week, a random
           Tuesday realization. These fuel your content.
@@ -193,7 +193,7 @@ export default function FoundationPage() {
 
       {/* Content Pillars */}
       <Section title="Content Pillars">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           3-5 topics you&apos;ll consistently post about. These should overlap
           what you know, what you love, and what your market needs.
         </p>
@@ -217,7 +217,7 @@ export default function FoundationPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
         >
           {saving ? "Saving..." : "Save"}
         </button>
@@ -237,7 +237,7 @@ function Section({
 }) {
   return (
     <div className="mb-8">
-      <h2 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">
+      <h2 className="text-lg font-semibold mb-4 pb-2 border-b border-border">
         {title}
       </h2>
       <div className="space-y-4">{children}</div>
@@ -259,11 +259,11 @@ function Field({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
         {onSuggest && (
           <button
             onClick={onSuggest}
-            className="text-xs text-blue-600 hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             AI Suggest
           </button>
@@ -273,7 +273,7 @@ function Field({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
       />
     </div>
   );
@@ -295,22 +295,22 @@ function TextArea({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
         {onSuggest && (
           <button
             onClick={onSuggest}
-            className="text-xs text-blue-600 hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             AI Suggest
           </button>
         )}
       </div>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground mb-1">{hint}</p>}
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
       />
     </div>
   );
@@ -353,12 +353,12 @@ function ListField({
           {items.map((item, i) => (
             <li
               key={i}
-              className="flex items-start gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              className="flex items-start gap-2 bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               <span className="flex-1">{item}</span>
               <button
                 onClick={() => remove(i)}
-                className="text-gray-400 hover:text-red-500 text-xs mt-0.5"
+                className="text-muted-foreground hover:text-red-500 text-xs mt-0.5"
               >
                 remove
               </button>
@@ -373,12 +373,12 @@ function ListField({
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
         />
         <button
           onClick={add}
           disabled={!draft.trim()}
-          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 transition"
+          className="px-3 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-accent disabled:opacity-50 transition"
         >
           Add
         </button>

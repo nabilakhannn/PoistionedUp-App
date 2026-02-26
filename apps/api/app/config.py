@@ -19,7 +19,14 @@ class Settings(BaseSettings):
 
     # API
     port: int = 8000  # Railway/Render inject PORT automatically
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"]
+    cors_origins: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "https://positionedup.com",
+        "https://www.positionedup.com",
+        "https://positionedup.vercel.app",
+    ]
 
     # LLM
     openai_api_key: str = ""
@@ -31,11 +38,6 @@ class Settings(BaseSettings):
     # LangGraph
     langgraph_db_uri: str = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
-    # Agent Zero
-    agent_zero_enabled: bool = False
-    agent_zero_docker_image: str = "agent0ai/agent-zero:latest"
-    agent_zero_timeout_seconds: int = 120
-
     # Cost governance
     max_tokens_per_step: int = 32000
     max_tokens_per_workflow: int = 200000
@@ -44,6 +46,11 @@ class Settings(BaseSettings):
 
     # Agent Bridge (OpenClaw agents calling into PositionedUp)
     agent_api_key: str = ""  # Set a strong random key for agent-to-API auth
+
+    # OpenClaw Gateway (PositionedUp calling into agent runtime)
+    openclaw_gateway_url: str = ""  # e.g. http://localhost:18789 or https://agents.positionedup.com
+    openclaw_gateway_token: str = ""  # Must match OPENCLAW_GATEWAY_TOKEN on VPS
+    openclaw_mock_mode: bool = False  # Set to true for local dev without VPS
 
     # PostHog analytics
     posthog_api_key: str = ""  # Server-side PostHog project API key

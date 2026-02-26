@@ -22,16 +22,16 @@ router = APIRouter(prefix="/mission-control", tags=["mission-control"])
 
 DEFAULT_AGENTS = [
     {
-        "id": "jarvis",
-        "name": "Jarvis",
+        "id": "jumbo",
+        "name": "Jumbo",
         "role": "Orchestrator",
         "role_type": "lead",
         "model_provider": "openai",
         "model_name": "gpt-4o",
         "avatar_emoji": "🎯",
-        "skills": ["coordination", "decomposition", "delegation", "monitoring", "reporting"],
-        "about": "Chief orchestrator of the marketing squad. Coordinates work across all agents, maintains quality standards, and makes sure nothing falls through the cracks.",
-        "workspace_path": "./agents/jarvis",
+        "skills": ["coordination", "decomposition", "delegation", "monitoring", "reporting", "agent-creation"],
+        "about": "Chief orchestrator of the marketing squad. Coordinates work across all agents, maintains quality standards, spawns new specialist agents, and makes sure nothing falls through the cracks.",
+        "workspace_path": "./agents/jumbo",
     },
     {
         "id": "trend-analyzer",
@@ -322,7 +322,7 @@ async def update_deliverable_status(
     return result.data[0]
 
 
-# ── Orchestrator Activity (Jarvis view) ──────────────────
+# ── Orchestrator Activity (Jumbo view) ──────────────────
 
 @router.get("/orchestrator", response_model=OrchestratorActivity)
 async def get_orchestrator_activity(
@@ -332,14 +332,14 @@ async def get_orchestrator_activity(
     sb = get_admin_client()
     since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
 
-    # Delegations from Jarvis
-    delegations = sb.table("agent_messages").select("*").eq("user_id", user.id).eq("from_agent_id", "jarvis").eq("message_type", "delegation").gte("created_at", since).order("created_at", desc=True).limit(20).execute()
+    # Delegations from Jumbo
+    delegations = sb.table("agent_messages").select("*").eq("user_id", user.id).eq("from_agent_id", "jumbo").eq("message_type", "delegation").gte("created_at", since).order("created_at", desc=True).limit(20).execute()
 
     # Recent tasks created
     recent_tasks = sb.table("agent_tasks").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", desc=True).limit(20).execute()
 
     # Sub-agent statuses
-    agents = sb.table("openclaw_agents").select("*").eq("user_id", user.id).neq("id", "jarvis").execute()
+    agents = sb.table("openclaw_agents").select("*").eq("user_id", user.id).neq("id", "jumbo").execute()
 
     # Full timeline (all message types)
     timeline = sb.table("agent_messages").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", desc=True).limit(50).execute()

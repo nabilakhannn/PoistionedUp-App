@@ -98,10 +98,10 @@ export default function MissionControlPage() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-zinc-400">Loading Mission Control...</p>
+          <p className="text-sm text-muted-foreground">Loading Mission Control...</p>
         </div>
       </div>
     );
@@ -109,14 +109,14 @@ export default function MissionControlPage() {
 
   if (error) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-sm">
           <div className="text-4xl mb-3">⚠️</div>
-          <h2 className="text-lg font-semibold text-zinc-200 mb-2">Connection Error</h2>
-          <p className="text-sm text-zinc-400 mb-4">{error}</p>
+          <h2 className="text-lg font-semibold text-foreground mb-2">Connection Error</h2>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
           <button
             onClick={loadData}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition"
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition"
           >
             Retry
           </button>
@@ -126,7 +126,7 @@ export default function MissionControlPage() {
   }
 
   return (
-    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Stats Bar */}
       <StatsBar
         stats={stats}
@@ -136,24 +136,36 @@ export default function MissionControlPage() {
       />
 
       {/* Sub-navigation */}
-      <div className="h-10 border-b border-zinc-800 bg-zinc-900/50 flex items-center px-5 gap-1">
+      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1">
         <Link
           href="/mission-control"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600/15 text-blue-400 border border-blue-500/20"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/15 text-primary border border-primary/20"
         >
           Dashboard
         </Link>
         <Link
           href="/mission-control/analytics"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
         >
           Analytics
         </Link>
         <Link
           href="/mission-control/orchestrator"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
         >
           Orchestrator
+        </Link>
+        <Link
+          href="/mission-control/gateway"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
+        >
+          Gateway
+        </Link>
+        <Link
+          href="/mission-control/chat"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
+        >
+          Chat
         </Link>
 
         <div className="flex-1" />
@@ -163,7 +175,7 @@ export default function MissionControlPage() {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
             showLiveFeed
               ? "bg-red-500/15 text-red-400 border-red-500/20"
-              : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-200"
+              : "bg-accent text-muted-foreground border-border hover:text-foreground"
           }`}
         >
           <span className="relative flex h-1.5 w-1.5">
@@ -203,7 +215,7 @@ export default function MissionControlPage() {
 
           {/* Deliverables Review (collapsible at bottom) */}
           {deliverables.length > 0 && (
-            <div className="border-t border-zinc-800 px-4 py-3 bg-zinc-900/30">
+            <div className="border-t border-border px-4 py-3 bg-card/30">
               <DeliverablesPanel
                 deliverables={deliverables}
                 agents={agents}
@@ -236,31 +248,31 @@ export default function MissionControlPage() {
       {/* Broadcast modal */}
       {showBroadcast && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-sm font-bold text-zinc-200 mb-1 flex items-center gap-2">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
               <span>📢</span> Broadcast to All Agents
             </h3>
-            <p className="text-xs text-zinc-500 mb-4">
+            <p className="text-xs text-muted-foreground mb-4">
               Send a message to every agent in your squad. They will all receive this on their next heartbeat.
             </p>
             <textarea
               value={broadcastMsg}
               onChange={(e) => setBroadcastMsg(e.target.value)}
               placeholder="Type your broadcast message..."
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 resize-none h-24"
+              className="w-full bg-accent border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground resize-none h-24"
               autoFocus
             />
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => { setShowBroadcast(false); setBroadcastMsg(""); }}
-                className="px-4 py-2 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 transition"
+                className="px-4 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBroadcast}
                 disabled={!broadcastMsg.trim()}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 disabled:opacity-40 transition"
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 disabled:opacity-40 transition"
               >
                 Send Broadcast
               </button>
@@ -323,42 +335,42 @@ function NewTaskModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 w-full max-w-lg shadow-2xl">
-        <h3 className="text-sm font-bold text-zinc-200 mb-4 flex items-center gap-2">
+      <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl">
+        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
           <span>📋</span> New Agent Task
-          <span className="text-[10px] text-zinc-600 font-mono ml-auto">{taskId}</span>
+          <span className="text-[10px] text-muted-foreground font-mono ml-auto">{taskId}</span>
         </h3>
 
         <div className="space-y-3">
           <div>
-            <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Title</label>
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Task title..."
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+              className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Brief</label>
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Brief</label>
             <textarea
               value={brief}
               onChange={(e) => setBrief(e.target.value)}
               placeholder="What needs to be done..."
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 resize-none h-20"
+              className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground resize-none h-20"
             />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Priority</label>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-muted-foreground"
               >
                 <option value="P0">P0 - Critical</option>
                 <option value="P1">P1 - High</option>
@@ -368,11 +380,11 @@ function NewTaskModal({
             </div>
 
             <div className="flex-1">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Assign To</label>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Assign To</label>
               <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-muted-foreground"
               >
                 <option value="">Unassigned</option>
                 {agents.map((a) => (
@@ -385,13 +397,13 @@ function NewTaskModal({
           </div>
 
           <div>
-            <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Tags (comma separated)</label>
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Tags (comma separated)</label>
             <input
               type="text"
               value={tagsStr}
               onChange={(e) => setTagsStr(e.target.value)}
               placeholder="research, content, social-media"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+              className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground"
             />
           </div>
         </div>
@@ -399,7 +411,7 @@ function NewTaskModal({
         <div className="flex justify-end gap-2 mt-5">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 transition"
+            className="px-4 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground transition"
           >
             Cancel
           </button>

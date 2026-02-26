@@ -37,22 +37,22 @@ function CompletenessBar({ completeness }: { completeness: Record<string, number
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-500">Overall</span>
-        <span className="text-xs font-medium text-zinc-300">{overall}%</span>
+        <span className="text-xs text-muted-foreground">Overall</span>
+        <span className="text-xs font-medium text-foreground">{overall}%</span>
       </div>
-      <div className="w-full bg-zinc-800 rounded-full h-1.5">
+      <div className="w-full bg-muted rounded-full h-1.5">
         <div
-          className="bg-blue-500 h-1.5 rounded-full transition-all"
+          className="bg-primary h-1.5 rounded-full transition-all"
           style={{ width: `${overall}%` }}
         />
       </div>
       <div className="flex gap-0.5">
         {modules.map((s) => (
           <div key={s.label} className="flex-1" title={`${s.title}: ${s.pct}%`}>
-            <div className="w-full bg-zinc-800 rounded-full h-1">
+            <div className="w-full bg-muted rounded-full h-1">
               <div
                 className={`h-1 rounded-full transition-all ${
-                  s.pct >= 80 ? "bg-green-500" : s.pct > 0 ? "bg-yellow-400" : "bg-zinc-700"
+                  s.pct >= 80 ? "bg-green-500" : s.pct > 0 ? "bg-yellow-400" : "bg-border"
                 }`}
                 style={{ width: `${s.pct}%` }}
               />
@@ -96,18 +96,18 @@ export default function BrandsListPage() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-4xl mx-auto p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Your Brands</h1>
-            <p className="text-zinc-400 mt-1">
+            <p className="text-muted-foreground mt-1">
               Manage your personal brands. Each brand has its own profile, content, and audience.
             </p>
           </div>
           <Link
             href="/brands/new"
-            className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+            className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
           >
             + New Brand
           </Link>
@@ -121,12 +121,12 @@ export default function BrandsListPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         ) : brands.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-zinc-700 rounded-xl bg-zinc-900">
+          <div className="text-center py-20 border border-dashed border-border rounded-xl bg-card">
             <svg
-              className="mx-auto h-12 w-12 text-zinc-600 mb-4"
+              className="mx-auto h-12 w-12 text-muted-foreground mb-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -138,13 +138,13 @@ export default function BrandsListPage() {
                 d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
               />
             </svg>
-            <h3 className="text-lg font-medium text-zinc-200 mb-1">No brands yet</h3>
-            <p className="text-zinc-500 text-sm mb-4">
+            <h3 className="text-lg font-medium text-foreground mb-1">No brands yet</h3>
+            <p className="text-muted-foreground text-sm mb-4">
               Create your first brand to start building your personal brand profile and generating content.
             </p>
             <Link
               href="/brands/new"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
             >
               + Create Your First Brand
             </Link>
@@ -154,16 +154,16 @@ export default function BrandsListPage() {
             {brands.map((brand) => (
               <div
                 key={brand.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition cursor-pointer group"
+                className="bg-card border border-border rounded-xl p-5 hover:border-border transition cursor-pointer group"
                 onClick={() => handleBrandClick(brand)}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-zinc-100 truncate group-hover:text-blue-400 transition">
+                    <h3 className="font-semibold text-card-foreground truncate group-hover:text-primary transition">
                       {brand.name}
                     </h3>
                     {brand.description && (
-                      <p className="text-sm text-zinc-500 truncate mt-0.5">
+                      <p className="text-sm text-muted-foreground truncate mt-0.5">
                         {brand.description}
                       </p>
                     )}
@@ -173,7 +173,7 @@ export default function BrandsListPage() {
                       e.stopPropagation();
                       handleDelete(brand.id, brand.name);
                     }}
-                    className="text-zinc-600 hover:text-red-400 transition ml-3 opacity-0 group-hover:opacity-100"
+                    className="text-muted-foreground hover:text-red-400 transition ml-3 opacity-0 group-hover:opacity-100"
                     title="Deactivate brand"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,9 +189,9 @@ export default function BrandsListPage() {
 
                 <CompletenessBar completeness={brand.completeness} />
 
-                <div className="flex items-center justify-between mt-3 text-xs text-zinc-500">
+                <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
                   <span>Updated {timeAgo(brand.updated_at)}</span>
-                  <span className="text-blue-400 font-medium group-hover:underline">
+                  <span className="text-primary font-medium group-hover:underline">
                     Open brand →
                   </span>
                 </div>

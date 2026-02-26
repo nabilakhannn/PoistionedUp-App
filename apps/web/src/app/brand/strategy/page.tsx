@@ -61,7 +61,7 @@ export default function BrandStrategyPage() {
     <main className="max-w-3xl mx-auto p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link href="/brand" className="text-sm text-blue-600 hover:underline">
+          <Link href="/brand" className="text-sm text-primary hover:underline">
             Back to Brand
           </Link>
           <h1 className="text-2xl font-bold mt-1">Brand Strategy</h1>
@@ -69,7 +69,7 @@ export default function BrandStrategyPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
         >
           {saving ? "Saving..." : saved ? "Saved" : "Save"}
         </button>
@@ -83,7 +83,7 @@ export default function BrandStrategyPage() {
 
       {/* Brand Statement */}
       <Section title="Brand Statement">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Formula: We help (Ideal Client) achieve (Tangible Result) and
           (Emotional Benefit) by (How).
         </p>
@@ -130,7 +130,7 @@ export default function BrandStrategyPage() {
 
       {/* Content Pillars */}
       <Section title="Content Pillars">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           3-5 topics you will consistently talk about. These define what you are
           known for.
         </p>
@@ -154,7 +154,7 @@ export default function BrandStrategyPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
         >
           {saving ? "Saving..." : "Save"}
         </button>
@@ -166,7 +166,7 @@ export default function BrandStrategyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-8">
-      <h2 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">{title}</h2>
+      <h2 className="text-lg font-semibold mb-4 pb-2 border-b border-border">{title}</h2>
       <div className="space-y-4">{children}</div>
     </div>
   );
@@ -176,10 +176,10 @@ function Field({ label, value, onChange, onSuggest }: { label: string; value: st
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
-        {onSuggest && <button onClick={onSuggest} className="text-xs text-blue-600 hover:underline">AI Suggest</button>}
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
+        {onSuggest && <button onClick={onSuggest} className="text-xs text-primary hover:underline">AI Suggest</button>}
       </div>
-      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent" />
     </div>
   );
 }
@@ -188,11 +188,11 @@ function TextArea({ label, value, onChange, onSuggest, hint }: { label: string; 
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
-        {onSuggest && <button onClick={onSuggest} className="text-xs text-blue-600 hover:underline">AI Suggest</button>}
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
+        {onSuggest && <button onClick={onSuggest} className="text-xs text-primary hover:underline">AI Suggest</button>}
       </div>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+      {hint && <p className="text-xs text-muted-foreground mb-1">{hint}</p>}
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent" />
     </div>
   );
 }

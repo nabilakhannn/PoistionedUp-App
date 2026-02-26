@@ -1,8 +1,8 @@
 """CLI interface for OpenClaw agents to emit analytics events.
 
 Agents can call this via shell tool:
-    python -m analytics track task_created --agent jarvis --task WOW-001 --title "Research"
-    python -m analytics track heartbeat --agent jarvis --backlog 3
+    python -m analytics track task_created --agent jumbo --task WOW-001 --title "Research"
+    python -m analytics track heartbeat --agent jumbo --backlog 3
     python -m analytics track llm_call --agent copywriter --model opus --input 1200 --output 800 --cost 0.04
     python -m analytics report summary
     python -m analytics report board
@@ -143,7 +143,7 @@ def build_parser() -> argparse.ArgumentParser:
     asp = track_sub.add_parser("agent_spawned", help="Track agent spawn")
     asp.add_argument("--agent", required=True, help="New agent ID")
     asp.add_argument("--role", required=True, help="Agent role")
-    asp.add_argument("--parent", default="jarvis", help="Parent agent")
+    asp.add_argument("--parent", default="jumbo", help="Parent agent")
     asp.add_argument("--model", default="", help="LLM model")
 
     # ---- report command ----

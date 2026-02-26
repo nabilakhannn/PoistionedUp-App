@@ -125,6 +125,13 @@ async def create_resource(
                 detail="This is a YouTube channel URL. Use POST /resources/channel to import all videos from a channel.",
             )
 
+        # SSRF protection: validate URL before server-side fetch
+        from app.utils.url_validation import validate_url_for_fetch
+        try:
+            validate_url_for_fetch(body.source_url)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
         result = extract_text_from_url(body.source_url)
         if result["text"]:
             content_text = result["text"]

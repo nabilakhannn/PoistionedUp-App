@@ -81,19 +81,19 @@ export default function ContentDashboard() {
   ];
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       {/* ── Header Bar ── */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50">
+      <div className="border-b border-border bg-card/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                   </svg>
                 </div>
-                <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Content</h1>
+                <h1 className="text-xl font-bold text-card-foreground tracking-tight">Content</h1>
               </div>
             </div>
 
@@ -101,7 +101,7 @@ export default function ContentDashboard() {
               {/* Content Studio button */}
               <Link
                 href="/content/chat"
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl text-xs font-semibold hover:from-blue-700 hover:to-blue-800 transition shadow-lg shadow-blue-600/20"
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-xl text-xs font-semibold hover:from-primary/90 hover:to-primary/80 transition shadow-lg shadow-primary/20"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -113,9 +113,9 @@ export default function ContentDashboard() {
               {brandReady !== false && (
                 <Link
                   href="/content/new"
-                  className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-xl text-xs font-semibold hover:bg-zinc-700 hover:border-zinc-600 transition"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-accent border border-border text-foreground rounded-xl text-xs font-semibold hover:bg-accent hover:border-border transition"
                 >
-                  <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-chart-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                   </svg>
                   + New Pipeline
@@ -165,8 +165,8 @@ export default function ContentDashboard() {
           <StatCard
             label="Total Content"
             value={totalContent}
-            color="bg-blue-500/15"
-            icon={<svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>}
+            color="bg-primary/15"
+            icon={<svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>}
           />
           <StatCard
             label="In Progress"
@@ -196,7 +196,7 @@ export default function ContentDashboard() {
                 const priorityColors: Record<string, string> = {
                   high: "border-l-red-500",
                   medium: "border-l-yellow-500",
-                  low: "border-l-blue-500",
+                  low: "border-l-primary",
                 };
                 const categoryIcons: Record<string, string> = {
                   performance: "📊",
@@ -224,13 +224,13 @@ export default function ContentDashboard() {
                       priority: s.priority,
                       brand_id: brandId || "",
                     })}
-                    className={`block bg-zinc-900 border border-zinc-800 border-l-4 ${priorityColors[s.priority] || "border-l-zinc-700"} rounded-xl p-4 hover:border-zinc-700 transition`}
+                    className={`block bg-card border border-border border-l-4 ${priorityColors[s.priority] || "border-l-border"} rounded-xl p-4 hover:border-border transition`}
                   >
                     <div className="flex items-start gap-2 mb-1">
                       <span className="text-sm">{categoryIcons[s.category] || "💡"}</span>
-                      <h4 className="text-xs font-semibold text-zinc-200 leading-tight">{s.title}</h4>
+                      <h4 className="text-xs font-semibold text-foreground leading-tight">{s.title}</h4>
                     </div>
-                    <p className="text-[11px] text-zinc-500 ml-6 leading-relaxed line-clamp-2">{s.body}</p>
+                    <p className="text-[11px] text-muted-foreground ml-6 leading-relaxed line-clamp-2">{s.body}</p>
                   </Link>
                 );
               })}
@@ -240,19 +240,19 @@ export default function ContentDashboard() {
 
         {/* ── Filter Bar ── */}
         <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-1 bg-zinc-900/80 border border-zinc-800 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-card/80 border border-border rounded-xl p-1">
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setStatusFilter(f.id)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
                   statusFilter === f.id
-                    ? "bg-zinc-800 text-zinc-100 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+                    ? "bg-accent text-card-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 }`}
               >
                 {f.label}
-                <span className={`text-[10px] ${statusFilter === f.id ? "text-zinc-400" : "text-zinc-600"}`}>
+                <span className={`text-[10px] ${statusFilter === f.id ? "text-muted-foreground" : "text-muted-foreground"}`}>
                   {f.count}
                 </span>
               </button>
@@ -261,7 +261,7 @@ export default function ContentDashboard() {
 
           {/* Search */}
           <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
             <input
@@ -269,7 +269,7 @@ export default function ContentDashboard() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search content..."
-              className="bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-4 py-2 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50 w-48 transition"
+              className="bg-card border border-border rounded-xl pl-9 pr-4 py-2 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring/50 w-48 transition"
             />
           </div>
         </div>
@@ -283,34 +283,34 @@ export default function ContentDashboard() {
           </div>
         ) : filteredWorkflows.length === 0 && workflows.length > 0 ? (
           <div className="text-center py-16">
-            <svg className="mx-auto h-10 w-10 text-zinc-700 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+            <svg className="mx-auto h-10 w-10 text-muted-foreground mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
-            <h3 className="text-sm font-medium text-zinc-400 mb-1">No matching content</h3>
-            <p className="text-zinc-600 text-xs">Try adjusting your filters or search query.</p>
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">No matching content</h3>
+            <p className="text-muted-foreground text-xs">Try adjusting your filters or search query.</p>
           </div>
         ) : workflows.length === 0 ? (
-          <div className="text-center py-20 border-2 border-dashed border-zinc-800 rounded-2xl bg-zinc-900/30">
-            <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-5">
-              <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <div className="text-center py-20 border-2 border-dashed border-border rounded-2xl bg-card/30">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-5">
+              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 mb-2">Start creating content</h2>
-            <p className="text-zinc-500 text-sm max-w-md mx-auto mb-6">
+            <h2 className="text-xl font-bold text-card-foreground mb-2">Start creating content</h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
               Use Content Studio for chat-based creation, or launch the Automation Pipeline for the full 8-step AI workflow.
             </p>
             <div className="flex items-center justify-center gap-3">
               <Link
                 href="/content/chat"
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition"
+                className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition"
               >
                 Open Content Studio
               </Link>
               {brandReady !== false && (
                 <Link
                   href="/content/new"
-                  className="px-5 py-2.5 bg-zinc-800 text-zinc-300 rounded-xl text-sm font-medium hover:bg-zinc-700 transition"
+                  className="px-5 py-2.5 bg-accent text-foreground rounded-xl text-sm font-medium hover:bg-accent transition"
                 >
                   + New Pipeline
                 </Link>

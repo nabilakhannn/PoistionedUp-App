@@ -243,16 +243,16 @@ export default function ContentCanvasPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4px)] bg-zinc-950">
+    <div className="flex h-[calc(100vh-4px)] bg-background">
       {/* ════════════════════════════════════════════════════════
          LEFT SIDEBAR: History + Settings
          ════════════════════════════════════════════════════════ */}
-      <aside className="w-64 border-r border-zinc-800 flex-col shrink-0 hidden lg:flex bg-zinc-950">
+      <aside className="w-64 border-r border-border flex-col shrink-0 hidden lg:flex bg-background">
         {/* New Chat */}
-        <div className="p-3 border-b border-zinc-800">
+        <div className="p-3 border-b border-border">
           <button
             onClick={startNewChat}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -263,10 +263,10 @@ export default function ContentCanvasPage() {
 
         <div className="flex-1 overflow-y-auto">
           {/* ── Settings ── */}
-          <div className="p-3 border-b border-zinc-800">
+          <div className="p-3 border-b border-border">
             <button
               onClick={() => setSettingsOpen(!settingsOpen)}
-              className="flex items-center justify-between w-full text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2"
+              className="flex items-center justify-between w-full text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2"
             >
               <span>Settings</span>
               <svg
@@ -281,7 +281,7 @@ export default function ContentCanvasPage() {
               <div className="space-y-3">
                 {/* Objective */}
                 <div>
-                  <label className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide block mb-1">Goal</label>
+                  <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide block mb-1">Goal</label>
                   <div className="space-y-0.5">
                     {OBJECTIVES.map((o) => (
                       <button
@@ -289,8 +289,8 @@ export default function ContentCanvasPage() {
                         onClick={() => setObjective(o.id)}
                         className={`w-full flex items-center gap-2 text-left px-2 py-1.5 rounded text-xs transition ${
                           objective === o.id
-                            ? "bg-blue-600/20 text-blue-400 font-medium"
-                            : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-300"
+                            ? "bg-primary/20 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-accent/80 hover:text-foreground"
                         }`}
                       >
                         <span>{o.icon}</span>
@@ -302,7 +302,7 @@ export default function ContentCanvasPage() {
 
                 {/* Platform */}
                 <div>
-                  <label className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide block mb-1">Platform</label>
+                  <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide block mb-1">Platform</label>
                   <div className="flex flex-wrap gap-1">
                     {PLATFORMS.map((p) => (
                       <button
@@ -310,8 +310,8 @@ export default function ContentCanvasPage() {
                         onClick={() => togglePlatform(p.id)}
                         className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition ${
                           platforms.includes(p.id)
-                            ? "bg-blue-600/20 text-blue-400 font-medium"
-                            : "bg-zinc-800/80 text-zinc-500 hover:text-zinc-300"
+                            ? "bg-primary/20 text-primary font-medium"
+                            : "bg-accent/80 text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         <span className="text-[10px]">{p.icon}</span>
@@ -323,7 +323,7 @@ export default function ContentCanvasPage() {
 
                 {/* Style */}
                 <div>
-                  <label className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide block mb-1">Style</label>
+                  <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide block mb-1">Style</label>
                   <div className="flex flex-wrap gap-1">
                     {CONTENT_TYPES.map((ct) => (
                       <button
@@ -331,8 +331,8 @@ export default function ContentCanvasPage() {
                         onClick={() => setContentType(ct.id)}
                         className={`px-2 py-1 rounded text-xs transition ${
                           contentType === ct.id
-                            ? "bg-blue-600/20 text-blue-400 font-medium"
-                            : "bg-zinc-800/80 text-zinc-500 hover:text-zinc-300"
+                            ? "bg-primary/20 text-primary font-medium"
+                            : "bg-accent/80 text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         {ct.label}
@@ -343,7 +343,7 @@ export default function ContentCanvasPage() {
 
                 {/* Tone */}
                 <div>
-                  <label className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide block mb-1">Tone</label>
+                  <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide block mb-1">Tone</label>
                   <div className="flex flex-wrap gap-1">
                     {TONES.map((t) => (
                       <button
@@ -351,8 +351,8 @@ export default function ContentCanvasPage() {
                         onClick={() => setTone(t.id)}
                         className={`px-2 py-1 rounded text-xs transition ${
                           tone === t.id
-                            ? "bg-blue-600/20 text-blue-400 font-medium"
-                            : "bg-zinc-800/80 text-zinc-500 hover:text-zinc-300"
+                            ? "bg-primary/20 text-primary font-medium"
+                            : "bg-accent/80 text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         {t.label}
@@ -363,7 +363,7 @@ export default function ContentCanvasPage() {
 
                 {/* Length */}
                 <div>
-                  <label className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide block mb-1">Length</label>
+                  <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide block mb-1">Length</label>
                   <div className="flex flex-wrap gap-1">
                     {LENGTHS.map((l) => (
                       <button
@@ -371,8 +371,8 @@ export default function ContentCanvasPage() {
                         onClick={() => setContentLength(l.id)}
                         className={`px-2 py-1 rounded text-xs transition ${
                           contentLength === l.id
-                            ? "bg-blue-600/20 text-blue-400 font-medium"
-                            : "bg-zinc-800/80 text-zinc-500 hover:text-zinc-300"
+                            ? "bg-primary/20 text-primary font-medium"
+                            : "bg-accent/80 text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         {l.label}
@@ -383,7 +383,7 @@ export default function ContentCanvasPage() {
 
                 {/* Pillars */}
                 <div>
-                  <label className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide block mb-1">Pillars</label>
+                  <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide block mb-1">Pillars</label>
                   <div className="flex flex-wrap gap-1 mb-1.5">
                     {[...new Set([...brandPillars, ...selectedPillars])].map((pillar) => {
                       const isSelected = selectedPillars.includes(pillar);
@@ -400,7 +400,7 @@ export default function ContentCanvasPage() {
                           className={`px-2 py-0.5 rounded text-xs transition ${
                             isSelected
                               ? "bg-emerald-500/20 text-emerald-400 font-medium"
-                              : "bg-zinc-800/80 text-zinc-600 line-through"
+                              : "bg-accent/80 text-muted-foreground line-through"
                           }`}
                         >
                           {pillar}
@@ -424,7 +424,7 @@ export default function ContentCanvasPage() {
                         }
                       }}
                       placeholder="Add pillar..."
-                      className="flex-1 bg-zinc-800/80 border border-zinc-700 text-zinc-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-zinc-600 min-w-0"
+                      className="flex-1 bg-accent/80 border border-border text-foreground rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground min-w-0"
                     />
                   </div>
                 </div>
@@ -436,7 +436,7 @@ export default function ContentCanvasPage() {
           <div className="p-3">
             <button
               onClick={() => setHistoryOpen(!historyOpen)}
-              className="flex items-center justify-between w-full text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2"
+              className="flex items-center justify-between w-full text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2"
             >
               <span>Chats</span>
               <svg
@@ -450,15 +450,15 @@ export default function ContentCanvasPage() {
             {historyOpen && (
               <div className="space-y-0.5">
                 {chatList.length === 0 && (
-                  <p className="text-xs text-zinc-600 py-2">No chats yet</p>
+                  <p className="text-xs text-muted-foreground py-2">No chats yet</p>
                 )}
                 {chatList.map((c) => (
                   <div
                     key={c.chat_id}
                     className={`group flex items-center gap-1.5 px-2 py-1.5 rounded cursor-pointer transition ${
                       chatId === c.chat_id
-                        ? "bg-blue-600/20 text-blue-400"
-                        : "hover:bg-zinc-800/80 text-zinc-400"
+                        ? "bg-primary/20 text-primary"
+                        : "hover:bg-accent/80 text-muted-foreground"
                     }`}
                   >
                     <button
@@ -474,7 +474,7 @@ export default function ContentCanvasPage() {
                         e.stopPropagation();
                         deleteChat(c.chat_id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition p-0.5 shrink-0"
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition p-0.5 shrink-0"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -488,10 +488,10 @@ export default function ContentCanvasPage() {
         </div>
 
         {/* Back */}
-        <div className="p-3 border-t border-zinc-800">
+        <div className="p-3 border-t border-border">
           <Link
             href="/content"
-            className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition"
+            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -506,30 +506,30 @@ export default function ContentCanvasPage() {
          ════════════════════════════════════════════════════════ */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* ── Top Bar ── */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
           <div className="flex items-center gap-3">
             {/* Mobile sidebar toggle */}
             <button
               onClick={() => setSettingsOpen(!settingsOpen)}
-              className="lg:hidden p-1.5 text-zinc-500 hover:text-zinc-300 transition"
+              className="lg:hidden p-1.5 text-muted-foreground hover:text-foreground transition"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
             </button>
-            <h1 className="text-sm font-semibold text-zinc-200">Content Studio</h1>
+            <h1 className="text-sm font-semibold text-foreground">Content Studio</h1>
 
             {/* Active settings pills */}
             <div className="hidden md:flex items-center gap-1.5">
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-zinc-800 text-zinc-400">
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-accent text-muted-foreground">
                 {OBJECTIVES.find((o) => o.id === objective)?.icon} {OBJECTIVES.find((o) => o.id === objective)?.label}
               </span>
               {platforms.map((pid) => (
-                <span key={pid} className="px-2 py-0.5 rounded-full text-[10px] bg-zinc-800 text-zinc-400">
+                <span key={pid} className="px-2 py-0.5 rounded-full text-[10px] bg-accent text-muted-foreground">
                   {PLATFORMS.find((p) => p.id === pid)?.icon} {PLATFORMS.find((p) => p.id === pid)?.label}
                 </span>
               ))}
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-zinc-800 text-zinc-400">
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-accent text-muted-foreground">
                 {TONES.find((t) => t.id === tone)?.label}
               </span>
             </div>
@@ -537,13 +537,13 @@ export default function ContentCanvasPage() {
 
           <div className="flex items-center gap-2">
             {/* Mobile panel toggle */}
-            <div className="flex md:hidden bg-zinc-800 rounded-lg p-0.5">
+            <div className="flex md:hidden bg-accent rounded-lg p-0.5">
               <button
                 onClick={() => setActivePanel("chat")}
                 className={`px-3 py-1 text-xs rounded-md transition ${
                   activePanel === "chat"
-                    ? "bg-zinc-700 text-zinc-200"
-                    : "text-zinc-500"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground"
                 }`}
               >
                 Chat
@@ -552,8 +552,8 @@ export default function ContentCanvasPage() {
                 onClick={() => setActivePanel("canvas")}
                 className={`px-3 py-1 text-xs rounded-md transition ${
                   activePanel === "canvas"
-                    ? "bg-zinc-700 text-zinc-200"
-                    : "text-zinc-500"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground"
                 }`}
               >
                 Canvas
@@ -562,7 +562,7 @@ export default function ContentCanvasPage() {
 
             <Link
               href="/content/new"
-              className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition"
+              className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
@@ -576,7 +576,7 @@ export default function ContentCanvasPage() {
         <div className="flex-1 flex min-h-0">
           {/* ════ CHAT PANEL ════ */}
           <div
-            className={`flex flex-col border-r border-zinc-800 ${
+            className={`flex flex-col border-r border-border ${
               activePanel === "chat" ? "flex" : "hidden md:flex"
             } md:w-[55%] lg:w-[50%] w-full`}
           >
@@ -584,13 +584,13 @@ export default function ContentCanvasPage() {
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {messages.length === 0 && !chatId && (
                 <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                  <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3">
-                    <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <div className="w-14 h-14 rounded-2xl bg-card border border-border flex items-center justify-center mb-3">
+                    <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                     </svg>
                   </div>
-                  <h2 className="text-lg font-semibold text-zinc-100 mb-1.5">Content Studio</h2>
-                  <p className="text-sm text-zinc-500 max-w-sm leading-relaxed mb-4">
+                  <h2 className="text-lg font-semibold text-card-foreground mb-1.5">Content Studio</h2>
+                  <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-4">
                     Tell me what you want to create. I'll research, write, and refine it.
                     Your content appears on the canvas to the right.
                   </p>
@@ -607,7 +607,7 @@ export default function ContentCanvasPage() {
                           setInput(suggestion);
                           textareaRef.current?.focus();
                         }}
-                        className="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition"
+                        className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:text-foreground hover:border-border transition"
                       >
                         {suggestion}
                       </button>
@@ -625,19 +625,19 @@ export default function ContentCanvasPage() {
                     <div
                       className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                         msg.role === "user"
-                          ? "bg-blue-600 text-white"
-                          : "bg-zinc-900 border border-zinc-800 text-zinc-200"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card border border-border text-foreground"
                       }`}
                     >
                       {msg.role === "assistant" ? (
                         <div
                           className="prose prose-invert prose-sm max-w-none
-                            prose-headings:text-zinc-100 prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-1
-                            prose-p:text-zinc-300 prose-p:leading-relaxed prose-p:my-1
-                            prose-strong:text-zinc-100
-                            prose-ul:text-zinc-300 prose-ol:text-zinc-300
-                            prose-li:text-zinc-300 prose-li:my-0
-                            prose-code:text-blue-400 prose-code:bg-zinc-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
+                            prose-headings:text-card-foreground prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-1
+                            prose-p:text-foreground prose-p:leading-relaxed prose-p:my-1
+                            prose-strong:text-card-foreground
+                            prose-ul:text-foreground prose-ol:text-foreground
+                            prose-li:text-foreground prose-li:my-0
+                            prose-code:text-primary prose-code:bg-accent prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
                           dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                         />
                       ) : (
@@ -649,7 +649,7 @@ export default function ContentCanvasPage() {
                     {msg.role === "assistant" && msg.content.length > 50 && (
                       <button
                         onClick={() => pinToCanvas(msg.content)}
-                        className="absolute -right-1 -top-1 opacity-0 group-hover:opacity-100 p-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 hover:text-blue-400 hover:border-blue-500/40 transition shadow-lg"
+                        className="absolute -right-1 -top-1 opacity-0 group-hover:opacity-100 p-1.5 bg-accent border border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary/40 transition shadow-lg"
                         title="Pin to canvas"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -663,12 +663,12 @@ export default function ContentCanvasPage() {
 
               {sending && (
                 <div className="flex justify-start">
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-3.5 py-2.5">
-                    <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                  <div className="bg-card border border-border rounded-2xl px-3.5 py-2.5">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
                       <div className="flex gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                       <span className="text-xs">Writing...</span>
                     </div>
@@ -687,7 +687,7 @@ export default function ContentCanvasPage() {
             )}
 
             {/* Input */}
-            <div className="px-4 py-3 border-t border-zinc-800">
+            <div className="px-4 py-3 border-t border-border">
               <div className="flex items-end gap-2">
                 <textarea
                   ref={textareaRef}
@@ -695,7 +695,7 @@ export default function ContentCanvasPage() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Write a YouTube script about personal branding..."
-                  className="flex-1 bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-zinc-600 min-h-[44px] max-h-[150px]"
+                  className="flex-1 bg-card border border-border text-card-foreground rounded-xl px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition placeholder:text-muted-foreground min-h-[44px] max-h-[150px]"
                   rows={1}
                   style={{ height: "auto", minHeight: "44px" }}
                   onInput={(e) => {
@@ -707,14 +707,14 @@ export default function ContentCanvasPage() {
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || sending}
-                  className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  className="p-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                   </svg>
                 </button>
               </div>
-              <p className="text-[10px] text-zinc-600 mt-1 text-center">
+              <p className="text-[10px] text-muted-foreground mt-1 text-center">
                 Enter to send, Shift+Enter for new line
               </p>
             </div>
@@ -722,27 +722,27 @@ export default function ContentCanvasPage() {
 
           {/* ════ CANVAS PANEL ════ */}
           <div
-            className={`flex flex-col bg-zinc-950 ${
+            className={`flex flex-col bg-background ${
               activePanel === "canvas" ? "flex" : "hidden md:flex"
             } md:w-[45%] lg:w-[50%] w-full`}
           >
             {canvasSections.length > 0 ? (
               <>
                 {/* Canvas header */}
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800 shrink-0">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border shrink-0">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-sm font-semibold text-zinc-200">Canvas</h2>
-                    <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                    <h2 className="text-sm font-semibold text-foreground">Canvas</h2>
+                    <span className="text-[10px] text-muted-foreground bg-accent px-2 py-0.5 rounded-full">
                       {totalWords} words
                     </span>
-                    <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] text-muted-foreground bg-accent px-2 py-0.5 rounded-full">
                       {canvasSections.length} sections
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={handleCopyAll}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-800 text-zinc-300 rounded-lg text-xs hover:bg-zinc-700 transition"
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-accent text-foreground rounded-lg text-xs hover:bg-accent transition"
                     >
                       {copiedKey === "all" ? (
                         <>
@@ -765,7 +765,7 @@ export default function ContentCanvasPage() {
                         setCanvasContent("");
                         setCanvasSections([]);
                       }}
-                      className="p-1 text-zinc-500 hover:text-zinc-300 transition"
+                      className="p-1 text-muted-foreground hover:text-foreground transition"
                       title="Clear canvas"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -784,7 +784,7 @@ export default function ContentCanvasPage() {
                       return (
                         <span
                           key={pid}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary border border-primary/20"
                         >
                           {p?.icon} {p?.label} format
                         </span>
@@ -808,17 +808,17 @@ export default function ContentCanvasPage() {
             ) : (
               /* Empty canvas state */
               <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
-                <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-zinc-800/50 border-dashed flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-zinc-700" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                <div className="w-20 h-20 rounded-2xl bg-card border border-border/50 border-dashed flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                   </svg>
                 </div>
-                <h3 className="text-base font-semibold text-zinc-300 mb-1">Your content canvas</h3>
-                <p className="text-xs text-zinc-500 max-w-xs leading-relaxed">
+                <h3 className="text-base font-semibold text-foreground mb-1">Your content canvas</h3>
+                <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
                   Start chatting with the AI on the left. Generated content will automatically
                   appear here for editing, copying, and exporting.
                 </p>
-                <div className="flex items-center gap-4 mt-6 text-[10px] text-zinc-600">
+                <div className="flex items-center gap-4 mt-6 text-[10px] text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />

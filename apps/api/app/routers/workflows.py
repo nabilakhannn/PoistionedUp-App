@@ -299,7 +299,7 @@ async def execute_workflow_inline(
                 "claimed_at": None,
             }).eq("id", workflow_id).execute()
         except Exception:
-            pass
+            logger.warning("Failed to mark workflow %s as failed in DB", workflow_id, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Pipeline execution failed: {str(e)[:200]}",

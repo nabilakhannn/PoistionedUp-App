@@ -30,4 +30,7 @@ export * from "./advisor";
 export * from "./strategist";
 export * from "./training";
 export * from "./mission-control";
+export * from "./orchestrator";
 export * from "./agent-bridge";
+export * from "./composer";
+export * from "./gateway";

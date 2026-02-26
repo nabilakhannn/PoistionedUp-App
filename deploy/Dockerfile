@@ -13,8 +13,8 @@ RUN apt-get update && \
 # ── Install Python analytics deps (PostHog) ──────────────
 RUN pip3 install --break-system-packages posthog python-dotenv
 
-# ── Install OpenClaw globally ─────────────────────────────
-RUN npm install -g openclaw@latest
+# ── Install OpenClaw + NotebookLM MCP globally ──────────
+RUN npm install -g openclaw@latest notebooklm-mcp@latest
 
 # ── Create non-root user (reuse existing GID 1000 from node image) ──
 RUN useradd -u 1001 -g 1000 -m -s /bin/bash openclaw
@@ -31,6 +31,7 @@ COPY --chown=openclaw:node AGENTS.md /home/openclaw/.openclaw/workspace/AGENTS.m
 COPY --chown=openclaw:node HEARTBEAT.md /home/openclaw/.openclaw/workspace/HEARTBEAT.md
 COPY --chown=openclaw:node task_board.md /home/openclaw/.openclaw/workspace/task_board.md
 COPY --chown=openclaw:node AGENT_BRIDGE_PLAYBOOK.md /home/openclaw/.openclaw/workspace/AGENT_BRIDGE_PLAYBOOK.md
+COPY --chown=openclaw:node OPENCLAW_NOTEBOOKLM_PLAYBOOK.md /home/openclaw/.openclaw/workspace/OPENCLAW_NOTEBOOKLM_PLAYBOOK.md
 COPY --chown=openclaw:node analytics/ /home/openclaw/.openclaw/workspace/analytics/
 
 # ── Copy workspace sub-directories ────────────────────────

@@ -82,11 +82,11 @@ export default function NewBrandPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-xl mx-auto p-8">
         <Link
           href="/brands"
-          className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1 mb-6 transition"
+          className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 mb-6 transition"
         >
           &larr; Back to brands
         </Link>
@@ -98,10 +98,10 @@ export default function NewBrandPage() {
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition ${
                   step === s
-                    ? "bg-blue-600 text-white"
+                    ? "bg-primary text-primary-foreground"
                     : (["basics", "industry", "launch"].indexOf(step) > i)
                       ? "bg-green-600 text-white"
-                      : "bg-zinc-800 text-zinc-500"
+                      : "bg-muted text-muted-foreground"
                 }`}
               >
                 {(["basics", "industry", "launch"].indexOf(step) > i) ? "✓" : i + 1}
@@ -109,7 +109,7 @@ export default function NewBrandPage() {
               {i < 2 && (
                 <div className={`w-12 h-0.5 ${
                   (["basics", "industry", "launch"].indexOf(step) > i)
-                    ? "bg-green-600" : "bg-zinc-800"
+                    ? "bg-green-600" : "bg-muted"
                 }`} />
               )}
             </div>
@@ -126,13 +126,13 @@ export default function NewBrandPage() {
         {step === "basics" && (
           <div>
             <h1 className="text-3xl font-bold mb-2">What should we call your brand?</h1>
-            <p className="text-zinc-400 mb-8">
+            <p className="text-muted-foreground mb-8">
               Just a name to get started. You can always change it later.
             </p>
 
             <div className="space-y-5">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-zinc-300 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
                   Brand Name *
                 </label>
                 <input
@@ -141,7 +141,7 @@ export default function NewBrandPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. My Personal Brand"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   required
                   maxLength={100}
                   autoFocus
@@ -155,7 +155,7 @@ export default function NewBrandPage() {
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-zinc-300 mb-1">
+                <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
                   Brief description (optional)
                 </label>
                 <textarea
@@ -164,7 +164,7 @@ export default function NewBrandPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What do you do? Who do you help?"
                   rows={2}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   maxLength={500}
                 />
               </div>
@@ -172,7 +172,7 @@ export default function NewBrandPage() {
               <button
                 onClick={() => setStep("industry")}
                 disabled={!name.trim()}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-500 disabled:opacity-40 transition"
+                className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 disabled:opacity-40 transition"
               >
                 Continue
               </button>
@@ -184,13 +184,13 @@ export default function NewBrandPage() {
         {step === "industry" && (
           <div>
             <h1 className="text-3xl font-bold mb-2">What&apos;s your industry?</h1>
-            <p className="text-zinc-400 mb-6">
+            <p className="text-muted-foreground mb-6">
               This helps our AI research your niche, audience, and competitors automatically.
             </p>
 
             <div className="space-y-5">
               <div>
-                <label htmlFor="industry" className="block text-sm font-medium text-zinc-300 mb-1">
+                <label htmlFor="industry" className="block text-sm font-medium text-foreground mb-1">
                   Industry / Niche *
                 </label>
                 <input
@@ -199,7 +199,7 @@ export default function NewBrandPage() {
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
                   placeholder="e.g. Personal branding for tech professionals"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   maxLength={200}
                   autoFocus
                 />
@@ -211,7 +211,7 @@ export default function NewBrandPage() {
                       <button
                         key={s}
                         onClick={() => setIndustry(s)}
-                        className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition"
+                        className="px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-muted-foreground hover:text-foreground hover:border-border transition"
                       >
                         {s}
                       </button>
@@ -221,7 +221,7 @@ export default function NewBrandPage() {
               </div>
 
               <div>
-                <label htmlFor="audience" className="block text-sm font-medium text-zinc-300 mb-1">
+                <label htmlFor="audience" className="block text-sm font-medium text-foreground mb-1">
                   Target audience (optional)
                 </label>
                 <input
@@ -230,7 +230,7 @@ export default function NewBrandPage() {
                   value={targetAudience}
                   onChange={(e) => setTargetAudience(e.target.value)}
                   placeholder="e.g. Early-career software engineers wanting to build a personal brand"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   maxLength={300}
                 />
               </div>
@@ -238,20 +238,20 @@ export default function NewBrandPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep("basics")}
-                  className="px-4 py-3 text-zinc-400 text-sm hover:text-zinc-200 transition"
+                  className="px-4 py-3 text-muted-foreground text-sm hover:text-foreground transition"
                 >
                   Back
                 </button>
                 <button
                   onClick={() => setStep("launch")}
                   disabled={!industry.trim()}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-500 disabled:opacity-40 transition"
+                  className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 disabled:opacity-40 transition"
                 >
                   Continue
                 </button>
                 <button
                   onClick={() => { setIndustry(""); setStep("launch"); }}
-                  className="px-4 py-3 text-zinc-500 text-xs hover:text-zinc-300 transition"
+                  className="px-4 py-3 text-muted-foreground text-xs hover:text-foreground transition"
                 >
                   Skip
                 </button>
@@ -264,32 +264,32 @@ export default function NewBrandPage() {
         {step === "launch" && (
           <div>
             <h1 className="text-3xl font-bold mb-2">Ready to launch</h1>
-            <p className="text-zinc-400 mb-8">
+            <p className="text-muted-foreground mb-8">
               Here&apos;s what we&apos;ll set up for you.
             </p>
 
             {/* Summary */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-6 space-y-3">
+            <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-zinc-400">Brand name</span>
-                <span className="text-sm font-medium text-zinc-200">{name}</span>
+                <span className="text-sm text-muted-foreground">Brand name</span>
+                <span className="text-sm font-medium text-foreground">{name}</span>
               </div>
               {description && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Description</span>
-                  <span className="text-sm text-zinc-300 text-right max-w-[250px] truncate">{description}</span>
+                  <span className="text-sm text-muted-foreground">Description</span>
+                  <span className="text-sm text-foreground text-right max-w-[250px] truncate">{description}</span>
                 </div>
               )}
               {industry && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Industry</span>
-                  <span className="text-sm text-zinc-300 text-right max-w-[250px] truncate">{industry}</span>
+                  <span className="text-sm text-muted-foreground">Industry</span>
+                  <span className="text-sm text-foreground text-right max-w-[250px] truncate">{industry}</span>
                 </div>
               )}
               {targetAudience && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Target audience</span>
-                  <span className="text-sm text-zinc-300 text-right max-w-[250px] truncate">{targetAudience}</span>
+                  <span className="text-sm text-muted-foreground">Target audience</span>
+                  <span className="text-sm text-foreground text-right max-w-[250px] truncate">{targetAudience}</span>
                 </div>
               )}
             </div>
@@ -301,7 +301,7 @@ export default function NewBrandPage() {
                   <button
                     onClick={() => setAutoResearch(!autoResearch)}
                     className={`mt-0.5 w-10 h-5 rounded-full transition flex-shrink-0 relative ${
-                      autoResearch ? "bg-violet-600" : "bg-zinc-700"
+                      autoResearch ? "bg-violet-600" : "bg-border"
                     }`}
                   >
                     <div
@@ -311,10 +311,10 @@ export default function NewBrandPage() {
                     />
                   </button>
                   <div>
-                    <p className="text-sm font-bold text-zinc-200">
+                    <p className="text-sm font-bold text-foreground">
                       Run AI Research automatically
                     </p>
-                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                       Our AI will research your niche, audience, competitors, content landscape,
                       voice positioning, content strategy, and generate initial content ideas.
                       Results appear on your brand dashboard.
@@ -327,7 +327,7 @@ export default function NewBrandPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep("industry")}
-                className="px-4 py-3 text-zinc-400 text-sm hover:text-zinc-200 transition"
+                className="px-4 py-3 text-muted-foreground text-sm hover:text-foreground transition"
               >
                 Back
               </button>

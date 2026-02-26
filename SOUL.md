@@ -32,14 +32,14 @@ All brand-specific information lives in the PositionedUp app, NOT in these agent
 
 | What | Where It Lives | How Agents Get It |
 |------|---------------|-------------------|
-| Brand name, audience, positioning | App → Brand Profile (8 modules) | Jarvis calls `GET /context/{brand_id}` |
-| Writing voice & style | App → Voice DNA | Jarvis calls `GET /context/{brand_id}` |
-| Content themes | App → Content Pillars | Jarvis calls `GET /context/{brand_id}` |
-| Reference material | App → Knowledge Library | Jarvis calls `POST /knowledge/search` |
-| Saved inspiration | App → Inspo Boards | Jarvis calls `POST /inspo/search` |
-| What works / what fails | App → Performance Analytics | Jarvis calls `GET /context/{brand_id}` |
-| Lessons learned | App → Agent Memory | Jarvis calls `GET /context/{brand_id}` |
-| A/B tests | App → Experiments | Jarvis calls `GET /context/{brand_id}` |
+| Brand name, audience, positioning | App → Brand Profile (8 modules) | Jumbo calls `GET /context/{brand_id}` |
+| Writing voice & style | App → Voice DNA | Jumbo calls `GET /context/{brand_id}` |
+| Content themes | App → Content Pillars | Jumbo calls `GET /context/{brand_id}` |
+| Reference material | App → Knowledge Library | Jumbo calls `POST /knowledge/search` |
+| Saved inspiration | App → Inspo Boards | Jumbo calls `POST /inspo/search` |
+| What works / what fails | App → Performance Analytics | Jumbo calls `GET /context/{brand_id}` |
+| Lessons learned | App → Agent Memory | Jumbo calls `GET /context/{brand_id}` |
+| A/B tests | App → Experiments | Jumbo calls `GET /context/{brand_id}` |
 
 **To add a new brand**: Create it in the PositionedUp web app, fill in the profile modules, and the agents automatically adapt. No file editing needed.
 
@@ -117,7 +117,7 @@ System files, internal notes, and inter-agent communication are always in Englis
 
 The active brand's voice, pillars, audience, and style rules all come from the PositionedUp Brain at runtime. This is by design — it means one agent squad can serve multiple brands.
 
-When Jarvis calls `GET /context/{brand_id}`, the response includes:
+When Jumbo calls `GET /context/{brand_id}`, the response includes:
 - **voice_dna** — the brand's writing fingerprint
 - **content_pillars** — themes to focus on
 - **writing_rules** — mandatory style rules for all content
@@ -132,7 +132,7 @@ Agents must follow whatever the Brain says for the active brand. If the Brain sa
 ```
 HUMAN OPERATOR (via Telegram + Mission Control Dashboard)
     |
-    +-- ORCHESTRATOR ("Jarvis") <-> PositionedUp Brain (Agent Bridge API)
+    +-- ORCHESTRATOR ("Jumbo") <-> PositionedUp Brain (Agent Bridge API)
             |
             +-- Trend Analyzer
             +-- Copywriter
@@ -146,10 +146,10 @@ HUMAN OPERATOR (via Telegram + Mission Control Dashboard)
 - Specialists NEVER talk to each other directly
 - Specialists NEVER talk to the human directly
 - All communication flows through the task board
-- **Jarvis has exclusive access to the PositionedUp Brain** (Agent Bridge API)
-- Jarvis queries the Brain for brand context, knowledge, performance data, voice DNA before creating tasks
-- Jarvis includes relevant Brain context in every task brief so specialists work with full information
-- Specialists do NOT call the Brain directly. They receive context through Jarvis's task briefs.
+- **Jumbo has exclusive access to the PositionedUp Brain** (Agent Bridge API)
+- Jumbo queries the Brain for brand context, knowledge, performance data, voice DNA before creating tasks
+- Jumbo includes relevant Brain context in every task brief so specialists work with full information
+- Specialists do NOT call the Brain directly. They receive context through Jumbo's task briefs.
 
 ## POSITIONEDUP BRAIN CONNECTION
 
@@ -163,8 +163,8 @@ The PositionedUp app is the team's shared brain. It contains:
 - **Active Experiments** (A/B tests currently running)
 - **Content Pipeline** (8-node AI content generation system)
 
-Jarvis accesses the Brain via the Agent Bridge API. The API key is stored in Jarvis's environment.
-See `agents/jarvis/SOUL.md` for the full API reference.
+Jumbo accesses the Brain via the Agent Bridge API. The API key is stored in Jumbo's environment.
+See `agents/jumbo/SOUL.md` for the full API reference.
 See `AGENT_BRIDGE_PLAYBOOK.md` for the complete integration guide.
 
 ---

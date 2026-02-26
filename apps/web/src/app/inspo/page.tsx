@@ -72,18 +72,18 @@ export default function InspoBoards() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-5xl mx-auto p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Inspo Boards</h1>
-            <p className="text-zinc-400 mt-1">
+            <p className="text-muted-foreground mt-1">
               Collect inspiration from anywhere. Tag sources. Tell the AI what to learn from each one.
             </p>
           </div>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
           >
             + New Board
           </button>
@@ -100,15 +100,15 @@ export default function InspoBoards() {
 
         {/* Create board form */}
         {showCreate && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-            <h3 className="font-semibold mb-4 text-zinc-100">Create New Board</h3>
+          <div className="bg-card border border-border rounded-xl p-6 mb-6">
+            <h3 className="font-semibold mb-4 text-card-foreground">Create New Board</h3>
             <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Board name (e.g., Hook Ideas, Competitor Analysis)"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                 autoFocus
               />
               <textarea
@@ -116,13 +116,13 @@ export default function InspoBoards() {
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
                 rows={2}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
               />
               <div className="flex gap-2">
                 <button
                   onClick={handleCreate}
                   disabled={creating || !newName.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition disabled:opacity-50"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition disabled:opacity-50"
                 >
                   {creating ? "Creating..." : "Create Board"}
                 </button>
@@ -132,7 +132,7 @@ export default function InspoBoards() {
                     setNewName("");
                     setNewDescription("");
                   }}
-                  className="px-4 py-2 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg text-sm transition"
+                  className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg text-sm transition"
                 >
                   Cancel
                 </button>
@@ -145,30 +145,30 @@ export default function InspoBoards() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 animate-pulse">
-                <div className="h-5 bg-zinc-800 rounded w-3/4 mb-3" />
-                <div className="h-3 bg-zinc-800 rounded w-full mb-2" />
-                <div className="h-3 bg-zinc-800 rounded w-2/3 mb-4" />
+              <div key={i} className="bg-card border border-border rounded-xl p-5 animate-pulse">
+                <div className="h-5 bg-accent rounded w-3/4 mb-3" />
+                <div className="h-3 bg-accent rounded w-full mb-2" />
+                <div className="h-3 bg-accent rounded w-2/3 mb-4" />
                 <div className="flex justify-between">
-                  <div className="h-3 bg-zinc-800 rounded w-16" />
-                  <div className="h-3 bg-zinc-800 rounded w-24" />
+                  <div className="h-3 bg-accent rounded w-16" />
+                  <div className="h-3 bg-accent rounded w-24" />
                 </div>
               </div>
             ))}
           </div>
         ) : boards.length === 0 ? (
-          <div className="text-center py-16 bg-zinc-900 rounded-xl border border-dashed border-zinc-700">
+          <div className="text-center py-16 bg-card rounded-xl border border-dashed border-border">
             <div className="text-5xl mb-4">💡</div>
-            <h3 className="text-lg font-semibold text-zinc-200 mb-2">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
               No boards yet
             </h3>
-            <p className="text-zinc-500 mb-4 max-w-md mx-auto">
+            <p className="text-muted-foreground mb-4 max-w-md mx-auto">
               Create your first board to start collecting inspiration. Save links, notes, screenshots,
               and videos. Tag each source so the AI knows what to learn from it.
             </p>
             <button
               onClick={() => setShowCreate(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
             >
               + Create Your First Board
             </button>
@@ -178,18 +178,18 @@ export default function InspoBoards() {
             {boards.map((board) => (
               <div
                 key={board.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition group relative"
+                className="bg-card border border-border rounded-xl p-5 hover:border-border transition group relative"
               >
                 <Link href={`/inspo/${board.id}`} className="block">
-                  <h3 className="font-semibold text-lg mb-1 text-zinc-100 group-hover:text-blue-400 transition">
+                  <h3 className="font-semibold text-lg mb-1 text-card-foreground group-hover:text-primary transition">
                     {board.name}
                   </h3>
                   {board.description && (
-                    <p className="text-zinc-500 text-sm mb-3 line-clamp-2">
+                    <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
                       {board.description}
                     </p>
                   )}
-                  <div className="flex items-center justify-between text-xs text-zinc-500">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>
                       {board.item_count} {board.item_count === 1 ? "item" : "items"}
                     </span>
@@ -201,7 +201,7 @@ export default function InspoBoards() {
 
                 {/* Delete button */}
                 {deleting === board.id ? (
-                  <div className="absolute top-2 right-2 bg-zinc-800 border border-zinc-700 rounded-lg p-2 shadow-lg z-10">
+                  <div className="absolute top-2 right-2 bg-accent border border-border rounded-lg p-2 shadow-lg z-10">
                     <p className="text-xs text-red-400 mb-2">Delete this board?</p>
                     <div className="flex gap-1">
                       <button
@@ -212,7 +212,7 @@ export default function InspoBoards() {
                       </button>
                       <button
                         onClick={() => setDeleting(null)}
-                        className="px-2 py-1 bg-zinc-700 text-zinc-300 rounded text-xs hover:bg-zinc-600"
+                        className="px-2 py-1 bg-muted text-foreground rounded text-xs hover:bg-accent"
                       >
                         No
                       </button>
@@ -224,7 +224,7 @@ export default function InspoBoards() {
                       e.preventDefault();
                       setDeleting(board.id);
                     }}
-                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition text-sm"
+                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition text-sm"
                     title="Delete board"
                   >
                     🗑
@@ -239,7 +239,7 @@ export default function InspoBoards() {
         <div className="mt-8 text-center">
           <Link
             href="/content"
-            className="text-blue-400 hover:text-blue-300 text-sm font-medium transition"
+            className="text-primary hover:text-primary/80 text-sm font-medium transition"
           >
             Next: Create Content →
           </Link>

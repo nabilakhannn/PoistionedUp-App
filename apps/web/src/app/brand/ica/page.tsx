@@ -65,12 +65,12 @@ export default function ICAFormPage() {
         <div>
           <Link
             href="/brand"
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-primary hover:underline"
           >
             Back to Brand
           </Link>
           <h1 className="text-2xl font-bold mt-1">Ideal Client Avatar</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Define the ONE person you serve best. The deeper you go, the better
             your content will resonate.
           </p>
@@ -78,7 +78,7 @@ export default function ICAFormPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
         >
           {saving ? "Saving..." : saved ? "Saved" : "Save"}
         </button>
@@ -169,7 +169,7 @@ export default function ICAFormPage() {
 
       {/* 4 Buying Motivations */}
       <Section title="4 Buying Motivations">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           There are 4 reasons people buy. Describe how EACH one shows up for
           your ideal client.
         </p>
@@ -249,7 +249,7 @@ export default function ICAFormPage() {
 
       {/* Peskiest Problems & Biggest Fears */}
       <Section title="Problems & Fears (Go Deep)">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Push for 10 of each. The deeper you go, the better your content hooks.
         </p>
         <ListField
@@ -323,7 +323,7 @@ export default function ICAFormPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
         >
           {saving ? "Saving..." : "Save"}
         </button>
@@ -343,7 +343,7 @@ function Section({
 }) {
   return (
     <div className="mb-8">
-      <h2 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">
+      <h2 className="text-lg font-semibold mb-4 pb-2 border-b border-border">
         {title}
       </h2>
       <div className="space-y-4">{children}</div>
@@ -365,11 +365,11 @@ function Field({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
         {onSuggest && (
           <button
             onClick={onSuggest}
-            className="text-xs text-blue-600 hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             AI Suggest
           </button>
@@ -379,7 +379,7 @@ function Field({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
       />
     </div>
   );
@@ -401,22 +401,22 @@ function TextArea({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
         {onSuggest && (
           <button
             onClick={onSuggest}
-            className="text-xs text-blue-600 hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             AI Suggest
           </button>
         )}
       </div>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground mb-1">{hint}</p>}
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
       />
     </div>
   );
@@ -456,7 +456,7 @@ function ListField({
 
   return (
     <div>
-      <label className="text-sm font-medium text-gray-700 mb-1 block">
+      <label className="text-sm font-medium text-muted-foreground mb-1 block">
         {label}
       </label>
       {items.length > 0 && (
@@ -464,12 +464,12 @@ function ListField({
           {items.map((item, i) => (
             <li
               key={i}
-              className="flex items-start gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              className="flex items-start gap-2 bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               <span className="flex-1">{item}</span>
               <button
                 onClick={() => remove(i)}
-                className="text-gray-400 hover:text-red-500 text-xs mt-0.5"
+                className="text-muted-foreground hover:text-red-500 text-xs mt-0.5"
               >
                 remove
               </button>
@@ -484,12 +484,12 @@ function ListField({
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
         />
         <button
           onClick={add}
           disabled={!draft.trim()}
-          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 transition"
+          className="px-3 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-accent disabled:opacity-50 transition"
         >
           Add
         </button>

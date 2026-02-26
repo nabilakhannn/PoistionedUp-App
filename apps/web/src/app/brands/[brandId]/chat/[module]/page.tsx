@@ -442,7 +442,7 @@ export default function BrandChatPage() {
         <div className="px-4 pt-4 pb-2">
           <Link
             href={`/brands/${brandId}`}
-            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+            className="text-xs text-primary hover:underline flex items-center gap-1"
           >
             <span>←</span> Brand Dashboard
           </Link>
@@ -466,7 +466,7 @@ export default function BrandChatPage() {
                 href={chatPath}
                 className={`block rounded-lg px-3 py-2.5 transition-all ${
                   isCurrent
-                    ? "bg-blue-50 border border-blue-200"
+                    ? "bg-primary/10 border border-primary/30"
                     : "hover:bg-gray-50"
                 }`}
               >
@@ -474,7 +474,7 @@ export default function BrandChatPage() {
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                       isCurrent
-                        ? "bg-blue-600 text-white"
+                        ? "bg-primary text-primary-foreground"
                         : isPast
                         ? "bg-green-500 text-white"
                         : "bg-gray-200 text-gray-500"
@@ -485,7 +485,7 @@ export default function BrandChatPage() {
                   <div className="min-w-0">
                     <div
                       className={`text-sm font-medium truncate ${
-                        isCurrent ? "text-blue-700" : "text-gray-700"
+                        isCurrent ? "text-primary" : "text-gray-700"
                       }`}
                     >
                       {stage.label}
@@ -506,7 +506,7 @@ export default function BrandChatPage() {
             Completed
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-600 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-primary inline-block" />
             In progress
           </div>
           <div className="flex items-center gap-1.5">
@@ -591,7 +591,7 @@ export default function BrandChatPage() {
           </div>
           <button
             onClick={handleNewChat}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition"
+            className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -620,7 +620,7 @@ export default function BrandChatPage() {
                   key={chat.chat_id}
                   className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm cursor-pointer transition ${
                     chat.chat_id === chatId
-                      ? "bg-blue-50 border border-blue-200"
+                      ? "bg-primary/10 border border-primary/30"
                       : "hover:bg-gray-50"
                   }`}
                   onClick={() => handleSwitchChat(chat.chat_id)}
@@ -631,7 +631,7 @@ export default function BrandChatPage() {
                         chat.status === "active"
                           ? "bg-green-400"
                           : chat.status === "completed"
-                          ? "bg-blue-400"
+                          ? "bg-primary"
                           : "bg-gray-300"
                       }`}
                     />
@@ -643,7 +643,7 @@ export default function BrandChatPage() {
                       {chat.message_count !== 1 ? "s" : ""}
                     </span>
                     {chat.status === "completed" && (
-                      <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex-shrink-0">
+                      <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
                         saved
                       </span>
                     )}
@@ -689,7 +689,7 @@ export default function BrandChatPage() {
               <div
                 className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-blue-600 text-white rounded-br-md"
+                    ? "bg-primary text-primary-foreground rounded-br-md"
                     : "bg-gray-50 text-gray-800 rounded-bl-md border border-gray-100"
                 }`}
               >
@@ -742,7 +742,7 @@ export default function BrandChatPage() {
                 ? "bg-emerald-50 border border-emerald-200"
                 : attachSourceType === "inspo"
                 ? "bg-purple-50 border border-purple-200"
-                : "bg-blue-50 border border-blue-200"
+                : "bg-primary/10 border border-primary/20"
             }`}>
               {attachSourceType === "knowledge" ? (
                 <svg
@@ -777,7 +777,7 @@ export default function BrandChatPage() {
               ) : attachedLink ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4 text-blue-500 flex-shrink-0"
+                  className="w-4 h-4 text-primary flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -792,7 +792,7 @@ export default function BrandChatPage() {
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4 text-blue-500 flex-shrink-0"
+                  className="w-4 h-4 text-primary flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -810,7 +810,7 @@ export default function BrandChatPage() {
                   ? "text-emerald-700"
                   : attachSourceType === "inspo"
                   ? "text-purple-700"
-                  : "text-blue-700"
+                  : "text-primary"
               }`}>
                 {attachedLabel}
               </span>
@@ -825,7 +825,7 @@ export default function BrandChatPage() {
                 </span>
               )}
               {attachSourceType && attachSourceType !== "knowledge" && attachSourceType !== "inspo" && (
-                <span className="text-blue-400 text-xs flex-shrink-0 bg-blue-100 px-1.5 py-0.5 rounded">
+                <span className="text-primary text-xs flex-shrink-0 bg-primary/10 px-1.5 py-0.5 rounded">
                   {attachSourceType.replace(/_/g, " ")}
                 </span>
               )}
@@ -851,7 +851,7 @@ export default function BrandChatPage() {
               </span>
               <button
                 onClick={removeAttachment}
-                className="text-blue-400 hover:text-red-500 transition flex-shrink-0"
+                className="text-primary hover:text-red-500 transition flex-shrink-0"
                 title="Remove attachment"
               >
                 <svg
@@ -872,8 +872,8 @@ export default function BrandChatPage() {
             </div>
           )}
           {attachUploading && (
-            <div className="flex items-center gap-2 mb-2 text-xs text-blue-500">
-              <span className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-2 mb-2 text-xs text-primary">
+              <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               {attachedLink
                 ? "Extracting content from link..."
                 : "Reading file..."}
@@ -897,13 +897,13 @@ export default function BrandChatPage() {
                   }
                 }}
                 placeholder="Paste a URL (YouTube, website, Reddit, etc.)"
-                className="flex-1 border border-blue-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 border border-primary/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 autoFocus
               />
               <button
                 onClick={handleLinkSubmit}
                 disabled={!linkInputValue.trim()}
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
               >
                 Extract
               </button>
@@ -967,7 +967,7 @@ export default function BrandChatPage() {
               title="Attach a link (YouTube, website, Reddit, etc.)"
               className={`self-end w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50 ${
                 showLinkInput
-                  ? "bg-blue-100 text-blue-600"
+                  ? "bg-primary/10 text-primary"
                   : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
               }`}
             >
@@ -1017,7 +1017,7 @@ export default function BrandChatPage() {
                   : "Type your answer..."
               }
               rows={2}
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
             {micSupported && (
               <button
@@ -1046,7 +1046,7 @@ export default function BrandChatPage() {
             <button
               onClick={sendMessage}
               disabled={!input.trim() || sending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition self-end"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition self-end"
             >
               Send
             </button>
@@ -1076,7 +1076,7 @@ export default function BrandChatPage() {
 
           <div className="w-full bg-gray-200 rounded-full h-1.5 mb-4">
             <div
-              className="bg-blue-600 h-1.5 rounded-full transition-all"
+              className="bg-primary h-1.5 rounded-full transition-all"
               style={{ width: `${progress * 100}%` }}
             />
           </div>
@@ -1135,7 +1135,7 @@ function UserMessage({ content }: { content: string }) {
     return (
       <div>
         <div>{fileParts[0]}</div>
-        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-blue-500/20 rounded text-xs text-blue-100">
+        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-primary/20 rounded text-xs text-primary">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-3.5 h-3.5"
@@ -1159,7 +1159,7 @@ function UserMessage({ content }: { content: string }) {
     return (
       <div>
         <div>{linkParts[0]}</div>
-        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-blue-500/20 rounded text-xs text-blue-100">
+        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-primary/20 rounded text-xs text-primary">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-3.5 h-3.5"
@@ -1261,7 +1261,7 @@ function FormattedMessage({ content }: { content: string }) {
       flushParagraph();
       elements.push(
         <div key={`b-${i}`} className="flex items-start gap-2 ml-1 mb-1">
-          <span className="text-blue-400 font-bold mt-0.5 text-xs">•</span>
+          <span className="text-primary font-bold mt-0.5 text-xs">•</span>
           <span>{bulletMatch[1]}</span>
         </div>
       );
@@ -1273,7 +1273,7 @@ function FormattedMessage({ content }: { content: string }) {
       flushParagraph();
       elements.push(
         <div key={`n-${i}`} className="flex items-start gap-2 ml-1 mb-1">
-          <span className="text-blue-500 font-semibold text-xs min-w-[1rem]">
+          <span className="text-primary font-semibold text-xs min-w-[1rem]">
             {numMatch[1]}.
           </span>
           <span>{numMatch[2]}</span>

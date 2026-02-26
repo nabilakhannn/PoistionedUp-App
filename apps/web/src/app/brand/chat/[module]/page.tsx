@@ -396,18 +396,18 @@ export default function BrandChatPage() {
   return (
     <main className="flex h-screen">
       {/* Left sidebar: Brand building stages */}
-      <div className="w-56 border-r border-zinc-800 bg-zinc-900 flex flex-col hidden md:flex">
+      <div className="w-56 border-r border-border bg-card flex flex-col hidden md:flex">
         <div className="px-4 pt-4 pb-2">
           <Link
             href="/brand"
-            className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+            className="text-xs text-primary hover:underline flex items-center gap-1"
           >
             <span>←</span> Brand Dashboard
           </Link>
-          <h2 className="text-sm font-bold text-zinc-200 mt-3 mb-1">
+          <h2 className="text-sm font-bold text-foreground mt-3 mb-1">
             Build Your Brand
           </h2>
-          <p className="text-xs text-zinc-500 leading-tight">
+          <p className="text-xs text-muted-foreground leading-tight">
             Complete each stage to define your personal brand
           </p>
         </div>
@@ -423,8 +423,8 @@ export default function BrandChatPage() {
                 href={stage.chatPath}
                 className={`block rounded-lg px-3 py-2.5 transition-all ${
                   isCurrent
-                    ? "bg-blue-600/20 border border-blue-500/30"
-                    : "hover:bg-zinc-800"
+                    ? "bg-primary/20 border border-primary/30"
+                    : "hover:bg-accent"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -432,10 +432,10 @@ export default function BrandChatPage() {
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                       isCurrent
-                        ? "bg-blue-600 text-white"
+                        ? "bg-primary text-primary-foreground"
                         : isPast
                         ? "bg-green-500 text-white"
-                        : "bg-zinc-700 text-zinc-400"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {isPast ? "✓" : i + 1}
@@ -443,12 +443,12 @@ export default function BrandChatPage() {
                   <div className="min-w-0">
                     <div
                       className={`text-sm font-medium truncate ${
-                        isCurrent ? "text-blue-400" : "text-zinc-300"
+                        isCurrent ? "text-primary" : "text-foreground"
                       }`}
                     >
                       {stage.label}
                     </div>
-                    <div className="text-xs text-zinc-500 truncate">
+                    <div className="text-xs text-muted-foreground truncate">
                       {stage.shortDesc}
                     </div>
                   </div>
@@ -459,17 +459,17 @@ export default function BrandChatPage() {
         </nav>
 
         {/* Stage legend */}
-        <div className="px-4 py-3 border-t border-zinc-800 text-xs text-zinc-500 space-y-1">
+        <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground space-y-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
             Completed
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-600 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-primary inline-block" />
             In progress
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-zinc-700 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-muted inline-block" />
             Not started
           </div>
         </div>
@@ -478,29 +478,29 @@ export default function BrandChatPage() {
       {/* Chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="border-b border-zinc-800 px-6 py-3 flex items-center justify-between bg-zinc-900">
+        <div className="border-b border-border px-6 py-3 flex items-center justify-between bg-card">
           <div className="flex items-center gap-3">
             {/* Mobile: stage indicator */}
-            <div className="md:hidden flex items-center gap-1.5 text-xs text-zinc-500">
-              <span className="font-medium text-zinc-300">
+            <div className="md:hidden flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">
                 Step {currentStageIndex + 1}/4
               </span>
               ·
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-zinc-100">{label}</h1>
-              <p className="text-xs text-zinc-500">
+              <h1 className="text-lg font-semibold text-card-foreground">{label}</h1>
+              <p className="text-xs text-muted-foreground">
                 Chat with AI to build your {label.toLowerCase()}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="text-sm text-zinc-400">
+            <div className="text-sm text-muted-foreground">
               {Math.round(progress * 100)}%
             </div>
             <button
               onClick={() => setShowExtracted(!showExtracted)}
-              className="px-3 py-1.5 border border-zinc-700 text-zinc-400 rounded-lg text-xs font-medium hover:bg-zinc-800 transition lg:hidden"
+              className="px-3 py-1.5 border border-border text-muted-foreground rounded-lg text-xs font-medium hover:bg-accent transition lg:hidden"
             >
               {showExtracted ? "Hide data" : "View data"}
             </button>
@@ -515,11 +515,11 @@ export default function BrandChatPage() {
         </div>
 
         {/* Chat switcher bar */}
-        <div className="border-b border-zinc-800 px-6 py-2 bg-zinc-900/50 flex items-center justify-between">
+        <div className="border-b border-border px-6 py-2 bg-card/50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowChatList(!showChatList)}
-              className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition"
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -529,7 +529,7 @@ export default function BrandChatPage() {
                 : "No chats yet"}
             </button>
             {chatId && (
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-muted-foreground">
                 · {chatList.find((c) => c.chat_id === chatId)?.title ||
                   `Chat ${chatList.findIndex((c) => c.chat_id === chatId) + 1 || ""}`}
               </span>
@@ -537,7 +537,7 @@ export default function BrandChatPage() {
           </div>
           <button
             onClick={handleNewChat}
-            className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 transition"
+            className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -548,15 +548,15 @@ export default function BrandChatPage() {
 
         {/* Chat list dropdown */}
         {showChatList && chatList.length > 0 && (
-          <div className="border-b border-zinc-800 bg-zinc-900 px-6 py-3 max-h-48 overflow-y-auto">
+          <div className="border-b border-border bg-card px-6 py-3 max-h-48 overflow-y-auto">
             <div className="space-y-1">
               {chatList.map((chat, idx) => (
                 <div
                   key={chat.chat_id}
                   className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm cursor-pointer transition ${
                     chat.chat_id === chatId
-                      ? "bg-blue-600/20 border border-blue-500/30"
-                      : "hover:bg-zinc-800"
+                      ? "bg-primary/20 border border-primary/30"
+                      : "hover:bg-accent"
                   }`}
                   onClick={() => handleSwitchChat(chat.chat_id)}
                 >
@@ -566,18 +566,18 @@ export default function BrandChatPage() {
                         chat.status === "active"
                           ? "bg-green-400"
                           : chat.status === "completed"
-                          ? "bg-blue-400"
-                          : "bg-zinc-600"
+                          ? "bg-primary"
+                          : "bg-muted-foreground"
                       }`}
                     />
-                    <span className="truncate text-zinc-300">
+                    <span className="truncate text-foreground">
                       {chat.title || `Chat ${chatList.length - idx}`}
                     </span>
-                    <span className="text-xs text-zinc-500 flex-shrink-0">
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
                       {chat.message_count} msg{chat.message_count !== 1 ? "s" : ""}
                     </span>
                     {chat.status === "completed" && (
-                      <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                      <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
                         saved
                       </span>
                     )}
@@ -587,7 +587,7 @@ export default function BrandChatPage() {
                       e.stopPropagation();
                       handleDeleteChat(chat.chat_id);
                     }}
-                    className="text-zinc-600 hover:text-red-400 transition ml-2 flex-shrink-0"
+                    className="text-muted-foreground hover:text-red-400 transition ml-2 flex-shrink-0"
                     title="Delete this chat"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -601,7 +601,7 @@ export default function BrandChatPage() {
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-zinc-950">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-background">
           {messages.map((msg, i) => (
             <div
               key={i}
@@ -612,8 +612,8 @@ export default function BrandChatPage() {
               <div
                 className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-blue-600 text-white rounded-br-md"
-                    : "bg-zinc-800 text-zinc-200 rounded-bl-md border border-zinc-700"
+                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    : "bg-accent text-foreground rounded-bl-md border border-border"
                 }`}
               >
                 {msg.role === "assistant" ? (
@@ -627,7 +627,7 @@ export default function BrandChatPage() {
 
           {sending && (
             <div className="flex justify-start">
-              <div className="bg-zinc-800 border border-zinc-700 px-4 py-3 rounded-2xl rounded-bl-md text-sm text-zinc-400">
+              <div className="bg-accent border border-border px-4 py-3 rounded-2xl rounded-bl-md text-sm text-muted-foreground">
                 <span className="inline-flex gap-1">
                   <span className="animate-bounce">·</span>
                   <span className="animate-bounce" style={{ animationDelay: "0.1s" }}>·</span>
@@ -647,33 +647,33 @@ export default function BrandChatPage() {
         )}
 
         {/* Input */}
-        <div className="border-t border-zinc-800 px-6 py-4 bg-zinc-900">
+        <div className="border-t border-border px-6 py-4 bg-card">
           {/* Attachment preview (file or link) */}
           {(attachedFile || attachedLink) && (
-            <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
+            <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg text-sm">
               {attachedLink ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
               )}
-              <span className="text-blue-300 truncate flex-1">{attachedLabel}</span>
+              <span className="text-primary truncate flex-1">{attachedLabel}</span>
               {attachSourceType && (
-                <span className="text-blue-400 text-xs flex-shrink-0 bg-blue-500/20 px-1.5 py-0.5 rounded">
+                <span className="text-primary text-xs flex-shrink-0 bg-primary/20 px-1.5 py-0.5 rounded">
                   {attachSourceType.replace(/_/g, " ")}
                 </span>
               )}
-              <span className="text-blue-400 text-xs flex-shrink-0">
+              <span className="text-primary text-xs flex-shrink-0">
                 {attachedText.length > 0
                   ? `${Math.round(attachedText.length / 1000)}k chars`
                   : "processing..."}
               </span>
               <button
                 onClick={removeAttachment}
-                className="text-blue-400 hover:text-red-500 transition flex-shrink-0"
+                className="text-primary hover:text-red-500 transition flex-shrink-0"
                 title="Remove attachment"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -683,8 +683,8 @@ export default function BrandChatPage() {
             </div>
           )}
           {attachUploading && (
-            <div className="flex items-center gap-2 mb-2 text-xs text-blue-500">
-              <span className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-2 mb-2 text-xs text-primary">
+              <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               {attachedLink ? "Extracting content from link..." : "Reading file..."}
             </div>
           )}
@@ -706,19 +706,19 @@ export default function BrandChatPage() {
                   }
                 }}
                 placeholder="Paste a URL (YouTube, website, Reddit, etc.)"
-                className="flex-1 border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-zinc-500"
+                className="flex-1 border border-border bg-accent text-card-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
                 autoFocus
               />
               <button
                 onClick={handleLinkSubmit}
                 disabled={!linkInputValue.trim()}
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
               >
                 Extract
               </button>
               <button
                 onClick={() => { setShowLinkInput(false); setLinkInputValue(""); }}
-                className="px-2 py-2 text-zinc-500 hover:text-zinc-300 transition"
+                className="px-2 py-2 text-muted-foreground hover:text-foreground transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -741,7 +741,7 @@ export default function BrandChatPage() {
               onClick={() => fileInputRef.current?.click()}
               disabled={attachUploading || sending}
               title="Attach a file or image"
-              className="self-end w-10 h-10 rounded-full flex items-center justify-center transition-all bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 disabled:opacity-50"
+              className="self-end w-10 h-10 rounded-full flex items-center justify-center transition-all bg-accent text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -754,8 +754,8 @@ export default function BrandChatPage() {
               title="Attach a link (YouTube, website, Reddit, etc.)"
               className={`self-end w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50 ${
                 showLinkInput
-                  ? "bg-blue-500/20 text-blue-400"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-accent text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -772,7 +772,7 @@ export default function BrandChatPage() {
                   : "Type your answer..."
               }
               rows={2}
-              className="flex-1 border border-zinc-700 bg-zinc-800 text-zinc-100 rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
+              className="flex-1 border border-border bg-accent text-card-foreground rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder:text-muted-foreground"
             />
             {/* Mic button */}
             {micSupported && (
@@ -782,7 +782,7 @@ export default function BrandChatPage() {
                 className={`self-end w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                   isListening
                     ? "bg-red-500 text-white animate-pulse"
-                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                    : "bg-accent text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
                 <svg
@@ -802,7 +802,7 @@ export default function BrandChatPage() {
             <button
               onClick={sendMessage}
               disabled={!input.trim() || sending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition self-end"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition self-end"
             >
               Send
             </button>
@@ -818,44 +818,44 @@ export default function BrandChatPage() {
 
       {/* Right sidebar: extracted data (desktop always, mobile toggle) */}
       <div
-        className={`w-72 border-l border-zinc-800 bg-zinc-900 overflow-y-auto ${
+        className={`w-72 border-l border-border bg-card overflow-y-auto ${
           showExtracted ? "block" : "hidden lg:block"
         }`}
       >
         <div className="px-4 py-4">
-          <h2 className="text-sm font-semibold text-zinc-200 mb-1">
+          <h2 className="text-sm font-semibold text-foreground mb-1">
             Extracted Profile Data
           </h2>
-          <p className="text-xs text-zinc-500 mb-3">
+          <p className="text-xs text-muted-foreground mb-3">
             Fields auto-fill as you chat
           </p>
 
           {/* Progress bar */}
-          <div className="w-full bg-zinc-800 rounded-full h-1.5 mb-4">
+          <div className="w-full bg-accent rounded-full h-1.5 mb-4">
             <div
-              className="bg-blue-600 h-1.5 rounded-full transition-all"
+              className="bg-primary h-1.5 rounded-full transition-all"
               style={{ width: `${progress * 100}%` }}
             />
           </div>
 
           {/* Extracted fields */}
           {Object.keys(extracted).length === 0 ? (
-            <p className="text-xs text-zinc-500 italic">
+            <p className="text-xs text-muted-foreground italic">
               Answer questions and your profile will build itself here.
             </p>
           ) : (
             <div className="space-y-3">
               {Object.entries(extracted).map(([key, value]) => (
                 <div key={key} className="text-sm">
-                  <div className="font-medium text-zinc-500 text-xs uppercase tracking-wide mb-0.5">
+                  <div className="font-medium text-muted-foreground text-xs uppercase tracking-wide mb-0.5">
                     {key.replace(/[._]/g, " ")}
                   </div>
-                  <div className="text-zinc-200 bg-zinc-800 rounded px-2 py-1.5 border border-zinc-700 text-xs leading-relaxed">
+                  <div className="text-foreground bg-accent rounded px-2 py-1.5 border border-border text-xs leading-relaxed">
                     {typeof value === "object"
                       ? Array.isArray(value)
                         ? value.map((v, i) => (
                             <div key={i} className="flex items-start gap-1">
-                              <span className="text-zinc-500">•</span>
+                              <span className="text-muted-foreground">•</span>
                               <span>{String(v)}</span>
                             </div>
                           ))
@@ -883,7 +883,7 @@ function UserMessage({ content }: { content: string }) {
     return (
       <div>
         <div>{fileParts[0]}</div>
-        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-blue-500/20 rounded text-xs text-blue-100">
+        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-primary/20 rounded text-xs text-primary-foreground">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
           </svg>
@@ -896,7 +896,7 @@ function UserMessage({ content }: { content: string }) {
     return (
       <div>
         <div>{linkParts[0]}</div>
-        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-blue-500/20 rounded text-xs text-blue-100">
+        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-primary/20 rounded text-xs text-primary-foreground">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
           </svg>
@@ -942,7 +942,7 @@ function FormattedMessage({ content }: { content: string }) {
       flushParagraph();
       elements.push(
         <div key={`b-${i}`} className="flex items-start gap-2 ml-1 mb-1">
-          <span className="text-blue-300 font-bold mt-0.5 text-xs">•</span>
+          <span className="text-primary font-bold mt-0.5 text-xs">•</span>
           <span>{bulletMatch[1]}</span>
         </div>
       );
@@ -955,7 +955,7 @@ function FormattedMessage({ content }: { content: string }) {
       flushParagraph();
       elements.push(
         <div key={`n-${i}`} className="flex items-start gap-2 ml-1 mb-1">
-          <span className="text-blue-400 font-semibold text-xs min-w-[1rem]">
+          <span className="text-primary font-semibold text-xs min-w-[1rem]">
             {numMatch[1]}.
           </span>
           <span>{numMatch[2]}</span>

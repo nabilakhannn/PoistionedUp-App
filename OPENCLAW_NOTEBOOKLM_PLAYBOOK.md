@@ -104,7 +104,7 @@ NotebookLM (The Brain)          OpenClaw (The Builder)
     "kind": "agentTurn",
     "message": "COMPETITOR SCAN TRIGGER. Create a competitor analysis task. Assign to trend-analyzer. Use NotebookLM for comparison. Priority P1."
   },
-  "agentId": "jarvis"
+  "agentId": "jumbo"
 }
 ```
 
@@ -303,7 +303,7 @@ project-root/
   |-- task_board.md        # Shared async state
   |-- openclaw.json        # Gateway configuration
   |-- agents/              # Per-agent workspaces
-  |   |-- jarvis/SOUL.md
+  |   |-- jumbo/SOUL.md
   |   |-- trend-analyzer/SOUL.md
   |   |-- copywriter/SOUL.md
   |   |-- visual-designer/SOUL.md

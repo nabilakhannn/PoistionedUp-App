@@ -33,6 +33,7 @@ logger = logging.getLogger("app.middleware.rate_limit")
 
 # (max_requests, window_seconds)
 TIER_LLM: Tuple[int, int] = (30, 60)        # 30 req/min for LLM-heavy endpoints
+TIER_ORCHESTRATOR: Tuple[int, int] = (5, 60) # 5 req/min for orchestrator (spawns multiple LLM pipelines)
 TIER_AGENT: Tuple[int, int] = (120, 60)      # 120 req/min for agent bridge
 TIER_WRITE: Tuple[int, int] = (60, 60)       # 60 req/min for write operations
 TIER_READ: Tuple[int, int] = (200, 60)       # 200 req/min for general reads
@@ -52,6 +53,17 @@ _ROUTE_TIERS: List[Tuple[str, Tuple[int, int]]] = [
     ("/brands/", TIER_LLM),   # research/run endpoints hit LLM
     ("/content-chat/", TIER_LLM),
     ("/workflows", TIER_LLM),
+
+    # Orchestrator (strictest LLM tier — spawns multiple pipelines per call)
+    ("/orchestrator/pulse", TIER_ORCHESTRATOR),
+    ("/orchestrator/trigger", TIER_ORCHESTRATOR),
+    ("/orchestrator/execute", TIER_ORCHESTRATOR),
+    ("/orchestrator/status", TIER_READ),
+    ("/orchestrator/schedules", TIER_READ),
+
+    # Gateway (message relay hits LLM on remote agent, reads are moderate)
+    ("/gateway/message", TIER_LLM),
+    ("/gateway/", TIER_WRITE),
 
     # Agent bridge (server-to-server)
     ("/agent-api/", TIER_AGENT),

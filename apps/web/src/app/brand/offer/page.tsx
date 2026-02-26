@@ -90,11 +90,11 @@ export default function OfferFormPage() {
     <main className="max-w-3xl mx-auto p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link href="/brand" className="text-sm text-blue-600 hover:underline">
+          <Link href="/brand" className="text-sm text-primary hover:underline">
             Back to Brand
           </Link>
           <h1 className="text-2xl font-bold mt-1">Your Offer</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Build an irresistible offer using the MAGIC Offer Framework +
             Hormozi&apos;s $100M Grand Slam Offer. Each section makes your
             offer stronger.
@@ -103,7 +103,7 @@ export default function OfferFormPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
         >
           {saving ? "Saving..." : saved ? "Saved" : "Save"}
         </button>
@@ -140,7 +140,7 @@ export default function OfferFormPage() {
 
       {/* Offer Type */}
       <Section title="Offer Type">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Which type best describes your offer?
         </p>
         <div className="grid grid-cols-3 gap-3">
@@ -150,12 +150,12 @@ export default function OfferFormPage() {
               onClick={() => update("offer_type", t.value)}
               className={`p-3 rounded-lg border text-left text-sm transition ${
                 offer.offer_type === t.value
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                  ? "border-primary bg-primary/15 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:border-border"
               }`}
             >
               <div className="font-medium">{t.label}</div>
-              <div className="text-xs text-gray-500 mt-1">{t.desc}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t.desc}</div>
             </button>
           ))}
         </div>
@@ -303,7 +303,7 @@ export default function OfferFormPage() {
 
       {/* Value Equation */}
       <Section title="Value Equation">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Value = (Dream Outcome x Perceived Likelihood) / (Time x Effort).
           Rate each factor for your offer.
         </p>
@@ -416,7 +416,7 @@ export default function OfferFormPage() {
           />
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
+              <label className="text-sm font-medium text-muted-foreground mb-1 block">
                 Guarantee type
               </label>
               <select
@@ -424,7 +424,7 @@ export default function OfferFormPage() {
                 onChange={(e) =>
                   update("grand_slam.enhancers.guarantee_type", e.target.value)
                 }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               >
                 <option value="">Select type...</option>
                 <option value="unconditional">
@@ -460,7 +460,7 @@ export default function OfferFormPage() {
 
       {/* Objections */}
       <Section title="Top Objections">
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           List the top 5 objections people have and how you respond to each.
         </p>
         <ObjectionList
@@ -595,7 +595,7 @@ export default function OfferFormPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
         >
           {saving ? "Saving..." : "Save"}
         </button>
@@ -615,7 +615,7 @@ function Section({
 }) {
   return (
     <div className="mb-8">
-      <h2 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">
+      <h2 className="text-lg font-semibold mb-4 pb-2 border-b border-border">
         {title}
       </h2>
       <div className="space-y-4">{children}</div>
@@ -624,18 +624,18 @@ function Section({
 }
 
 const MAGIC_COLORS: Record<string, string> = {
-  blue: "border-blue-500 bg-blue-50",
+  blue: "border-primary bg-primary/15",
   green: "border-green-500 bg-green-50",
   yellow: "border-yellow-500 bg-yellow-50",
-  purple: "border-purple-500 bg-purple-50",
+  purple: "border-chart-2 bg-chart-2/15",
   red: "border-red-500 bg-red-50",
 };
 
 const MAGIC_BADGE_COLORS: Record<string, string> = {
-  blue: "bg-blue-600",
+  blue: "bg-primary",
   green: "bg-green-600",
   yellow: "bg-yellow-600",
-  purple: "bg-purple-600",
+  purple: "bg-chart-2",
   red: "bg-red-600",
 };
 
@@ -654,7 +654,7 @@ function MagicSection({
     <div className={`mb-8 rounded-lg border-l-4 p-5 ${MAGIC_COLORS[color] || ""}`}>
       <div className="flex items-center gap-3 mb-4">
         <span
-          className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${MAGIC_BADGE_COLORS[color] || "bg-gray-600"}`}
+          className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${MAGIC_BADGE_COLORS[color] || "bg-muted"}`}
         >
           {letter}
         </span>
@@ -679,11 +679,11 @@ function Field({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
         {onSuggest && (
           <button
             onClick={onSuggest}
-            className="text-xs text-blue-600 hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             AI Suggest
           </button>
@@ -693,7 +693,7 @@ function Field({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
       />
     </div>
   );
@@ -715,22 +715,22 @@ function TextArea({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
         {onSuggest && (
           <button
             onClick={onSuggest}
-            className="text-xs text-blue-600 hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             AI Suggest
           </button>
         )}
       </div>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground mb-1">{hint}</p>}
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
       />
     </div>
   );
@@ -770,7 +770,7 @@ function ListField({
 
   return (
     <div>
-      <label className="text-sm font-medium text-gray-700 mb-1 block">
+      <label className="text-sm font-medium text-muted-foreground mb-1 block">
         {label}
       </label>
       {items.length > 0 && (
@@ -778,12 +778,12 @@ function ListField({
           {items.map((item, i) => (
             <li
               key={i}
-              className="flex items-start gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              className="flex items-start gap-2 bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               <span className="flex-1">{item}</span>
               <button
                 onClick={() => remove(i)}
-                className="text-gray-400 hover:text-red-500 text-xs mt-0.5"
+                className="text-muted-foreground hover:text-red-500 text-xs mt-0.5"
               >
                 remove
               </button>
@@ -798,12 +798,12 @@ function ListField({
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
         />
         <button
           onClick={add}
           disabled={!draft.trim()}
-          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 transition"
+          className="px-3 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-accent disabled:opacity-50 transition"
         >
           Add
         </button>
@@ -860,10 +860,10 @@ function ProblemSolutionList({
 
   return (
     <div>
-      <label className="text-sm font-medium text-gray-700 mb-1 block">
+      <label className="text-sm font-medium text-muted-foreground mb-1 block">
         Problems &rarr; Solutions &rarr; Delivery &rarr; Sexy Name
       </label>
-      <p className="text-xs text-gray-400 mb-2">
+      <p className="text-xs text-muted-foreground mb-2">
         List every problem your prospect faces. For each, create a solution and
         give it a compelling name (e.g. &quot;The Never-Fall-Off Accountability
         System&quot;).
@@ -873,7 +873,7 @@ function ProblemSolutionList({
           {items.map((item, i) => (
             <div
               key={i}
-              className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm"
+              className="bg-card border border-border rounded-lg px-4 py-3 text-sm"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-1">
@@ -888,7 +888,7 @@ function ProblemSolutionList({
                     {item.solution}
                   </div>
                   {item.delivery_vehicle && (
-                    <div className="text-gray-500">
+                    <div className="text-muted-foreground">
                       Delivery: {item.delivery_vehicle}
                     </div>
                   )}
@@ -900,7 +900,7 @@ function ProblemSolutionList({
                 </div>
                 <button
                   onClick={() => remove(i)}
-                  className="text-gray-400 hover:text-red-500 text-xs ml-3"
+                  className="text-muted-foreground hover:text-red-500 text-xs ml-3"
                 >
                   remove
                 </button>
@@ -909,26 +909,26 @@ function ProblemSolutionList({
           ))}
         </div>
       )}
-      <div className="space-y-2 bg-white border border-gray-200 rounded-lg p-3">
+      <div className="space-y-2 bg-card border border-border rounded-lg p-3">
         <input
           type="text"
           value={draftProblem}
           onChange={(e) => setDraftProblem(e.target.value)}
           placeholder="Problem: e.g. 'Don't know what to post on LinkedIn'"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
         />
         <input
           type="text"
           value={draftSolution}
           onChange={(e) => setDraftSolution(e.target.value)}
           placeholder="Solution: e.g. 'Content strategy with pillar system + idea bank'"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
         />
         <div className="grid grid-cols-2 gap-2">
           <select
             value={draftVehicle}
             onChange={(e) => setDraftVehicle(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
           >
             <option value="">Delivery method...</option>
             <option value="1:1">1:1 (Done for you)</option>
@@ -943,7 +943,7 @@ function ProblemSolutionList({
             value={draftName}
             onChange={(e) => setDraftName(e.target.value)}
             placeholder="Sexy name: e.g. 'The Viral Content Blueprint'"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
           />
         </div>
         <button
@@ -990,18 +990,18 @@ function ObjectionList({
           {items.map((item, i) => (
             <div
               key={i}
-              className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm"
+              className="bg-card border border-border rounded-lg px-4 py-3 text-sm"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="font-medium text-red-600 mb-1">
                     &ldquo;{item.objection}&rdquo;
                   </div>
-                  <div className="text-gray-700">{item.response}</div>
+                  <div className="text-foreground">{item.response}</div>
                 </div>
                 <button
                   onClick={() => remove(i)}
-                  className="text-gray-400 hover:text-red-500 text-xs ml-3"
+                  className="text-muted-foreground hover:text-red-500 text-xs ml-3"
                 >
                   remove
                 </button>
@@ -1016,19 +1016,19 @@ function ObjectionList({
           value={draftObjection}
           onChange={(e) => setDraftObjection(e.target.value)}
           placeholder="Objection: e.g. 'It's too expensive'"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
         />
         <input
           type="text"
           value={draftResponse}
           onChange={(e) => setDraftResponse(e.target.value)}
           placeholder="Your response: e.g. 'Compare to a full-time hire at $6K/month'"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
         />
         <button
           onClick={add}
           disabled={!draftObjection.trim() || !draftResponse.trim()}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 transition"
+          className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-accent disabled:opacity-50 transition"
         >
           Add Objection
         </button>

@@ -38,7 +38,7 @@ function fmtDate(dateStr: string): string {
 function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="h-5 w-full bg-zinc-800 rounded-sm overflow-hidden">
+    <div className="h-5 w-full bg-accent rounded-sm overflow-hidden">
       <div className={`h-full ${color} rounded-sm transition-all duration-500`} style={{ width: `${pct}%` }} />
     </div>
   );
@@ -144,10 +144,10 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-zinc-400">Loading analytics...</p>
+          <p className="text-sm text-muted-foreground">Loading analytics...</p>
         </div>
       </div>
     );
@@ -155,12 +155,12 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-sm">
           <div className="text-4xl mb-3">⚠️</div>
-          <h2 className="text-lg font-semibold text-zinc-200 mb-2">Load Error</h2>
-          <p className="text-sm text-zinc-400 mb-4">{error}</p>
-          <button onClick={loadData} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition">
+          <h2 className="text-lg font-semibold text-foreground mb-2">Load Error</h2>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <button onClick={loadData} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition">
             Retry
           </button>
         </div>
@@ -169,12 +169,12 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="h-14 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-5">
+      <div className="h-14 border-b border-border bg-card flex items-center justify-between px-5">
         <div className="flex items-center gap-2">
           <span className="text-amber-400 text-lg">◇</span>
-          <h1 className="text-sm font-bold text-zinc-200 tracking-wider uppercase">Agent Analytics</h1>
+          <h1 className="text-sm font-bold text-foreground tracking-wider uppercase">Agent Analytics</h1>
         </div>
         <div className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -183,15 +183,21 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Sub-navigation */}
-      <div className="h-10 border-b border-zinc-800 bg-zinc-900/50 flex items-center px-5 gap-1">
-        <Link href="/mission-control" className="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition">
+      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1">
+        <Link href="/mission-control" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
           Dashboard
         </Link>
-        <Link href="/mission-control/analytics" className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600/15 text-blue-400 border border-blue-500/20">
+        <Link href="/mission-control/analytics" className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/15 text-primary border border-primary/20">
           Analytics
         </Link>
-        <Link href="/mission-control/orchestrator" className="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition">
+        <Link href="/mission-control/orchestrator" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
           Orchestrator
+        </Link>
+        <Link href="/mission-control/gateway" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
+          Gateway
+        </Link>
+        <Link href="/mission-control/chat" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
+          Chat
         </Link>
       </div>
 
@@ -201,32 +207,32 @@ export default function AnalyticsPage() {
           <SummaryCard label="Total Agents" value={stats?.agents_total ?? 0} icon="🤖" />
           <SummaryCard label="Total Tasks" value={stats?.tasks_total ?? 0} icon="📋" />
           <SummaryCard label="Completed Today" value={stats?.tasks_completed_today ?? 0} icon="✅" accent="text-green-400" />
-          <SummaryCard label="Messages Today" value={stats?.messages_today ?? 0} icon="💬" accent="text-blue-400" />
+          <SummaryCard label="Messages Today" value={stats?.messages_today ?? 0} icon="💬" accent="text-primary" />
         </div>
 
         {/* ── Agent performance table ─────────────────────── */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
-            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+        <section className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               Agent Performance
             </h2>
-            <span className="text-[10px] text-zinc-600 font-mono">{agents.length} agents</span>
+            <span className="text-[10px] text-muted-foreground font-mono">{agents.length} agents</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="text-left px-5 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider">Agent</th>
-                  <th className="text-left px-3 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider">Status</th>
-                  <th className="text-center px-3 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider">Tasks</th>
-                  <th className="text-center px-3 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider">Completed</th>
-                  <th className="text-center px-3 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider">Active</th>
-                  <th className="text-center px-3 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider">Completion %</th>
-                  <th className="text-center px-3 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider">Avg Time</th>
-                  <th className="text-center px-3 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider">Messages</th>
-                  <th className="text-left px-3 py-2.5 text-zinc-500 font-semibold uppercase tracking-wider w-32">Task Load</th>
+                <tr className="border-b border-border">
+                  <th className="text-left px-5 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Agent</th>
+                  <th className="text-left px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Status</th>
+                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Tasks</th>
+                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Completed</th>
+                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Active</th>
+                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Completion %</th>
+                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Avg Time</th>
+                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Messages</th>
+                  <th className="text-left px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider w-32">Task Load</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,18 +240,18 @@ export default function AnalyticsPage() {
                   const statusStyle = STATUS_COLORS[m.agent.status] || STATUS_COLORS.idle;
                   const roleStyle = ROLE_TYPE_BADGES[m.agent.role_type] || ROLE_TYPE_BADGES.specialist;
                   return (
-                    <tr key={m.agent.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition">
+                    <tr key={m.agent.id} className="border-b border-border/50 hover:bg-accent/30 transition">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2.5">
                           <span className="text-lg">{m.agent.avatar_emoji}</span>
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-medium text-zinc-200">{m.agent.name}</span>
+                              <span className="font-medium text-foreground">{m.agent.name}</span>
                               <span className={`text-[8px] px-1 py-0.5 rounded border font-bold ${roleStyle.color}`}>
                                 {roleStyle.label}
                               </span>
                             </div>
-                            <span className="text-[10px] text-zinc-500">{m.agent.role}</span>
+                            <span className="text-[10px] text-muted-foreground">{m.agent.role}</span>
                           </div>
                         </div>
                       </td>
@@ -255,28 +261,28 @@ export default function AnalyticsPage() {
                           {statusStyle.label}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-center text-zinc-200 font-mono">{m.totalTasks}</td>
+                      <td className="px-3 py-3 text-center text-foreground font-mono">{m.totalTasks}</td>
                       <td className="px-3 py-3 text-center text-green-400 font-mono">{m.completed}</td>
-                      <td className="px-3 py-3 text-center text-blue-400 font-mono">{m.active}</td>
+                      <td className="px-3 py-3 text-center text-primary font-mono">{m.active}</td>
                       <td className="px-3 py-3 text-center">
                         <span className={`font-mono font-bold ${
                           m.completionRate >= 80 ? "text-green-400" :
                           m.completionRate >= 50 ? "text-amber-400" :
-                          "text-zinc-500"
+                          "text-muted-foreground"
                         }`}>
                           {m.completionRate.toFixed(0)}%
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-center text-zinc-300 font-mono">
+                      <td className="px-3 py-3 text-center text-foreground font-mono">
                         {m.avgCompletionHours > 0
                           ? m.avgCompletionHours < 1
                             ? `${Math.round(m.avgCompletionHours * 60)}m`
                             : `${m.avgCompletionHours.toFixed(1)}h`
                           : "—"}
                       </td>
-                      <td className="px-3 py-3 text-center text-zinc-300 font-mono">{m.messageCount}</td>
+                      <td className="px-3 py-3 text-center text-foreground font-mono">{m.messageCount}</td>
                       <td className="px-3 py-3">
-                        <MiniBar value={m.totalTasks} max={maxTasks} color="bg-blue-500" />
+                        <MiniBar value={m.totalTasks} max={maxTasks} color="bg-primary" />
                       </td>
                     </tr>
                   );
@@ -289,18 +295,18 @@ export default function AnalyticsPage() {
         {/* ── Two-column layout: Task Breakdown + Message Types ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Task Status Breakdown */}
-          <section className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-zinc-800">
-              <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+          <section className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-border">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                 Task Status Breakdown
               </h2>
             </div>
             <div className="p-5 space-y-3">
               {[
-                { key: "backlog", label: "Inbox / Backlog", color: "bg-zinc-500" },
+                { key: "backlog", label: "Inbox / Backlog", color: "bg-muted-foreground" },
                 { key: "assigned", label: "Assigned", color: "bg-amber-500" },
-                { key: "in_progress", label: "In Progress", color: "bg-blue-500" },
+                { key: "in_progress", label: "In Progress", color: "bg-primary" },
                 { key: "review", label: "Review", color: "bg-purple-500" },
                 { key: "ready", label: "Ready", color: "bg-emerald-500" },
                 { key: "done", label: "Done", color: "bg-green-500" },
@@ -309,11 +315,11 @@ export default function AnalyticsPage() {
                 return (
                   <div key={s.key} className="flex items-center gap-3">
                     <span className={`w-2 h-2 rounded-full ${s.color} flex-shrink-0`} />
-                    <span className="text-xs text-zinc-400 w-24 flex-shrink-0">{s.label}</span>
+                    <span className="text-xs text-muted-foreground w-24 flex-shrink-0">{s.label}</span>
                     <div className="flex-1">
                       <MiniBar value={count} max={Math.max(tasks.length, 1)} color={s.color} />
                     </div>
-                    <span className="text-xs text-zinc-300 font-mono w-8 text-right">{count}</span>
+                    <span className="text-xs text-foreground font-mono w-8 text-right">{count}</span>
                   </div>
                 );
               })}
@@ -321,16 +327,16 @@ export default function AnalyticsPage() {
           </section>
 
           {/* Message Types Breakdown */}
-          <section className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-zinc-800">
-              <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+          <section className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-border">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-chart-2" />
                 Communication Breakdown
               </h2>
             </div>
             <div className="p-5 space-y-3">
               {[
-                { key: "chat", label: "Chat", icon: "💬", color: "bg-blue-500" },
+                { key: "chat", label: "Chat", icon: "💬", color: "bg-primary" },
                 { key: "delegation", label: "Delegations", icon: "📋", color: "bg-amber-500" },
                 { key: "status", label: "Status Updates", icon: "📡", color: "bg-green-500" },
                 { key: "deliverable", label: "Deliverables", icon: "📦", color: "bg-purple-500" },
@@ -341,11 +347,11 @@ export default function AnalyticsPage() {
                 return (
                   <div key={mt.key} className="flex items-center gap-3">
                     <span className="text-sm flex-shrink-0">{mt.icon}</span>
-                    <span className="text-xs text-zinc-400 w-24 flex-shrink-0">{mt.label}</span>
+                    <span className="text-xs text-muted-foreground w-24 flex-shrink-0">{mt.label}</span>
                     <div className="flex-1">
                       <MiniBar value={count} max={Math.max(messages.length, 1)} color={mt.color} />
                     </div>
-                    <span className="text-xs text-zinc-300 font-mono w-8 text-right">{count}</span>
+                    <span className="text-xs text-foreground font-mono w-8 text-right">{count}</span>
                   </div>
                 );
               })}
@@ -354,9 +360,9 @@ export default function AnalyticsPage() {
         </div>
 
         {/* ── Agent activity heatmap (messages per agent) ── */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-zinc-800">
-            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+        <section className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
               Agent Communication Matrix
             </h2>
@@ -365,19 +371,19 @@ export default function AnalyticsPage() {
             <table className="text-xs">
               <thead>
                 <tr>
-                  <th className="px-2 py-1.5 text-zinc-500 font-semibold text-left">From \ To</th>
+                  <th className="px-2 py-1.5 text-muted-foreground font-semibold text-left">From \ To</th>
                   {agents.map((a) => (
-                    <th key={a.id} className="px-2 py-1.5 text-zinc-500 font-semibold text-center whitespace-nowrap">
+                    <th key={a.id} className="px-2 py-1.5 text-muted-foreground font-semibold text-center whitespace-nowrap">
                       {a.avatar_emoji} {a.name.slice(0, 6)}
                     </th>
                   ))}
-                  <th className="px-2 py-1.5 text-zinc-500 font-semibold text-center">📢 All</th>
+                  <th className="px-2 py-1.5 text-muted-foreground font-semibold text-center">📢 All</th>
                 </tr>
               </thead>
               <tbody>
                 {agents.map((fromAgent) => (
-                  <tr key={fromAgent.id} className="border-t border-zinc-800/30">
-                    <td className="px-2 py-1.5 text-zinc-300 font-medium whitespace-nowrap">
+                  <tr key={fromAgent.id} className="border-t border-border/30">
+                    <td className="px-2 py-1.5 text-foreground font-medium whitespace-nowrap">
                       {fromAgent.avatar_emoji} {fromAgent.name}
                     </td>
                     {agents.map((toAgent) => {
@@ -388,14 +394,14 @@ export default function AnalyticsPage() {
                         <td key={toAgent.id} className="px-2 py-1.5 text-center">
                           {count > 0 ? (
                             <span className={`inline-flex items-center justify-center w-7 h-6 rounded text-[10px] font-bold ${
-                              count >= 10 ? "bg-blue-500/30 text-blue-300" :
-                              count >= 5 ? "bg-blue-500/20 text-blue-400" :
-                              "bg-zinc-800 text-zinc-400"
+                              count >= 10 ? "bg-primary/30 text-primary" :
+                              count >= 5 ? "bg-primary/20 text-primary" :
+                              "bg-accent text-muted-foreground"
                             }`}>
                               {count}
                             </span>
                           ) : (
-                            <span className="text-zinc-700">·</span>
+                            <span className="text-muted-foreground/50">·</span>
                           )}
                         </td>
                       );
@@ -410,7 +416,7 @@ export default function AnalyticsPage() {
                             {bc}
                           </span>
                         ) : (
-                          <span className="text-zinc-700">·</span>
+                          <span className="text-muted-foreground/50">·</span>
                         );
                       })()}
                     </td>
@@ -422,14 +428,14 @@ export default function AnalyticsPage() {
         </section>
 
         {/* ── Recent completed tasks ──────────────────────── */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-zinc-800">
-            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+        <section className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
               Recently Completed Tasks
             </h2>
           </div>
-          <div className="divide-y divide-zinc-800/50">
+          <div className="divide-y divide-border/50">
             {tasks
               .filter((t) => t.status === "done" && t.completed_at)
               .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime())
@@ -437,18 +443,18 @@ export default function AnalyticsPage() {
               .map((t) => {
                 const assignee = agents.find((a) => a.id === t.assignee_id);
                 return (
-                  <div key={t.id} className="px-5 py-3 flex items-center gap-3 hover:bg-zinc-800/20 transition">
+                  <div key={t.id} className="px-5 py-3 flex items-center gap-3 hover:bg-accent/20 transition">
                     <span className="text-sm">{assignee?.avatar_emoji || "❓"}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-zinc-200 truncate">{t.title}</p>
-                      <p className="text-[10px] text-zinc-500">
+                      <p className="text-xs font-medium text-foreground truncate">{t.title}</p>
+                      <p className="text-[10px] text-muted-foreground">
                         {assignee?.name || "Unassigned"} · Completed {timeAgo(t.completed_at!)}
                       </p>
                     </div>
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                       t.priority === "P0" ? "bg-red-500/20 text-red-400" :
                       t.priority === "P1" ? "bg-amber-500/20 text-amber-400" :
-                      "bg-zinc-700/50 text-zinc-500"
+                      "bg-muted text-muted-foreground"
                     }`}>
                       {t.priority}
                     </span>
@@ -456,7 +462,7 @@ export default function AnalyticsPage() {
                 );
               })}
             {tasks.filter((t) => t.status === "done").length === 0 && (
-              <div className="px-5 py-8 text-center text-xs text-zinc-600">
+              <div className="px-5 py-8 text-center text-xs text-muted-foreground">
                 No completed tasks yet. Tasks will appear here as agents finish their work.
               </div>
             )}
@@ -481,12 +487,12 @@ function SummaryCard({
   accent?: string;
 }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3">
+    <div className="bg-card border border-border rounded-xl px-4 py-3">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">{label}</span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{label}</span>
         <span className="text-sm">{icon}</span>
       </div>
-      <div className={`text-2xl font-bold ${accent || "text-zinc-100"} font-mono`}>{value}</div>
+      <div className={`text-2xl font-bold ${accent || "text-card-foreground"} font-mono`}>{value}</div>
     </div>
   );
 }

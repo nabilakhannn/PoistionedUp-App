@@ -1,7 +1,7 @@
 # Agent Bridge Playbook: How OpenClaw Agents Use the PositionedUp Brain
 
 > This is the complete reference for how agents connect to and use the PositionedUp app.
-> Jarvis is the ONLY agent with direct API access. All other agents receive context through task briefs.
+> Jumbo is the ONLY agent with direct API access. All other agents receive context through task briefs.
 
 ---
 
@@ -32,7 +32,7 @@
 │                    OpenClaw Agent System (VPS)                    │
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    JARVIS (Orchestrator)                   │   │
+│  │                    JUMBO (Orchestrator)                   │   │
 │  │  - Queries the Brain before every task                    │   │
 │  │  - Includes Brain context in all task briefs              │   │
 │  │  - Reports findings back to the Brain                     │   │
@@ -86,7 +86,7 @@ Auth: X-Agent-Key header (stored in AGENT_API_KEY env var)
 
 ## The Brain Has 10 Data Sources
 
-When Jarvis calls /context/{brand_id}, it gets ALL of these in one response:
+When Jumbo calls /context/{brand_id}, it gets ALL of these in one response:
 
 ### 1. Brand Profile (8 Modules)
 What it is: The brand's complete identity, built through guided AI coaching.
@@ -130,7 +130,7 @@ What agents use it for: Follow these EXACTLY. They apply to all generated conten
 
 ### 10. Content Pipeline
 What it is: An 8-node AI pipeline (research, gaps, topics, hooks, script, edit, test, approve).
-What agents use it for: Jarvis can trigger this instead of manually decomposing a content task. The pipeline automatically does research, generates hooks, writes the script, and presents it for human approval.
+What agents use it for: Jumbo can trigger this instead of manually decomposing a content task. The pipeline automatically does research, generates hooks, writes the script, and presents it for human approval.
 
 ---
 
@@ -139,7 +139,7 @@ What agents use it for: Jarvis can trigger this instead of manually decomposing 
 ### Example 1: Human says "Write a LinkedIn post about hook formulas"
 
 ```
-Jarvis:
+Jumbo:
   1. GET /active-brand -> brand_id = "abc123"
   2. GET /context/abc123 -> gets full brain dump
   3. POST /knowledge/search { query: "hook formulas", brand_id: "abc123" }
@@ -161,7 +161,7 @@ Jarvis:
 ### Example 2: Weekly research cycle
 
 ```
-Jarvis:
+Jumbo:
   1. GET /context/{brand_id} -> checks performance data
   2. Sees that "storytelling" content pillar is underperforming
   3. Creates research task: "Find new storytelling angles for [audience].
@@ -175,7 +175,7 @@ Jarvis:
 ### Example 3: Agent triggers the content pipeline
 
 ```
-Jarvis:
+Jumbo:
   1. Human says: "Create a YouTube script about customer retention"
   2. POST /pipeline/trigger {
        brand_id: "abc123",
@@ -188,14 +188,14 @@ Jarvis:
      }
   3. Pipeline runs automatically (8 nodes)
   4. Human approves via PositionedUp web app
-  5. Jarvis gets notified, creates distribution task
+  5. Jumbo gets notified, creates distribution task
 ```
 
 ---
 
 ## Security Rules for Brain Access
 
-- Only Jarvis has the API key. No other agent should ever see or use it.
+- Only Jumbo has the API key. No other agent should ever see or use it.
 - The API key is stored as an environment variable, never in files.
 - Never log the API key in task descriptions, reports, or messages.
 - All Brain data is private to the user. Never share it outside the workspace.
@@ -209,7 +209,7 @@ Jarvis:
 - [ ] AGENT_API_KEY set in the environment where agents run
 - [ ] API base URL configured: https://api-iota-puce.vercel.app/agent-api
 - [ ] At least one brand profile created in PositionedUp with >= 50% completeness
-- [ ] Jarvis's SOUL.md has the full API reference section
+- [ ] Jumbo's SOUL.md has the full API reference section
 - [ ] All specialist SOUL.md files have the "Using the Brain" sections
 - [ ] Mission Control database tables created (migration 021)
 - [ ] Agents seeded in openclaw_agents table

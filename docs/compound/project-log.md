@@ -3367,3 +3367,306 @@ The core problem: Docker container could not reach external internet.
 | Port 18789 not protected by Docker network isolation | UFW blocks port 18789 from external access, only SSH tunnel can reach it |
 | Container crash leaves port stuck | Quick fix: `fuser -k 18789/tcp`, documented in troubleshooting |
 | `.env` secrets on VPS | File permissions restricted, never committed to git |
+
+---
+
+## Slice 66: OpenClaw Agent Squad — Rename Jarvis → Jumbo + Dynamic Agent Creation + NotebookLM MCP
+
+**Date:** 2026-02-25
+
+### Requirements
+
+1. Rename all "Jarvis" references to "Jumbo" across the entire codebase (agents, backend, frontend, docs, analytics, deploy)
+2. Add dynamic agent creation capability to Jumbo (orchestrator can spawn new specialist agents at runtime)
+3. Wire NotebookLM MCP server into OpenClaw configuration and Docker image
+4. Update deployment files for the new agent identity
+
+### Changes
+
+| File | Change |
+|------|--------|
+| `agents/jarvis/` → `agents/jumbo/` | Directory renamed |
+| `openclaw.json` | Agent id/name/workspace → "jumbo", 3 cron agentIds → "jumbo", added MCP config, `"*"` in allowAgents, optional env vars |
+| `SOUL.md` | All "Jarvis" → "Jumbo" in hierarchy and brain connection |
+| `HEARTBEAT.md` | Delegation rule → "Jumbo (Orchestrator)" |
+| `task_board.md` | Brain injection note → "Jumbo" |
+| `AGENT_BRIDGE_PLAYBOOK.md` | All Jarvis/JARVIS → Jumbo/JUMBO (diagrams, workflows, security, setup) |
+| `OPENCLAW_NOTEBOOKLM_PLAYBOOK.md` | agentId + file paths → "jumbo" |
+| `agents/jumbo/SOUL.md` | Title, identity, API examples + added DYNAMIC AGENT CREATION section with specialist template |
+| `agents/trend-analyzer/SOUL.md` | All Jarvis refs → Jumbo |
+| `agents/copywriter/SOUL.md` | All Jarvis refs → Jumbo |
+| `agents/visual-designer/SOUL.md` | All Jarvis refs → Jumbo |
+| `agents/distributor/SOUL.md` | All Jarvis refs → Jumbo |
+| `agents/analytics/SOUL.md` | All Jarvis refs → Jumbo |
+| `apps/api/app/services/agent_orchestrator.py` | `from_agent_id`/`to_agent_id` → "jumbo" |
+| `apps/api/app/routers/mission_control.py` | DEFAULT_AGENTS[0] → jumbo (id, name, about, workspace, skills + "agent-creation") |
+| `apps/web/src/app/mission-control/orchestrator/page.tsx` | All `jarvis` vars → `jumbo`, fallback names |
+| `analytics/__init__.py`, `tracker.py`, `cli.py`, `client.py` | Defaults and examples → "jumbo" |
+| `deploy/Dockerfile` | Added `notebooklm-mcp@latest` install + COPY playbook |
+| `deploy/env.example` | Updated comments + NotebookLM MCP section |
+
+### Verification
+
+- `python3 -m pytest tests/ -v`: **30 passed, 0 failed** (0.26s)
+- `tsc --noEmit`: **0 errors**
+- Python module imports (8 modules): All pass
+- Grep for remaining "jarvis" in agents/ and backend code: 0 results
+
+### Risks
+
+| Risk | Mitigation |
+|------|-----------|
+| Missed Jarvis reference breaks runtime | Comprehensive grep found all 60+ references; tests pass |
+| Dynamic agent creation spawns too many agents | Capped at 8 total, human confirmation required for permanent roles |
+| NotebookLM MCP token optional | Gracefully degraded — agents work without it, just no NotebookLM research |
+
+### Patterns
+
+- **Cross-codebase rename**: Discover all references first (grep), categorize by file type, use `replace_all` for docs, targeted edits for code, verify with tests
+- **Dynamic agent creation**: Orchestrator writes SOUL.md → spawns via sessions_spawn → registers in task board → human notified. New agents inherit root SOUL security, no direct API access
+- **MCP server integration**: Declare in openclaw.json `mcp.servers`, install package in Dockerfile, document token in env.example
+
+See full details: `docs/compound/patterns/slice-66-openclaw-rename-agents.md`
+
+---
+
+## Slice 67 — VPS Deployment + Security Hardening
+
+**Date:** 2026-02-25
+
+### Requirements
+
+Deploy OpenClaw agent runtime to Hostinger VPS with production-grade security. Full security audit of codebase.
+
+### Changes
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `deploy/setup-vps.sh` | Enhanced | 9-step setup with SSH hardening, auto .env generation |
+| `deploy/docker-compose.yml` | Enhanced | Caddy HTTPS, Watchtower, loopback-only gateway port |
+| `deploy/Caddyfile` | Created | HTTPS reverse proxy with Let's Encrypt TLS + security headers |
+| `deploy/verify-deployment.sh` | Created | 11-check E2E deployment verification |
+| `deploy/telegram-setup.sh` | Created | Interactive Telegram bot setup + verification |
+| `apps/api/app/config.py` | Fixed | Added production CORS origins |
+| `apps/api/app/routers/agent_bridge.py` | Fixed | Timing-safe API key comparison |
+| `apps/api/app/auth.py` | Fixed | Structured logging for auth failures |
+| `apps/api/app/utils/url_validation.py` | Created | Shared SSRF protection utility |
+| `apps/api/app/routers/resources.py` | Fixed | SSRF protection on URL extraction |
+
+### Verification
+
+- 826/826 Python tests passing
+- 0 TypeScript errors
+- Security audit: 2 CRITICAL (rotated), 4 HIGH (fixed), 5 MEDIUM (documented), 5 LOW (ok)
+
+### Risks & Mitigations
+
+| Risk | Mitigation |
+|------|-----------|
+| In-memory rate limiter in multi-process | Documented for Redis upgrade before scaling |
+| X-Forwarded-For spoofing | Documented for trusted proxy configuration |
+| .env contains real keys | .gitignore excludes .env; keys should be rotated |
+
+See full details: `docs/compound/patterns/slice-67-vps-deployment-security.md`
+
+---
+
+## Slice 68 — LinkedIn Composer with Live Preview
+
+**Date:** 2026-02-25
+
+### Requirements
+
+Dedicated post composer inspired by Raycaster (from example agent screenshots). Rich editor + live LinkedIn preview + AI generation + save/queue/schedule.
+
+### Changes
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `apps/web/src/app/composer/page.tsx` | Created | Full composer: editor + LinkedIn preview + modals |
+| `apps/web/src/lib/api/composer.ts` | Created | API client with LinkedIn formatting utilities |
+| `apps/web/src/lib/api/index.ts` | Updated | Re-export composer module |
+| `apps/web/src/app/nav-bar.tsx` | Updated | Added Composer to sidebar navigation |
+
+### Verification
+
+- 826/826 Python tests passing
+- 0 TypeScript errors
+- Composer page at `/composer` with live mobile/desktop preview
+
+### Patterns
+
+- **No new backend endpoints**: Composer wraps existing schedule + content-chat APIs
+- **Platform-aware UI**: PLATFORM_CONFIG drives char limits, colors, tips per platform
+- **Unicode bold**: LinkedIn doesn't support markdown; convert **bold** to Unicode math bold chars
+
+See full details: `docs/compound/patterns/slice-68-linkedin-composer.md`
+
+## Slice 69 — OpenClaw Gateway Bridge + Deployment Health Dashboard
+
+**Date:** 2026-02-26
+
+### Requirements
+
+Connect Vercel-hosted API to the Hostinger VPS-hosted OpenClaw gateway. Build a deployment health dashboard in Mission Control to verify gateway connectivity, agent status, and deployment readiness.
+
+### Changes
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `apps/api/app/services/gateway_client.py` | Created | HTTP client for OpenClaw gateway (health, agents, sessions, messages) |
+| `apps/api/app/routers/gateway.py` | Created | 5 proxy endpoints at `/gateway/*` with JWT auth |
+| `apps/api/app/config.py` | Updated | Added `openclaw_gateway_url` + `openclaw_gateway_token` |
+| `apps/api/app/main.py` | Updated | Registered gateway router |
+| `apps/api/app/middleware/rate_limit.py` | Updated | Added gateway rate limit tiers |
+| `apps/web/src/lib/api/gateway.ts` | Created | TypeScript API client with types |
+| `apps/web/src/app/mission-control/gateway/page.tsx` | Created | Deployment dashboard: health, checklist, agents, sessions |
+| Mission Control sub-nav pages (3) | Updated | Added Gateway link |
+| `deploy/env.example` | Updated | Added gateway connection env vars |
+| `apps/api/tests/test_gateway.py` | Created | 30 tests |
+
+### Verification
+
+- 856/856 Python tests passing (30 new)
+- 0 TypeScript errors
+- Dashboard at `/mission-control/gateway` with auto-refresh
+- All endpoints require JWT auth (verified by router tests)
+
+### Security
+
+- Response sanitization on all gateway responses (no raw JSON forwarded)
+- Input validation with regex for agent IDs, max length for messages
+- Rate limiting: LLM tier (30/min) for message relay, WRITE tier (60/min) for reads
+- URL masking strips credentials before returning to frontend
+- Generic error messages returned to client (raw errors logged server-side only)
+
+### Patterns
+
+- **Gateway proxy:** API proxies all frontend-to-VPS communication — frontend never talks to VPS directly
+- **Graceful degradation:** Fallback to config-based agent list when gateway unreachable
+- **Deployment checklist:** Dynamic 7-item checklist built from runtime state + config
+- **Sanitize external responses:** All gateway data filtered through `_sanitize_*()` helpers
+
+See full details: `docs/compound/patterns/slice-69-gateway-bridge.md`
+
+## Slice 70 — Agent Chat Console + Deliverable Approval
+
+**Date:** 2026-02-26
+
+### Requirements
+
+Build a chat interface for interacting with OpenClaw agents via the gateway bridge. Fix broken approve/reject buttons in the orchestrator page.
+
+### Changes
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `apps/web/src/app/mission-control/chat/page.tsx` | Created | Agent Chat Console: sidebar + chat panel + quick prompts |
+| `apps/web/src/app/mission-control/orchestrator/page.tsx` | Updated | Fixed approve/reject buttons, added Chat sub-nav link |
+| Mission Control sub-nav pages (4) | Updated | Added Chat link to all MC pages |
+
+### Verification
+
+- 856/856 Python tests passing
+- 0 TypeScript errors
+- Chat console at `/mission-control/chat` with agent sidebar and message bubbles
+- Approve/reject buttons now call real `updateDeliverable()` API
+
+### Patterns
+
+- **Agent merge:** Gateway agents + MC agents combined for unified sidebar with live status + avatars
+- **Context-aware quick prompts:** Different suggestions for orchestrator vs specialist agents
+- **Optimistic UI:** User message appears instantly, agent response appended on gateway response
+- **Sub-nav consistency:** All 5 MC pages share 5-link bar (Dashboard, Analytics, Orchestrator, Gateway, Chat)
+
+See full details: `docs/compound/patterns/slice-70-agent-chat-console.md`
+
+## Slice 71 — Deployment Activation: Mock Gateway + Runbook
+
+**Date:** 2026-02-26
+
+### Requirements
+
+Enable local development and demos without a running VPS. Provide a deployment runbook for VPS activation.
+
+### Changes
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `apps/api/app/config.py` | Updated | Added `openclaw_mock_mode` config toggle |
+| `apps/api/app/services/gateway_mock.py` | Created | Mock gateway with 6-agent personas, sessions, health |
+| `apps/api/app/services/gateway_client.py` | Updated | Mock mode delegation at function entry |
+| `apps/web/src/lib/api/gateway.ts` | Updated | `mock_mode` in TypeScript interfaces |
+| `apps/web/src/app/mission-control/gateway/page.tsx` | Updated | DEMO MODE badge |
+| `apps/web/src/app/mission-control/chat/page.tsx` | Updated | DEMO MODE badge |
+| `apps/api/tests/test_gateway.py` | Updated | 10 new mock tests + 8 existing tests fixed |
+| `deploy/DEPLOYMENT-RUNBOOK.md` | Created | One-page VPS deployment guide |
+| `deploy/env.example` | Updated | Added OPENCLAW_MOCK_MODE option |
+
+### Verification
+
+- 866/866 Python tests passing (+10 new mock tests)
+- 0 TypeScript errors
+- Mock mode activates with `OPENCLAW_MOCK_MODE=true` — no VPS needed
+- DEMO MODE badge visible on Gateway Dashboard and Chat Console
+- Deployment runbook covers 5-step quick start, HTTPS, troubleshooting
+
+### Security
+
+- Mock mode defaults to `False`, requires explicit env var
+- Mock responses clearly labeled (`mock_mode: True`, `version: 1.0.0-mock`)
+- No secrets in mock data; JWT auth still required on all endpoints
+- MagicMock attribute defense in all gateway tests
+
+### Patterns
+
+- **Feature toggle delegation:** Single boolean routes all calls to mock at function entry
+- **Deferred import:** Mock module only imported when mock mode active
+- **MagicMock defense:** Explicitly set new boolean config attributes in tests to prevent truthy leak
+- **DEMO MODE badge:** Visual indicator on gateway-dependent pages
+
+See full details: `docs/compound/patterns/slice-71-deployment-activation.md`
+
+## Slice 72 — Deployment-Ready Hardening
+
+**Date:** 2026-02-26
+
+### Requirements
+
+Fix critical deployment blockers (port mismatch, incomplete env vars), remove dead config, add error visibility to silent exception handlers, and make Mission Control sub-pages discoverable.
+
+### Changes
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `openclaw.json` | Updated | Fixed port 3838 → 18789 (matches Docker/Caddy) |
+| `deploy/env.example` | Rewritten | Section A (VPS) + Section B (Backend) — covers all config.py vars |
+| `apps/api/app/config.py` | Updated | Removed 3 unused Agent Zero config fields |
+| `apps/api/app/routers/brand.py` | Updated | `logger.warning` on 2 silent except blocks |
+| `apps/api/app/routers/workflows.py` | Updated | `logger.warning` on 1 silent except block |
+| `apps/api/app/services/brand_strategist.py` | Updated | `logger.warning` on 1 silent except block |
+| `apps/api/app/services/ingestion.py` | Updated | `logger.debug` on 3 silent except blocks |
+| `apps/web/src/app/nav-bar.tsx` | Updated | MC expandable sub-nav (5 sub-pages with auto-expand) |
+
+### Verification
+
+- 866/866 Python tests passing
+- 0 TypeScript errors
+- Port 18789 consistent across openclaw.json, Dockerfile, docker-compose, Caddyfile
+- env.example covers all 29 config.py fields
+- MC sub-nav shows Dashboard, Analytics, Orchestrator, Gateway, Agent Chat
+
+### Security
+
+- No real secrets in env.example (all placeholder values)
+- Error logging uses `exc_info=True` server-side only, never leaks to clients
+- Dead config removal eliminates confusion about Agent Zero features
+
+### Patterns
+
+- **Config-as-documentation:** env.example should cover every field in config.py
+- **Port consistency:** Verify all components agree on the same port
+- **Logging triage:** JSON parse fallbacks stay silent; operational errors get `logger.warning`
+- **Expandable nav groups:** 3+ sub-pages → collapsible group instead of flat list
+
+See full details: `docs/compound/patterns/slice-72-deployment-hardening.md`

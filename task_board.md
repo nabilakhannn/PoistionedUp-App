@@ -52,9 +52,9 @@
 ## 1. BACKLOG
 
 > Goals assigned by Orchestrator or human. Tasks here are unassigned until claimed.
-> All brand context (voice, audience, pillars) is injected by Jarvis from the Brain at task creation time.
+> All brand context (voice, audience, pillars) is injected by Jumbo from the Brain at task creation time.
 
-*(No tasks in backlog — add your first brand in the PositionedUp app, then tell Jarvis to start creating content)*
+*(No tasks in backlog — add your first brand in the PositionedUp app, then tell Jumbo to start creating content)*
 
 ---
 

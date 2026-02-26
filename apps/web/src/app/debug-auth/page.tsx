@@ -32,21 +32,21 @@ export default function DebugAuthPage() {
       <div className="space-y-4">
         <div>
           <h2 className="font-semibold">Session from getSession():</h2>
-          <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+          <pre className="bg-muted p-2 rounded text-xs overflow-auto">
             {JSON.stringify(session, null, 2)}
           </pre>
         </div>
 
         <div>
           <h2 className="font-semibold">document.cookie:</h2>
-          <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+          <pre className="bg-muted p-2 rounded text-xs overflow-auto">
             {cookies}
           </pre>
         </div>
 
         <div>
           <h2 className="font-semibold">localStorage (Supabase keys):</h2>
-          <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+          <pre className="bg-muted p-2 rounded text-xs overflow-auto">
             {localStorage}
           </pre>
         </div>

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs basename -a)",
+      "Bash(xargs -n1)",
+      "Read(//Users/a16094/Desktop/SB's Content Automation Agent - positionedup/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/a16094/Desktop/SB''s Content Automation Agent - positionedup/.git"
+    ]
+  }
+}

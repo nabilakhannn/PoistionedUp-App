@@ -45,7 +45,7 @@ const DAYS = [
 const TIER_COLORS: Record<string, string> = {
   viral: "bg-purple-500/20 text-purple-300 border border-purple-500/30",
   above_average: "bg-green-500/20 text-green-300 border border-green-500/30",
-  average: "bg-zinc-700 text-zinc-300 border border-zinc-600",
+  average: "bg-muted text-foreground border border-border",
   below_average: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30",
   flop: "bg-red-500/20 text-red-300 border border-red-500/30",
 };
@@ -62,16 +62,16 @@ const DRIFT_LEVEL_COLORS: Record<string, string> = {
 function StatCard({
   label,
   value,
-  color = "text-blue-400",
+  color = "text-primary",
 }: {
   label: string;
   value: string | number;
   color?: string;
 }) {
   return (
-    <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-4 text-center">
+    <div className="bg-accent/60 border border-border rounded-xl p-4 text-center">
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
-      <div className="text-xs text-zinc-400 mt-1">{label}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
@@ -91,12 +91,12 @@ function DriftGauge({ score, level }: { score: number; level: string }) {
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm">
-        <span className="text-zinc-400">Voice Drift</span>
-        <span className={DRIFT_LEVEL_COLORS[level] || "text-zinc-300"}>
+        <span className="text-muted-foreground">Voice Drift</span>
+        <span className={DRIFT_LEVEL_COLORS[level] || "text-foreground"}>
           {level.charAt(0).toUpperCase() + level.slice(1)} ({pct.toFixed(0)}%)
         </span>
       </div>
-      <div className="w-full h-3 bg-zinc-700 rounded-full overflow-hidden">
+      <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${color}`}
           style={{ width: `${pct}%` }}
@@ -311,28 +311,28 @@ export default function PerformancePage() {
   /* ── Loading Skeleton (dark) ────────────────────── */
   if (loading) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <main className="min-h-screen bg-background text-card-foreground">
         <div className="max-w-5xl mx-auto p-8 animate-pulse space-y-6">
-          <div className="h-8 bg-zinc-800 rounded w-56" />
-          <div className="h-4 bg-zinc-800 rounded w-80" />
+          <div className="h-8 bg-accent rounded w-56" />
+          <div className="h-4 bg-accent rounded w-80" />
           <div className="flex gap-3 mb-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-9 bg-zinc-800 rounded-lg w-24" />
+              <div key={i} className="h-9 bg-accent rounded-lg w-24" />
             ))}
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-6 h-24" />
+              <div key={i} className="bg-accent/60 border border-border rounded-xl p-6 h-24" />
             ))}
           </div>
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-                <div className="h-5 bg-zinc-800 rounded w-3/4 mb-2" />
+              <div key={i} className="bg-card border border-border rounded-lg p-5">
+                <div className="h-5 bg-accent rounded w-3/4 mb-2" />
                 <div className="flex gap-4">
-                  <div className="h-3 bg-zinc-800 rounded w-20" />
-                  <div className="h-3 bg-zinc-800 rounded w-16" />
-                  <div className="h-3 bg-zinc-800 rounded w-24" />
+                  <div className="h-3 bg-accent rounded w-20" />
+                  <div className="h-3 bg-accent rounded w-16" />
+                  <div className="h-3 bg-accent rounded w-24" />
                 </div>
               </div>
             ))}
@@ -350,17 +350,17 @@ export default function PerformancePage() {
   ];
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-5xl mx-auto p-8">
         {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Performance Tracker</h1>
-            <p className="text-zinc-400 mt-1">
+            <p className="text-muted-foreground mt-1">
               Log published content. Track what works. The AI learns from YOUR data.
           </p>
         </div>
-          <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 transition">
+          <Link href="/" className="text-sm text-primary hover:text-primary transition">
           Home
         </Link>
       </div>
@@ -379,15 +379,15 @@ export default function PerformancePage() {
       )}
 
       {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-zinc-800">
+        <div className="flex gap-1 mb-6 border-b border-border">
           {tabs.map((t) => (
           <button
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
                 tab === t.key
-                  ? "border-blue-500 text-blue-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {t.label}
@@ -401,16 +401,16 @@ export default function PerformancePage() {
           {posts.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-5xl mb-4">📊</div>
-                <h2 className="text-xl font-semibold mb-2 text-zinc-200">
+                <h2 className="text-xl font-semibold mb-2 text-foreground">
                   No posts logged yet
                 </h2>
-                <p className="text-zinc-500 mb-6 max-w-md mx-auto">
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Start logging your published content to build your performance
                   database. The AI learns from your real data to improve future content.
               </p>
               <button
                 onClick={() => setTab("log")}
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+                  className="px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
               >
                 Log your first post
               </button>
@@ -419,24 +419,24 @@ export default function PerformancePage() {
             posts.map((post) => (
               <div
                 key={post.id}
-                  className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:border-zinc-700 transition"
+                  className="bg-card border border-border rounded-lg p-4 hover:border-border transition"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium text-zinc-100">{post.title}</h3>
+                        <h3 className="font-medium text-card-foreground">{post.title}</h3>
                       {post.performance_tier && (
                         <span
                           className={`text-xs px-2 py-0.5 rounded font-medium ${
-                              TIER_COLORS[post.performance_tier] || "bg-zinc-700 text-zinc-300"
+                              TIER_COLORS[post.performance_tier] || "bg-muted text-foreground"
                           }`}
                         >
                           {post.performance_tier.replace("_", " ")}
                         </span>
                       )}
                     </div>
-                      <div className="flex items-center gap-3 text-xs text-zinc-500">
-                        <span className="bg-zinc-800 px-1.5 py-0.5 rounded capitalize">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="bg-accent px-1.5 py-0.5 rounded capitalize">
                         {post.platform}
                       </span>
                       <span>{post.content_type.replace("_", " ")}</span>
@@ -446,7 +446,7 @@ export default function PerformancePage() {
                       )}
                     </div>
                     {/* Metrics row */}
-                      <div className="flex items-center gap-4 text-xs text-zinc-400 mt-2">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                         {post.views != null && (
                           <span>{post.views.toLocaleString()} views</span>
                         )}
@@ -457,7 +457,7 @@ export default function PerformancePage() {
                         <span>{post.comments.toLocaleString()} comments</span>
                       )}
                       {post.engagement_rate != null && (
-                          <span className="font-medium text-blue-400">
+                          <span className="font-medium text-primary">
                           {(post.engagement_rate * 100).toFixed(2)}% ER
                         </span>
                       )}
@@ -468,13 +468,13 @@ export default function PerformancePage() {
                       onClick={() =>
                           setSelectedPost(selectedPost === post.id ? null : post.id)
                       }
-                        className="text-xs text-blue-400 hover:text-blue-300 transition"
+                        className="text-xs text-primary hover:text-primary transition"
                     >
                       {selectedPost === post.id ? "Cancel" : "Update Metrics"}
                     </button>
                     <button
                       onClick={() => handleAnalyze(post.id)}
-                        className="text-xs text-purple-400 hover:text-purple-300 transition"
+                        className="text-xs text-chart-2 hover:text-chart-2 transition"
                     >
                       Analyze
                     </button>
@@ -483,7 +483,7 @@ export default function PerformancePage() {
 
                 {/* Metrics update form */}
                 {selectedPost === post.id && (
-                    <div className="mt-3 pt-3 border-t border-zinc-800">
+                    <div className="mt-3 pt-3 border-t border-border">
                     <div className="grid grid-cols-5 gap-2">
                         {[
                           { label: "Views", val: metricsViews, set: setMetricsViews },
@@ -498,14 +498,14 @@ export default function PerformancePage() {
                             placeholder={m.label}
                             value={m.val}
                             onChange={(e) => m.set(e.target.value)}
-                            className="px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="px-2 py-1.5 bg-accent border border-border rounded text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                           />
                         ))}
                     </div>
                     <button
                       onClick={handleUpdateMetrics}
                       disabled={updatingMetrics}
-                        className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition"
+                        className="mt-2 px-3 py-1.5 bg-primary text-primary-foreground rounded text-xs font-medium hover:bg-primary/90 disabled:opacity-50 transition"
                     >
                       {updatingMetrics ? "Saving..." : "Save Metrics"}
                     </button>
@@ -525,7 +525,7 @@ export default function PerformancePage() {
               <StatCard
                 label="Total Posts"
                 value={analytics.total_posts}
-                color="text-blue-400"
+                color="text-primary"
               />
               <StatCard
                 label="Best Day"
@@ -535,33 +535,33 @@ export default function PerformancePage() {
               <StatCard
                 label="Patterns Found"
                 value={analytics.patterns.length}
-                color="text-purple-400"
+                color="text-chart-2"
               />
                 </div>
 
             {/* Detected Patterns */}
             {analytics.patterns.length > 0 && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <h2 className="text-lg font-semibold mb-4 text-zinc-100">
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h2 className="text-lg font-semibold mb-4 text-card-foreground">
                   Detected Patterns
                 </h2>
                 <div className="space-y-3">
                   {analytics.patterns.map((p, i) => (
                     <div
                       key={i}
-                      className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3"
+                      className="bg-accent/50 border border-border rounded-lg p-3"
                     >
-                      <p className="font-medium text-sm text-zinc-200">{p.pattern}</p>
-                      <p className="text-xs text-zinc-400 mt-1">{p.evidence}</p>
+                      <p className="font-medium text-sm text-foreground">{p.pattern}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{p.evidence}</p>
                       <div className="mt-1.5">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-blue-500 rounded-full"
+                              className="h-full bg-primary rounded-full"
                               style={{ width: `${Math.round(p.confidence * 100)}%` }}
                             />
               </div>
-                          <span className="text-xs text-zinc-500">
+                          <span className="text-xs text-muted-foreground">
                             {Math.round(p.confidence * 100)}%
                           </span>
                 </div>
@@ -574,32 +574,32 @@ export default function PerformancePage() {
 
             {/* Hook Type Breakdown */}
             {analytics.top_hook_types && analytics.top_hook_types.length > 0 && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <h2 className="text-lg font-semibold mb-4 text-zinc-100">
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h2 className="text-lg font-semibold mb-4 text-card-foreground">
                   Hook Type Performance
                 </h2>
               <div className="space-y-3">
                   {analytics.top_hook_types.map((h) => (
                     <div
                       key={h.hook_type}
-                      className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0"
+                      className="flex items-center justify-between py-2 border-b border-border last:border-0"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-zinc-200 capitalize">
+                        <span className="text-sm font-medium text-foreground capitalize">
                           {h.hook_type.replace("_", " ")}
                         </span>
-                        <span className="text-xs text-zinc-500">
+                        <span className="text-xs text-muted-foreground">
                           {h.post_count} post{h.post_count !== 1 ? "s" : ""}
                       </span>
                     </div>
                       <div className="flex items-center gap-3">
                         {h.avg_engagement_rate != null && (
-                          <span className="text-xs text-blue-400 font-medium">
+                          <span className="text-xs text-primary font-medium">
                             {(h.avg_engagement_rate * 100).toFixed(2)}% avg ER
                           </span>
                         )}
                         {h.example_hooks && h.example_hooks.length > 0 && (
-                          <span className="text-xs text-zinc-500">
+                          <span className="text-xs text-muted-foreground">
                             e.g. &ldquo;{h.example_hooks[0].slice(0, 40)}{h.example_hooks[0].length > 40 ? "..." : ""}&rdquo;
                           </span>
                         )}
@@ -612,15 +612,15 @@ export default function PerformancePage() {
 
           {/* Top Hooks */}
           {analytics.top_hooks.length > 0 && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <h2 className="text-lg font-semibold mb-4 text-zinc-100">
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h2 className="text-lg font-semibold mb-4 text-card-foreground">
                   Top Performing Hooks
                 </h2>
               <ul className="space-y-2">
                 {analytics.top_hooks.map((h, i) => (
                   <li
                     key={i}
-                      className="text-sm text-zinc-300 italic border-l-2 border-green-500 pl-3"
+                      className="text-sm text-foreground italic border-l-2 border-green-500 pl-3"
                   >
                     &ldquo;{h}&rdquo;
                   </li>
@@ -631,15 +631,15 @@ export default function PerformancePage() {
 
           {/* Anti-Hooks */}
           {analytics.anti_hooks.length > 0 && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <h2 className="text-lg font-semibold mb-4 text-zinc-100">
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h2 className="text-lg font-semibold mb-4 text-card-foreground">
                 Hooks That Flopped
               </h2>
               <ul className="space-y-2">
                 {analytics.anti_hooks.map((h, i) => (
                   <li
                     key={i}
-                      className="text-sm text-zinc-500 italic border-l-2 border-red-500 pl-3"
+                      className="text-sm text-muted-foreground italic border-l-2 border-red-500 pl-3"
                   >
                     &ldquo;{h}&rdquo;
                   </li>
@@ -650,25 +650,25 @@ export default function PerformancePage() {
 
           {/* Platform Breakdown */}
           {analytics.platforms.length > 0 && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <h2 className="text-lg font-semibold mb-4 text-zinc-100">
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h2 className="text-lg font-semibold mb-4 text-card-foreground">
                   By Platform
                 </h2>
               <div className="space-y-2">
                 {analytics.platforms.map((p) => (
                   <div
                     key={p.platform}
-                      className="flex items-center justify-between py-2.5 border-b border-zinc-800 last:border-0"
+                      className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
                   >
                     <div>
-                        <span className="font-medium text-sm capitalize text-zinc-200">
+                        <span className="font-medium text-sm capitalize text-foreground">
                         {p.platform}
                       </span>
-                        <span className="text-xs text-zinc-500 ml-2">
+                        <span className="text-xs text-muted-foreground ml-2">
                         {p.post_count} posts
                       </span>
                     </div>
-                      <div className="text-xs text-zinc-400">
+                      <div className="text-xs text-muted-foreground">
                       {p.avg_engagement_rate != null
                         ? `${(p.avg_engagement_rate * 100).toFixed(2)}% avg ER`
                         : "No metrics"}
@@ -686,20 +686,20 @@ export default function PerformancePage() {
 
           {/* Top Topics */}
           {analytics.top_topics.length > 0 && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <h2 className="text-lg font-semibold mb-4 text-zinc-100">
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h2 className="text-lg font-semibold mb-4 text-card-foreground">
                 Best Topics
               </h2>
               <div className="space-y-2">
                 {analytics.top_topics.map((t) => (
                   <div
                     key={t.topic_category}
-                      className="flex items-center justify-between py-2.5 border-b border-zinc-800 last:border-0"
+                      className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
                   >
-                      <span className="font-medium text-sm text-zinc-200">
+                      <span className="font-medium text-sm text-foreground">
                       {t.topic_category}
                     </span>
-                      <div className="text-xs text-zinc-400">
+                      <div className="text-xs text-muted-foreground">
                       {t.post_count} posts
                       {t.avg_engagement_rate != null &&
                         ` | ${(t.avg_engagement_rate * 100).toFixed(2)}% ER`}
@@ -714,7 +714,7 @@ export default function PerformancePage() {
             {analytics.total_posts === 0 && (
               <div className="text-center py-12">
                 <div className="text-4xl mb-3">📈</div>
-                <p className="text-zinc-400">
+                <p className="text-muted-foreground">
                   Log some posts first to see analytics. Click the &quot;+ Log Post&quot; tab to get started.
                 </p>
               </div>
@@ -738,15 +738,15 @@ export default function PerformancePage() {
             )}
 
             {/* Voice Baseline */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-card border border-border rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-zinc-100">
+                <h2 className="text-lg font-semibold text-card-foreground">
                   Your Voice DNA
                 </h2>
                 <button
                   onClick={handleAnalyzeSelf}
                   disabled={analyzingSelf}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
                 >
                   {analyzingSelf
                     ? "Analyzing..."
@@ -758,16 +758,16 @@ export default function PerformancePage() {
 
               {voiceLoading && (
                 <div className="animate-pulse space-y-3">
-                  <div className="h-4 bg-zinc-800 rounded w-1/3" />
-                  <div className="h-4 bg-zinc-800 rounded w-1/2" />
-                  <div className="h-4 bg-zinc-800 rounded w-2/5" />
+                  <div className="h-4 bg-accent rounded w-1/3" />
+                  <div className="h-4 bg-accent rounded w-1/2" />
+                  <div className="h-4 bg-accent rounded w-2/5" />
                 </div>
               )}
 
               {!voiceLoading && !voiceBaseline && (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-3">🎙️</div>
-                  <p className="text-zinc-400 max-w-md mx-auto">
+                  <p className="text-muted-foreground max-w-md mx-auto">
                     No voice baseline yet. Click &quot;Analyze My Voice&quot; to extract your
                     unique writing DNA from your approved content. You need at least 3
                     published posts logged for a meaningful analysis.
@@ -778,42 +778,42 @@ export default function PerformancePage() {
               {voiceBaseline && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                      <div className="text-xs text-zinc-500 mb-1">Tone</div>
-                      <div className="text-sm font-medium text-zinc-200">
+                    <div className="bg-accent/50 border border-border rounded-lg p-3">
+                      <div className="text-xs text-muted-foreground mb-1">Tone</div>
+                      <div className="text-sm font-medium text-foreground">
                         {voiceBaseline.tone}
                       </div>
                     </div>
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                      <div className="text-xs text-zinc-500 mb-1">Sentence Style</div>
-                      <div className="text-sm font-medium text-zinc-200">
+                    <div className="bg-accent/50 border border-border rounded-lg p-3">
+                      <div className="text-xs text-muted-foreground mb-1">Sentence Style</div>
+                      <div className="text-sm font-medium text-foreground">
                         {voiceBaseline.sentence_style}
                       </div>
                     </div>
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                      <div className="text-xs text-zinc-500 mb-1">Vocabulary</div>
-                      <div className="text-sm font-medium text-zinc-200">
+                    <div className="bg-accent/50 border border-border rounded-lg p-3">
+                      <div className="text-xs text-muted-foreground mb-1">Vocabulary</div>
+                      <div className="text-sm font-medium text-foreground">
                         {voiceBaseline.vocabulary_level}
                       </div>
                     </div>
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                      <div className="text-xs text-zinc-500 mb-1">Avg Sentence Length</div>
-                      <div className="text-sm font-medium text-zinc-200">
+                    <div className="bg-accent/50 border border-border rounded-lg p-3">
+                      <div className="text-xs text-muted-foreground mb-1">Avg Sentence Length</div>
+                      <div className="text-sm font-medium text-foreground">
                         {voiceBaseline.avg_sentence_length ?? "N/A"} words
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                    <div className="text-xs text-zinc-500 mb-1">Content Structure</div>
-                    <div className="text-sm text-zinc-300">
+                  <div className="bg-accent/50 border border-border rounded-lg p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Content Structure</div>
+                    <div className="text-sm text-foreground">
                       {voiceBaseline.content_structure}
                     </div>
                   </div>
 
                   {voiceBaseline.personality_traits.length > 0 && (
                     <div>
-                      <div className="text-xs text-zinc-500 mb-2">Personality Traits</div>
+                      <div className="text-xs text-muted-foreground mb-2">Personality Traits</div>
                       <div className="flex flex-wrap gap-2">
                         {voiceBaseline.personality_traits.map((t, i) => (
                           <span
@@ -829,12 +829,12 @@ export default function PerformancePage() {
 
                   {voiceBaseline.signature_phrases.length > 0 && (
                     <div>
-                      <div className="text-xs text-zinc-500 mb-2">Signature Phrases</div>
+                      <div className="text-xs text-muted-foreground mb-2">Signature Phrases</div>
                       <div className="space-y-1">
                         {voiceBaseline.signature_phrases.map((p, i) => (
                           <div
                             key={i}
-                            className="text-sm text-zinc-300 italic border-l-2 border-blue-500 pl-3"
+                            className="text-sm text-foreground italic border-l-2 border-primary pl-3"
                           >
                             &ldquo;{p}&rdquo;
                           </div>
@@ -845,7 +845,7 @@ export default function PerformancePage() {
 
                   {voiceBaseline.hook_patterns.length > 0 && (
                     <div>
-                      <div className="text-xs text-zinc-500 mb-2">Hook Patterns</div>
+                      <div className="text-xs text-muted-foreground mb-2">Hook Patterns</div>
                       <div className="flex flex-wrap gap-2">
                         {voiceBaseline.hook_patterns.map((p, i) => (
                           <span
@@ -861,12 +861,12 @@ export default function PerformancePage() {
 
                   {voiceBaseline.sample_hooks.length > 0 && (
                     <div>
-                      <div className="text-xs text-zinc-500 mb-2">Sample Hooks</div>
+                      <div className="text-xs text-muted-foreground mb-2">Sample Hooks</div>
                       <div className="space-y-1">
                         {voiceBaseline.sample_hooks.map((h, i) => (
                           <div
                             key={i}
-                            className="text-sm text-zinc-300 italic border-l-2 border-yellow-500 pl-3"
+                            className="text-sm text-foreground italic border-l-2 border-yellow-500 pl-3"
                           >
                             &ldquo;{h}&rdquo;
                           </div>
@@ -875,7 +875,7 @@ export default function PerformancePage() {
                     </div>
                   )}
 
-                  <div className="text-xs text-zinc-600 pt-2">
+                  <div className="text-xs text-muted-foreground pt-2">
                     Based on {voiceBaseline.posts_analyzed} analyzed post{voiceBaseline.posts_analyzed !== 1 ? "s" : ""}
                   </div>
                 </div>
@@ -883,11 +883,11 @@ export default function PerformancePage() {
             </div>
 
             {/* Voice Drift Check */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h2 className="text-lg font-semibold mb-4 text-zinc-100">
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h2 className="text-lg font-semibold mb-4 text-card-foreground">
                 Voice Drift Check
               </h2>
-              <p className="text-sm text-zinc-400 mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 Paste any draft content below to check if it matches your voice
                 baseline. The AI will score how much it drifts from your natural style.
               </p>
@@ -897,34 +897,34 @@ export default function PerformancePage() {
                 onChange={(e) => setDriftText(e.target.value)}
                 placeholder="Paste your draft content here to check for voice drift..."
                 rows={5}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
               />
 
               <button
                 onClick={handleCheckDrift}
                 disabled={checkingDrift || !driftText.trim() || !voiceBaseline}
-                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition"
+                className="mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
               >
                 {checkingDrift ? "Checking..." : "Check Drift"}
               </button>
               {!voiceBaseline && (
-                <span className="text-xs text-zinc-500 ml-3">
+                <span className="text-xs text-muted-foreground ml-3">
                   Analyze your voice first to enable drift checking
                 </span>
               )}
 
               {/* Drift Result */}
               {driftResult && (
-                <div className="mt-4 bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 space-y-3">
+                <div className="mt-4 bg-accent/50 border border-border rounded-lg p-4 space-y-3">
                   <DriftGauge score={driftResult.drift_score} level={driftResult.drift_level} />
 
                   {driftResult.details.length > 0 && (
                     <div>
-                      <div className="text-xs text-zinc-500 mb-2">Details</div>
+                      <div className="text-xs text-muted-foreground mb-2">Details</div>
                       <ul className="space-y-1">
                         {driftResult.details.map((d, i) => (
-                          <li key={i} className="text-sm text-zinc-300 flex items-start gap-2">
-                            <span className="text-zinc-600 mt-0.5">&#8226;</span>
+                          <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                            <span className="text-muted-foreground mt-0.5">&#8226;</span>
                             {d}
                           </li>
                         ))}
@@ -933,9 +933,9 @@ export default function PerformancePage() {
                   )}
 
                   {driftResult.recommendation && (
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                      <div className="text-xs text-blue-400 mb-1">Recommendation</div>
-                      <p className="text-sm text-zinc-300">{driftResult.recommendation}</p>
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                      <div className="text-xs text-primary mb-1">Recommendation</div>
+                      <p className="text-sm text-foreground">{driftResult.recommendation}</p>
                     </div>
                   )}
                 </div>
@@ -946,8 +946,8 @@ export default function PerformancePage() {
 
         {/* ── Log Post Tab ────────────────────────────── */}
       {tab === "log" && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4 text-zinc-100">
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h2 className="text-lg font-semibold mb-4 text-card-foreground">
               Log Published Content
             </h2>
           <div className="space-y-3">
@@ -956,14 +956,14 @@ export default function PerformancePage() {
               placeholder="Post title *"
               value={logTitle}
               onChange={(e) => setLogTitle(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
 
             <div className="grid grid-cols-2 gap-3">
               <select
                 value={logPlatform}
                 onChange={(e) => setLogPlatform(e.target.value)}
-                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {PLATFORMS.map((p) => (
                   <option key={p} value={p}>
@@ -975,7 +975,7 @@ export default function PerformancePage() {
               <select
                 value={logContentType}
                 onChange={(e) => setLogContentType(e.target.value)}
-                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {CONTENT_TYPES.map((ct) => (
                   <option key={ct} value={ct}>
@@ -990,14 +990,14 @@ export default function PerformancePage() {
               placeholder="Hook used (the actual opening text)"
               value={logHookUsed}
               onChange={(e) => setLogHookUsed(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
 
             <div className="grid grid-cols-2 gap-3">
               <select
                 value={logHookType}
                 onChange={(e) => setLogHookType(e.target.value)}
-                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">Hook type (optional)</option>
                 {HOOK_TYPES.map((ht) => (
@@ -1010,7 +1010,7 @@ export default function PerformancePage() {
               <select
                 value={logDay}
                 onChange={(e) => setLogDay(e.target.value)}
-                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">Day of week (optional)</option>
                 {DAYS.map((d) => (
@@ -1027,14 +1027,14 @@ export default function PerformancePage() {
                 placeholder="Topic"
                 value={logTopic}
                 onChange={(e) => setLogTopic(e.target.value)}
-                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <input
                 type="text"
                 placeholder="Topic category (ai_tools, business, etc.)"
                 value={logTopicCategory}
                 onChange={(e) => setLogTopicCategory(e.target.value)}
-                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
@@ -1043,13 +1043,13 @@ export default function PerformancePage() {
               placeholder="Published URL (optional)"
               value={logUrl}
               onChange={(e) => setLogUrl(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
 
             <button
               onClick={handleLogPost}
               disabled={creating || !logTitle.trim()}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition"
+                className="px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
             >
               {creating ? "Logging..." : "Log Post"}
             </button>

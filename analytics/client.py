@@ -33,7 +33,7 @@ class PostHogClient:
 
     Example:
         client = PostHogClient(config)
-        client.capture("agent-jarvis", "task_created", {"task_id": "WOW-001"})
+        client.capture("agent-jumbo", "task_created", {"task_id": "PU-001"})
         client.flush()
     """
 

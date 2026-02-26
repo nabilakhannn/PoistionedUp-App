@@ -20,8 +20,8 @@ const MEMORY_TYPES = [
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-500/20 text-green-300 border border-green-500/30",
   pending_approval: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30",
-  dismissed: "bg-zinc-700 text-zinc-400 border border-zinc-600",
-  superseded: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+  dismissed: "bg-muted text-muted-foreground border border-border",
+  superseded: "bg-primary/20 text-primary border border-primary/30",
   expired: "bg-red-500/20 text-red-300 border border-red-500/30",
 };
 
@@ -140,15 +140,15 @@ export default function MemoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 transition">
+            <Link href="/" className="text-sm text-primary hover:text-primary/80 transition">
               &larr; Home
             </Link>
             <h1 className="text-2xl font-bold mt-1">Agent Memory</h1>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               What the AI has learned about your content, preferences, and patterns
             </p>
           </div>
@@ -190,7 +190,7 @@ export default function MemoryPage() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-zinc-800">
+        <div className="flex gap-1 mb-6 border-b border-border">
           {[
             { key: "all" as const, label: `Active Memories (${memories.length})` },
             { key: "pending" as const, label: `Pending Approval (${pendingMemories.length})` },
@@ -202,7 +202,7 @@ export default function MemoryPage() {
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
                 tab === t.key
                   ? "border-indigo-500 text-indigo-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {t.label}
@@ -219,8 +219,8 @@ export default function MemoryPage() {
                 onClick={() => setFilterType("")}
                 className={`px-3 py-1 text-xs rounded-full transition ${
                   !filterType
-                    ? "bg-zinc-200 text-zinc-900"
-                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                    ? "bg-foreground text-background"
+                    : "bg-accent text-muted-foreground hover:bg-accent/80"
                 }`}
               >
                 All
@@ -231,7 +231,7 @@ export default function MemoryPage() {
                   onClick={() => setFilterType(t.value)}
                   className={`px-3 py-1 text-xs rounded-full transition ${
                     filterType === t.value
-                      ? "bg-zinc-200 text-zinc-900"
+                      ? "bg-foreground text-background"
                       : `${TYPE_COLORS[t.value]} hover:opacity-80`
                   }`}
                 >
@@ -243,17 +243,17 @@ export default function MemoryPage() {
             {loading ? (
               <div className="animate-pulse space-y-3">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-                    <div className="h-4 bg-zinc-800 rounded w-1/3 mb-2" />
-                    <div className="h-3 bg-zinc-800 rounded w-2/3" />
+                  <div key={i} className="bg-card border border-border rounded-lg p-4">
+                    <div className="h-4 bg-accent rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-accent rounded w-2/3" />
                   </div>
                 ))}
               </div>
             ) : memories.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-4xl mb-3">🧠</div>
-                <p className="text-lg mb-2 text-zinc-300">No memories yet</p>
-                <p className="text-sm text-zinc-500 max-w-md mx-auto">
+                <p className="text-lg mb-2 text-foreground">No memories yet</p>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
                   Memories are auto-created as the agent learns from your content performance
                   and editing patterns. You can also add memories manually.
                 </p>
@@ -263,25 +263,25 @@ export default function MemoryPage() {
                 {memories.map((m) => (
                   <div
                     key={m.id}
-                    className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-zinc-700 transition"
+                    className="p-4 bg-card border border-border rounded-lg hover:border-muted-foreground transition"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className={`px-2 py-0.5 text-xs rounded-full ${TYPE_COLORS[m.memory_type] || "bg-zinc-700 text-zinc-300"}`}>
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${TYPE_COLORS[m.memory_type] || "bg-muted text-foreground"}`}>
                             {m.memory_type}
                           </span>
-                          <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_COLORS[m.status] || "bg-zinc-700 text-zinc-300"}`}>
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_COLORS[m.status] || "bg-muted text-foreground"}`}>
                             {m.status}
                           </span>
                           {m.platform && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-800 text-zinc-400">
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-accent text-muted-foreground">
                               {m.platform}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-zinc-200">{m.content}</p>
-                        <div className="flex items-center gap-3 mt-2 text-xs text-zinc-500">
+                        <p className="text-sm text-foreground">{m.content}</p>
+                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                           <span>
                             Confidence:{" "}
                             <span
@@ -305,7 +305,7 @@ export default function MemoryPage() {
                       </div>
                       <button
                         onClick={() => handleDelete(m.id)}
-                        className="ml-3 text-zinc-600 hover:text-red-400 text-sm transition"
+                        className="ml-3 text-muted-foreground hover:text-red-400 text-sm transition"
                         title="Delete memory"
                       >
                         &times;
@@ -324,8 +324,8 @@ export default function MemoryPage() {
             {pendingMemories.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-4xl mb-3">✅</div>
-                <p className="text-lg mb-2 text-zinc-300">No pending approvals</p>
-                <p className="text-sm text-zinc-500 max-w-md mx-auto">
+                <p className="text-lg mb-2 text-foreground">No pending approvals</p>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
                   When the agent synthesizes observations into strategic lessons,
                   they appear here for your review.
                 </p>
@@ -338,15 +338,15 @@ export default function MemoryPage() {
                     className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-lg"
                   >
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${TYPE_COLORS[m.memory_type] || "bg-zinc-700 text-zinc-300"}`}>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${TYPE_COLORS[m.memory_type] || "bg-muted text-foreground"}`}>
                         {m.memory_type}
                       </span>
                       <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
                         Pending Approval
                       </span>
                     </div>
-                    <p className="text-sm text-zinc-200 mb-3">{m.content}</p>
-                    <div className="flex items-center gap-3 text-xs text-zinc-500 mb-3">
+                    <p className="text-sm text-foreground mb-3">{m.content}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                       <span>Confidence: {Math.round(m.confidence * 100)}%</span>
                       {m.category && <span>Category: {m.category}</span>}
                       {m.platform && <span>Platform: {m.platform}</span>}
@@ -360,7 +360,7 @@ export default function MemoryPage() {
                       </button>
                       <button
                         onClick={() => handleDismiss(m.id)}
-                        className="px-4 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg text-sm hover:bg-zinc-700 transition"
+                        className="px-4 py-1.5 bg-accent text-foreground rounded-lg text-sm hover:bg-accent/80 transition"
                       >
                         Dismiss
                       </button>
@@ -376,20 +376,20 @@ export default function MemoryPage() {
         {tab === "add" && (
           <form
             onSubmit={handleAddMemory}
-            className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl space-y-4"
+            className="bg-card border border-border p-6 rounded-xl space-y-4"
           >
-            <h2 className="text-lg font-semibold text-zinc-100">Add a Memory Manually</h2>
-            <p className="text-sm text-zinc-400">
+            <h2 className="text-lg font-semibold text-card-foreground">Add a Memory Manually</h2>
+            <p className="text-sm text-muted-foreground">
               Tell the agent something it should remember about your content preferences,
               voice, or strategy.
             </p>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1">Memory Type</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Memory Type</label>
               <select
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground focus:ring-2 focus:ring-ring"
               >
                 {MEMORY_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -400,20 +400,20 @@ export default function MemoryPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1">Content</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Content</label>
               <textarea
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
                 placeholder="e.g., 'I prefer short, punchy hooks under 10 words' or 'Never use rhetorical questions'"
                 rows={3}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring resize-none"
                 required
               />
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Confidence ({Math.round(newConfidence * 100)}%)
                 </label>
                 <input
@@ -427,11 +427,11 @@ export default function MemoryPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">Platform (optional)</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Platform (optional)</label>
                 <select
                   value={newPlatform}
                   onChange={(e) => setNewPlatform(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground focus:ring-2 focus:ring-ring"
                 >
                   <option value="">All platforms</option>
                   <option value="youtube">YouTube</option>
@@ -442,13 +442,13 @@ export default function MemoryPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">Category (optional)</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Category (optional)</label>
                 <input
                   type="text"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   placeholder="e.g., hooks, voice, topics"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>

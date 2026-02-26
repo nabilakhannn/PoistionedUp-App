@@ -16,7 +16,7 @@ const OBJECTIVES = [
     id: "personal_branding",
     label: "Personal Branding",
     description: "Position yourself as the go-to authority in your niche",
-    color: "from-violet-500 to-purple-600",
+    color: "from-violet-500 to-chart-2",
     bgLight: "bg-violet-500/10 border-violet-500/30",
     textColor: "text-violet-400",
     icon: (
@@ -42,9 +42,9 @@ const OBJECTIVES = [
     id: "grow_audience",
     label: "Grow Audience",
     description: "Attract new followers and expand your reach organically",
-    color: "from-blue-500 to-indigo-600",
-    bgLight: "bg-blue-500/10 border-blue-500/30",
-    textColor: "text-blue-400",
+    color: "from-primary to-indigo-600",
+    bgLight: "bg-primary/10 border-primary/30",
+    textColor: "text-primary",
     icon: (
       <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -267,20 +267,20 @@ export default function NewWorkflow() {
   };
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10 bg-zinc-950 text-zinc-100 min-h-screen">
+    <main className="max-w-3xl mx-auto px-6 py-10 bg-background text-card-foreground min-h-screen">
       {/* Header */}
       <div className="mb-10">
         <Link
           href="/content"
-          className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-300 transition mb-4"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition mb-4"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
           Back to Content
         </Link>
-        <h1 className="text-3xl font-bold text-zinc-100">Create New Content</h1>
-        <p className="text-zinc-400 mt-2 text-base">
+        <h1 className="text-3xl font-bold text-card-foreground">Create New Content</h1>
+        <p className="text-muted-foreground mt-2 text-base">
           Choose your goal, pick a format, and tell the AI what to write. It will research, find angles, generate hooks, and build the full content pack.
         </p>
       </div>
@@ -299,10 +299,10 @@ export default function NewWorkflow() {
         {/* ───── Step 1: Content Objective ───── */}
         <section>
           <div className="flex items-center gap-2 mb-1">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-100 text-zinc-900 text-xs font-bold">1</span>
-            <h2 className="text-lg font-semibold text-zinc-100">What is your goal?</h2>
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-card-foreground text-card text-xs font-bold">1</span>
+            <h2 className="text-lg font-semibold text-card-foreground">What is your goal?</h2>
           </div>
-          <p className="text-sm text-zinc-500 ml-8 mb-4">
+          <p className="text-sm text-muted-foreground ml-8 mb-4">
             Pick the primary objective for this content piece.
           </p>
 
@@ -317,7 +317,7 @@ export default function NewWorkflow() {
                   className={`relative flex flex-col items-start p-4 rounded-xl border-2 text-left transition-all duration-200 group ${
                     selected
                       ? `${obj.bgLight} border-current ${obj.textColor}`
-                      : "border-zinc-700 bg-zinc-900 hover:border-zinc-600"
+                      : "border-border bg-card hover:border-border"
                   }`}
                 >
                   {/* Selected indicator */}
@@ -329,15 +329,15 @@ export default function NewWorkflow() {
                     </div>
                   )}
 
-                  <div className={`mb-3 p-2 rounded-lg ${selected ? "bg-white/10" : "bg-zinc-800 group-hover:bg-zinc-700"} transition`}>
-                    <div className={selected ? obj.textColor : "text-zinc-500 group-hover:text-zinc-400"}>
+                  <div className={`mb-3 p-2 rounded-lg ${selected ? "bg-white/10" : "bg-accent group-hover:bg-accent"} transition`}>
+                    <div className={selected ? obj.textColor : "text-muted-foreground group-hover:text-muted-foreground"}>
                       {obj.icon}
                     </div>
                   </div>
-                  <div className={`text-sm font-semibold mb-1 ${selected ? obj.textColor : "text-zinc-200"}`}>
+                  <div className={`text-sm font-semibold mb-1 ${selected ? obj.textColor : "text-foreground"}`}>
                     {obj.label}
                   </div>
-                  <div className="text-xs text-zinc-500 leading-relaxed">
+                  <div className="text-xs text-muted-foreground leading-relaxed">
                     {obj.description}
                   </div>
                 </button>
@@ -349,10 +349,10 @@ export default function NewWorkflow() {
         {/* ───── Step 2: Content Type ───── */}
         <section className={`transition-opacity duration-300 ${objective ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
           <div className="flex items-center gap-2 mb-1">
-            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${objective ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-500"}`}>2</span>
-            <h2 className="text-lg font-semibold text-zinc-100">Content style</h2>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${objective ? "bg-card-foreground text-card" : "bg-accent text-muted-foreground"}`}>2</span>
+            <h2 className="text-lg font-semibold text-card-foreground">Content style</h2>
           </div>
-          <p className="text-sm text-zinc-500 ml-8 mb-4">
+          <p className="text-sm text-muted-foreground ml-8 mb-4">
             How do you want to frame the message?
           </p>
 
@@ -366,8 +366,8 @@ export default function NewWorkflow() {
                   onClick={() => setContentType(ct.id)}
                   className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200 ${
                     selected
-                      ? "border-zinc-100 bg-zinc-100 text-zinc-900"
-                      : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800"
+                      ? "border-card-foreground bg-card-foreground text-card"
+                      : "border-border bg-card text-foreground hover:border-muted-foreground hover:bg-accent"
                   }`}
                 >
                   <span className="text-base">{ct.emoji}</span>
@@ -381,10 +381,10 @@ export default function NewWorkflow() {
         {/* ───── Step 3: Platforms ───── */}
         <section className={`transition-opacity duration-300 ${contentType ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
           <div className="flex items-center gap-2 mb-1">
-            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-500"}`}>3</span>
-            <h2 className="text-lg font-semibold text-zinc-100">Where to publish?</h2>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-card-foreground text-card" : "bg-accent text-muted-foreground"}`}>3</span>
+            <h2 className="text-lg font-semibold text-card-foreground">Where to publish?</h2>
           </div>
-          <p className="text-sm text-zinc-500 ml-8 mb-4">
+          <p className="text-sm text-muted-foreground ml-8 mb-4">
             Select at least one platform. The AI adapts format and length for each.
           </p>
 
@@ -398,21 +398,21 @@ export default function NewWorkflow() {
                   onClick={() => togglePlatform(p.id)}
                   className={`flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all duration-200 ${
                     selected
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-zinc-700 bg-zinc-900 hover:border-zinc-600"
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-border"
                   }`}
                 >
-                  <div className={`p-2 rounded-lg ${selected ? "bg-blue-500/20 text-blue-400" : "bg-zinc-800 text-zinc-500"} transition`}>
+                  <div className={`p-2 rounded-lg ${selected ? "bg-primary/20 text-primary" : "bg-accent text-muted-foreground"} transition`}>
                     {p.icon}
                   </div>
                   <div className="min-w-0">
-                    <div className={`text-sm font-medium ${selected ? "text-blue-300" : "text-zinc-200"}`}>
+                    <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>
                       {p.label}
                     </div>
-                    <div className="text-xs text-zinc-500 truncate">{p.description}</div>
+                    <div className="text-xs text-muted-foreground truncate">{p.description}</div>
                   </div>
                   {selected && (
-                    <svg className="w-5 h-5 ml-auto text-blue-500 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="w-5 h-5 ml-auto text-primary shrink-0" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                     </svg>
                   )}
@@ -425,10 +425,10 @@ export default function NewWorkflow() {
         {/* ───── Step 4: Topic / Goal ───── */}
         <section className={`transition-opacity duration-300 ${contentType ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
           <div className="flex items-center gap-2 mb-1">
-            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-500"}`}>4</span>
-            <h2 className="text-lg font-semibold text-zinc-100">What is it about?</h2>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-card-foreground text-card" : "bg-accent text-muted-foreground"}`}>4</span>
+            <h2 className="text-lg font-semibold text-card-foreground">What is it about?</h2>
           </div>
-          <p className="text-sm text-zinc-500 ml-8 mb-3">
+          <p className="text-sm text-muted-foreground ml-8 mb-3">
             Be specific about the topic, angle, and audience. The more detail, the better the output.
           </p>
 
@@ -437,15 +437,15 @@ export default function NewWorkflow() {
               value={goalText}
               onChange={(e) => setGoalText(e.target.value)}
               placeholder="e.g. How to build a personal brand on LinkedIn in 2026, targeting solopreneurs who are stuck at under 1000 followers..."
-              className="w-full border-2 border-zinc-700 bg-zinc-900 text-zinc-100 rounded-xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-zinc-500"
+              className="w-full border-2 border-border bg-card text-card-foreground rounded-xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition placeholder:text-muted-foreground"
               rows={4}
               maxLength={2000}
             />
             <div className="flex items-center justify-between mt-1.5">
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 Be specific about topic, angle, and target audience.
               </p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 {goalText.length}/2000
               </p>
             </div>
@@ -455,10 +455,10 @@ export default function NewWorkflow() {
         {/* ───── Step 5: Tone ───── */}
         <section className={`transition-opacity duration-300 ${contentType ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
           <div className="flex items-center gap-2 mb-1">
-            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-500"}`}>5</span>
-            <h2 className="text-lg font-semibold text-zinc-100">Tone of voice</h2>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-card-foreground text-card" : "bg-accent text-muted-foreground"}`}>5</span>
+            <h2 className="text-lg font-semibold text-card-foreground">Tone of voice</h2>
           </div>
-          <p className="text-sm text-zinc-500 ml-8 mb-3">
+          <p className="text-sm text-muted-foreground ml-8 mb-3">
             How should this content sound? This overrides the default from your brand profile for this piece.
           </p>
 
@@ -472,16 +472,16 @@ export default function NewWorkflow() {
                   onClick={() => setTone(t.id)}
                   className={`flex items-start gap-2 p-3 rounded-xl border-2 text-left transition-all duration-200 ${
                     selected
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-zinc-700 bg-zinc-900 hover:border-zinc-600"
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-border"
                   }`}
                 >
                   <span className="text-lg mt-0.5">{t.emoji}</span>
                   <div className="min-w-0">
-                    <div className={`text-sm font-medium ${selected ? "text-blue-300" : "text-zinc-200"}`}>
+                    <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>
                       {t.label}
                     </div>
-                    <div className="text-xs text-zinc-500 leading-snug">{t.description}</div>
+                    <div className="text-xs text-muted-foreground leading-snug">{t.description}</div>
                   </div>
                 </button>
               );
@@ -492,10 +492,10 @@ export default function NewWorkflow() {
         {/* ───── Step 6: Content Length ───── */}
         <section className={`transition-opacity duration-300 ${contentType ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
           <div className="flex items-center gap-2 mb-1">
-            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-500"}`}>6</span>
-            <h2 className="text-lg font-semibold text-zinc-100">Content length</h2>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-card-foreground text-card" : "bg-accent text-muted-foreground"}`}>6</span>
+            <h2 className="text-lg font-semibold text-card-foreground">Content length</h2>
           </div>
-          <p className="text-sm text-zinc-500 ml-8 mb-3">
+          <p className="text-sm text-muted-foreground ml-8 mb-3">
             How long should the content be? Length adapts to each platform automatically.
           </p>
 
@@ -509,20 +509,20 @@ export default function NewWorkflow() {
                   onClick={() => setContentLength(l.id)}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all duration-200 ${
                     selected
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-zinc-700 bg-zinc-900 hover:border-zinc-600"
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-border"
                   }`}
                 >
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                    selected ? "border-blue-500" : "border-zinc-600"
+                    selected ? "border-primary" : "border-muted-foreground"
                   }`}>
-                    {selected && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                    {selected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                   </div>
                   <div className="min-w-0">
-                    <div className={`text-sm font-medium ${selected ? "text-blue-300" : "text-zinc-200"}`}>
+                    <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>
                       {l.label}
                     </div>
-                    <div className="text-xs text-zinc-500">{l.detail}</div>
+                    <div className="text-xs text-muted-foreground">{l.detail}</div>
                   </div>
                 </button>
               );
@@ -533,10 +533,10 @@ export default function NewWorkflow() {
         {/* ───── Step 7: Content Pillars ───── */}
         <section className={`transition-opacity duration-300 ${contentType ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
           <div className="flex items-center gap-2 mb-1">
-            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-500"}`}>7</span>
-            <h2 className="text-lg font-semibold text-zinc-100">Content pillars</h2>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-card-foreground text-card" : "bg-accent text-muted-foreground"}`}>7</span>
+            <h2 className="text-lg font-semibold text-card-foreground">Content pillars</h2>
           </div>
-          <p className="text-sm text-zinc-500 ml-8 mb-3">
+          <p className="text-sm text-muted-foreground ml-8 mb-3">
             {brandPillars.length > 0
               ? "Your brand pillars are pre-loaded. Toggle them on or off, or add new ones for this piece."
               : "Add the themes and topics this content should cover. You can set default pillars in your brand profile."}
@@ -562,7 +562,7 @@ export default function NewWorkflow() {
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all duration-200 ${
                         isSelected
                           ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-medium"
-                          : "border-zinc-700 bg-zinc-900 text-zinc-500 hover:border-zinc-600 line-through"
+                          : "border-border bg-card text-muted-foreground hover:border-border line-through"
                       }`}
                     >
                       {pillar}
@@ -594,7 +594,7 @@ export default function NewWorkflow() {
                   }
                 }}
                 placeholder="Add a pillar (e.g., Leadership, AI, Marketing)..."
-                className="flex-1 border-2 border-zinc-700 bg-zinc-900 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder:text-zinc-500"
+                className="flex-1 border-2 border-border bg-card text-card-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition placeholder:text-muted-foreground"
               />
               <button
                 type="button"
@@ -606,7 +606,7 @@ export default function NewWorkflow() {
                   }
                 }}
                 disabled={!customPillar.trim()}
-                className="px-3 py-2 bg-zinc-800 text-zinc-300 rounded-lg text-sm hover:bg-zinc-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-2 bg-accent text-foreground rounded-lg text-sm hover:bg-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Add
               </button>
@@ -617,10 +617,10 @@ export default function NewWorkflow() {
         {/* ───── Step 8: Research Sources ───── */}
         <section className={`transition-opacity duration-300 ${contentType ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
           <div className="flex items-center gap-2 mb-1">
-            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-500"}`}>8</span>
-            <h2 className="text-lg font-semibold text-zinc-100">Research sources</h2>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${contentType ? "bg-card-foreground text-card" : "bg-accent text-muted-foreground"}`}>8</span>
+            <h2 className="text-lg font-semibold text-card-foreground">Research sources</h2>
           </div>
-          <p className="text-sm text-zinc-500 ml-8 mb-3">
+          <p className="text-sm text-muted-foreground ml-8 mb-3">
             The AI searches these for trends, gaps, and content ideas before writing.
           </p>
 
@@ -632,8 +632,8 @@ export default function NewWorkflow() {
                 onClick={() => toggleSource(s.id)}
                 className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm border transition-all duration-200 ${
                   sources[s.id]
-                    ? "border-blue-500/40 bg-blue-500/10 text-blue-400 font-medium"
-                    : "border-zinc-700 bg-zinc-900 text-zinc-500 hover:border-zinc-600"
+                    ? "border-primary/40 bg-primary/10 text-primary font-medium"
+                    : "border-border bg-card text-muted-foreground hover:border-border"
                 }`}
               >
                 <span>{s.icon}</span>
@@ -648,7 +648,7 @@ export default function NewWorkflow() {
           <button
             type="submit"
             disabled={submitting || !canSubmit}
-            className="px-8 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <span className="flex items-center gap-2">
@@ -664,7 +664,7 @@ export default function NewWorkflow() {
           </button>
           <Link
             href="/content"
-            className="text-sm text-zinc-500 hover:text-zinc-300 transition"
+            className="text-sm text-muted-foreground hover:text-foreground transition"
           >
             Cancel
           </Link>
@@ -672,18 +672,18 @@ export default function NewWorkflow() {
 
         {/* ───── Summary preview ───── */}
         {canSubmit && (
-          <div className="ml-8 p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Summary</p>
+          <div className="ml-8 p-4 rounded-xl bg-card border border-border">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Summary</p>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="px-2 py-1 rounded-md bg-violet-500/20 text-violet-400 font-medium">
                 {OBJECTIVES.find((o) => o.id === objective)?.label}
               </span>
-              <span className="px-2 py-1 rounded-md bg-zinc-800 text-zinc-300 font-medium">
+              <span className="px-2 py-1 rounded-md bg-accent text-foreground font-medium">
                 {CONTENT_TYPES.find((c) => c.id === contentType)?.emoji}{" "}
                 {CONTENT_TYPES.find((c) => c.id === contentType)?.label}
               </span>
               {selectedPlatforms.map((pid) => (
-                <span key={pid} className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-400 font-medium">
+                <span key={pid} className="px-2 py-1 rounded-md bg-primary/20 text-primary font-medium">
                   {PLATFORMS.find((p) => p.id === pid)?.label}
                 </span>
               ))}

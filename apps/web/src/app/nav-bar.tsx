@@ -40,6 +40,14 @@ function ContentIcon({ className }: { className?: string }) {
   );
 }
 
+function ComposerIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+    </svg>
+  );
+}
+
 function ScheduleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -142,6 +150,7 @@ export function NavBar() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+  const [mcExpanded, setMcExpanded] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { brands, currentBrand, selectBrand, loading: brandsLoading } = useBrand();
@@ -164,6 +173,13 @@ export function NavBar() {
   // Close mobile menu on navigation
   useEffect(() => {
     setMobileOpen(false);
+  }, [pathname]);
+
+  // Auto-expand Mission Control section when on MC pages
+  useEffect(() => {
+    if (pathname?.startsWith("/mission-control")) {
+      setMcExpanded(true);
+    }
   }, [pathname]);
 
   // Close brand dropdown when clicking outside
@@ -205,11 +221,19 @@ export function NavBar() {
     { href: "/knowledge", label: "Knowledge", icon: KnowledgeIcon },
     { href: "/inspo", label: "Inspo", icon: InspoIcon },
     { href: "/content", label: "Content", icon: ContentIcon },
+    { href: "/composer", label: "Composer", icon: ComposerIcon },
     { href: "/research", label: "Research", icon: ResearchIcon },
     { href: "/schedule", label: "Schedule", icon: ScheduleIcon },
     { href: "/performance", label: "Performance", icon: PerformanceIcon },
     { href: "/usage", label: "Usage", icon: UsageIcon },
-    { href: "/mission-control", label: "Mission Control", icon: MissionControlIcon },
+  ];
+
+  const mcSubLinks = [
+    { href: "/mission-control", label: "Dashboard" },
+    { href: "/mission-control/analytics", label: "Analytics" },
+    { href: "/mission-control/orchestrator", label: "Orchestrator" },
+    { href: "/mission-control/gateway", label: "Gateway" },
+    { href: "/mission-control/chat", label: "Agent Chat" },
   ];
 
   const adminLinks = [
@@ -225,10 +249,10 @@ export function NavBar() {
       {/* Logo */}
       <div className="px-4 pt-6 pb-4">
         <Link href="/brands" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">P</span>
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">P</span>
           </div>
-          <span className="font-semibold text-zinc-100 text-lg tracking-tight">PositionedUp</span>
+          <span className="font-semibold text-card-foreground text-lg tracking-tight">PositionedUp</span>
         </Link>
       </div>
 
@@ -237,45 +261,45 @@ export function NavBar() {
         <div ref={dropdownRef} className="px-3 mb-4 relative">
           <button
             onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 text-sm font-medium text-zinc-300 transition"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-sidebar-accent/50 hover:bg-sidebar-accent text-sm font-medium text-sidebar-foreground transition"
           >
             <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
             <span className="flex-1 text-left truncate">
               {currentBrand ? currentBrand.name : "Select brand"}
             </span>
-            <ChevronIcon className="w-3.5 h-3.5 text-zinc-500" open={brandDropdownOpen} />
+            <ChevronIcon className="w-3.5 h-3.5 text-muted-foreground" open={brandDropdownOpen} />
           </button>
 
           {brandDropdownOpen && (
-            <div className="absolute left-3 right-3 top-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 py-1">
+            <div className="absolute left-3 right-3 top-full mt-1 bg-popover border border-border rounded-lg shadow-xl z-50 py-1">
               {brands.map((brand) => (
                 <button
                   key={brand.id}
                   onClick={() => handleBrandSwitch(brand.id)}
                   className={`w-full text-left px-3 py-2 text-sm transition ${
                     currentBrand?.id === brand.id
-                      ? "bg-blue-600/20 text-blue-400 font-medium"
-                      : "text-zinc-300 hover:bg-zinc-700"
+                      ? "bg-primary/20 text-primary font-medium"
+                      : "text-popover-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate">{brand.name}</span>
                     {currentBrand?.id === brand.id && (
-                      <svg className="w-4 h-4 text-blue-400 flex-shrink-0 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4 text-primary flex-shrink-0 ml-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     )}
                   </div>
                   {brand.description && (
-                    <p className="text-xs text-zinc-500 truncate mt-0.5">{brand.description}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{brand.description}</p>
                   )}
                 </button>
               ))}
-              <div className="border-t border-zinc-700 mt-1 pt-1">
+              <div className="border-t border-border mt-1 pt-1">
                 <Link
                   href="/brands/new"
                   onClick={() => setBrandDropdownOpen(false)}
-                  className="block px-3 py-2 text-sm text-blue-400 hover:bg-zinc-700 transition"
+                  className="block px-3 py-2 text-sm text-primary hover:bg-sidebar-accent transition"
                 >
                   + New Brand
                 </Link>
@@ -287,7 +311,7 @@ export function NavBar() {
 
       {/* Nav links */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        <p className="px-3 mb-2 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
+        <p className="px-3 mb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           Navigation
         </p>
         {navLinks.map((link) => {
@@ -299,19 +323,55 @@ export function NavBar() {
               href={link.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
-                  ? "bg-blue-600/15 text-blue-400 border border-blue-500/20"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/70 border border-transparent"
+                  ? "bg-primary/15 text-primary border border-primary/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent border border-transparent"
               }`}
             >
-              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-blue-400" : "text-zinc-500"}`} />
+              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} />
               {link.label}
             </Link>
           );
         })}
 
+        {/* Mission Control (expandable) */}
+        <div>
+          <button
+            onClick={() => setMcExpanded(!mcExpanded)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              pathname?.startsWith("/mission-control")
+                ? "bg-primary/15 text-primary border border-primary/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent border border-transparent"
+            }`}
+          >
+            <MissionControlIcon className={`w-[18px] h-[18px] flex-shrink-0 ${pathname?.startsWith("/mission-control") ? "text-primary" : "text-muted-foreground"}`} />
+            <span className="flex-1 text-left">Mission Control</span>
+            <ChevronIcon className="w-3.5 h-3.5 text-muted-foreground" open={mcExpanded} />
+          </button>
+          {mcExpanded && (
+            <div className="ml-7 mt-0.5 space-y-0.5">
+              {mcSubLinks.map((sub) => {
+                const subActive = pathname === sub.href;
+                return (
+                  <Link
+                    key={sub.href}
+                    href={sub.href}
+                    className={`block px-3 py-1.5 rounded-md text-[13px] transition-colors ${
+                      subActive
+                        ? "text-primary font-medium bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                    }`}
+                  >
+                    {sub.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Admin section */}
-        <div className="pt-4 mt-4 border-t border-zinc-800">
-          <p className="px-3 mb-2 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
+        <div className="pt-4 mt-4 border-t border-sidebar-border">
+          <p className="px-3 mb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             Admin
           </p>
           {adminLinks.map((link) => {
@@ -323,11 +383,11 @@ export function NavBar() {
                 href={link.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
-                    ? "bg-blue-600/15 text-blue-400 border border-blue-500/20"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/70 border border-transparent"
+                    ? "bg-primary/15 text-primary border border-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent border border-transparent"
                 }`}
               >
-                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-blue-400" : "text-zinc-500"}`} />
+                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} />
                 {link.label}
               </Link>
             );
@@ -336,10 +396,10 @@ export function NavBar() {
       </nav>
 
       {/* Bottom section */}
-      <div className="px-3 pb-4 mt-auto border-t border-zinc-800 pt-3">
+      <div className="px-3 pb-4 mt-auto border-t border-sidebar-border pt-3">
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/70 transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
         >
           <LogOutIcon className="w-[18px] h-[18px]" />
           Sign out
@@ -351,21 +411,21 @@ export function NavBar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-60 bg-zinc-900 border-r border-zinc-800 z-40">
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-60 bg-sidebar border-r border-sidebar-border z-40">
         {sidebarContent}
       </aside>
 
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 z-40">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-4 z-40">
         <Link href="/brands" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">P</span>
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-xs">P</span>
           </div>
-          <span className="font-semibold text-zinc-100 text-base">PositionedUp</span>
+          <span className="font-semibold text-card-foreground text-base">PositionedUp</span>
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <CloseIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
@@ -379,7 +439,7 @@ export function NavBar() {
             className="md:hidden fixed inset-0 bg-black/60 z-40"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="md:hidden fixed inset-y-0 left-0 w-64 bg-zinc-900 border-r border-zinc-800 z-50 flex flex-col overflow-y-auto">
+          <aside className="md:hidden fixed inset-y-0 left-0 w-64 bg-sidebar border-r border-sidebar-border z-50 flex flex-col overflow-y-auto">
             {sidebarContent}
           </aside>
         </>

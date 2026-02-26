@@ -408,7 +408,7 @@ def _transcribe_with_captions(video_id: str) -> Optional[Dict[str, str]]:
                 transcript = transcript_list.find_manually_created_transcript(["en"])
                 lang = "en"
             except Exception:
-                pass
+                logger.debug("No manual EN transcript for %s", video_id)
 
         if transcript is None:
             # Fall back to any available transcript
@@ -418,7 +418,7 @@ def _transcribe_with_captions(video_id: str) -> Optional[Dict[str, str]]:
                     lang = t.language_code
                     break
             except Exception:
-                pass
+                logger.debug("Failed to iterate transcript list for %s", video_id)
 
         if transcript is None:
             logger.debug(f"No usable transcript found for {video_id}")
@@ -879,7 +879,7 @@ def _extract_twitter_post(url: str) -> Dict[str, Any]:
             if not author:
                 author = oembed_data.get("author_name", "")
         except Exception:
-            pass
+            logger.debug("Twitter oEmbed extraction failed for tweet")
 
     # ── Build result ──
     if not tweet_text:

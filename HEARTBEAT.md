@@ -94,7 +94,7 @@ If no scheduled post matches, skip this rule.
 
 ## RULE 4: DELEGATION (Sub-Agent Spawning)
 
-**Trigger**: A task in BACKLOG or IN PROGRESS requires a specialist agent AND you are Jarvis (Orchestrator).
+**Trigger**: A task in BACKLOG or IN PROGRESS requires a specialist agent AND you are Jumbo (Orchestrator).
 
 **Steps**:
 1. Identify which specialist agent should handle the task based on tags and brief.
@@ -108,7 +108,7 @@ If no scheduled post matches, skip this rule.
 **Rules**:
 - Max 3 active sub-agents at a time (maxChildrenPerAgent).
 - Sub-agents use gpt-4o-mini by default (cost savings).
-- Only Jarvis can spawn sub-agents. Other agents cannot spawn.
+- Only Jumbo can spawn sub-agents. Other agents cannot spawn.
 - If a sub-agent fails, log the error and retry on next pulse.
 
 ---

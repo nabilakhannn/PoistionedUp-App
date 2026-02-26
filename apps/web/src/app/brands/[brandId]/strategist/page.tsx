@@ -547,11 +547,11 @@ export default function StrategistPage() {
 
   if (loading) {
     return (
-      <main className="flex h-screen bg-zinc-950">
+      <main className="flex h-screen bg-background">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-3">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm text-zinc-400">Loading your brand strategist...</p>
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-sm text-muted-foreground">Loading your brand strategist...</p>
           </div>
         </div>
       </main>
@@ -559,10 +559,10 @@ export default function StrategistPage() {
   }
 
   return (
-    <main className="flex h-screen bg-zinc-950">
+    <main className="flex h-screen bg-background">
       {/* ── Right sidebar: completeness (desktop) ───────── */}
       <div
-        className={`w-64 border-l border-zinc-800 bg-zinc-900 overflow-y-auto order-last ${
+        className={`w-64 border-l border-border bg-card overflow-y-auto order-last ${
           showSidebar ? "block" : "hidden lg:block"
         }`}
       >
@@ -578,11 +578,11 @@ export default function StrategistPage() {
       {/* ── Main chat area ────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="border-b border-zinc-800 px-6 py-3 flex items-center justify-between bg-zinc-900">
+        <div className="border-b border-border px-6 py-3 flex items-center justify-between bg-card">
           <div className="flex items-center gap-3">
             <Link
               href={`/brands/${brandId}`}
-              className="text-zinc-400 hover:text-zinc-200 transition"
+              className="text-muted-foreground hover:text-foreground transition"
               title="Back to brand dashboard"
             >
               <svg
@@ -601,10 +601,10 @@ export default function StrategistPage() {
               </svg>
             </Link>
             <div>
-              <h1 className="text-base font-semibold text-zinc-100">
+              <h1 className="text-base font-semibold text-card-foreground">
                 Brand Strategist
               </h1>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 Building your personal brand DNA
               </p>
             </div>
@@ -614,21 +614,21 @@ export default function StrategistPage() {
             {/* Completeness badge */}
             {completeness && (
               <div className="hidden sm:flex items-center gap-2">
-                <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
                       completeness.overall_percent >= 100
                         ? "bg-green-500"
                         : completeness.overall_percent >= 50
-                        ? "bg-blue-500"
-                        : "bg-zinc-600"
+                        ? "bg-primary"
+                        : "bg-muted-foreground"
                     }`}
                     style={{
                       width: `${Math.min(completeness.overall_percent, 100)}%`,
                     }}
                   />
                 </div>
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs text-muted-foreground">
                   {completeness.overall_percent}%
                 </span>
               </div>
@@ -637,7 +637,7 @@ export default function StrategistPage() {
             {/* Mobile sidebar toggle */}
             <button
               onClick={() => setShowSidebar(!showSidebar)}
-              className="lg:hidden px-3 py-1.5 border border-zinc-700 text-zinc-400 rounded-lg text-xs font-medium hover:bg-zinc-800 transition"
+              className="lg:hidden px-3 py-1.5 border border-border text-muted-foreground rounded-lg text-xs font-medium hover:bg-accent transition"
             >
               {showSidebar ? "Hide progress" : "Progress"}
             </button>
@@ -645,7 +645,7 @@ export default function StrategistPage() {
             {/* New chat */}
             <button
               onClick={handleNewChat}
-              className="px-3 py-1.5 border border-zinc-700 text-zinc-400 rounded-lg text-xs font-medium hover:bg-zinc-800 hover:text-zinc-200 transition flex items-center gap-1.5"
+              className="px-3 py-1.5 border border-border text-muted-foreground rounded-lg text-xs font-medium hover:bg-accent hover:text-foreground transition flex items-center gap-1.5"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -681,7 +681,7 @@ export default function StrategistPage() {
                 <div
                   className={`max-w-[85%] sm:max-w-[75%] ${
                     isUser
-                      ? "bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-3"
+                      ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md px-4 py-3"
                       : "space-y-4"
                   }`}
                 >
@@ -703,7 +703,7 @@ export default function StrategistPage() {
                         return (
                           <div
                             key={respIdx}
-                            className="group bg-zinc-900 border border-zinc-800 rounded-2xl rounded-bl-md px-4 py-4"
+                            className="group bg-card border border-border rounded-2xl rounded-bl-md px-4 py-4"
                           >
                             <ResponseRenderer
                               response={resp}
@@ -744,7 +744,7 @@ export default function StrategistPage() {
           {/* Sending indicator */}
           {sending && (
             <div className="flex justify-start">
-              <div className="bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl rounded-bl-md text-sm text-zinc-400">
+              <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-md text-sm text-muted-foreground">
                 <span className="inline-flex gap-1">
                   <span className="animate-bounce">·</span>
                   <span
@@ -775,7 +775,7 @@ export default function StrategistPage() {
         )}
 
         {/* ── Input area ──────────────────────────────────── */}
-        <div className="border-t border-zinc-800 px-4 sm:px-6 py-4 bg-zinc-900">
+        <div className="border-t border-border px-4 sm:px-6 py-4 bg-card">
           {/* Attachment preview */}
           {(attachedFile || attachedLink || attachedText) && (
             <AttachmentPreview
@@ -787,8 +787,8 @@ export default function StrategistPage() {
             />
           )}
           {attachUploading && (
-            <div className="flex items-center gap-2 mb-2 text-xs text-blue-400">
-              <span className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-2 mb-2 text-xs text-primary">
+              <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               {attachedLink ? "Extracting content..." : "Reading file..."}
             </div>
           )}
@@ -811,13 +811,13 @@ export default function StrategistPage() {
                   }
                 }}
                 placeholder="Paste a URL (YouTube, website, Reddit, etc.)"
-                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 autoFocus
               />
               <button
                 onClick={handleLinkSubmit}
                 disabled={!linkInputValue.trim()}
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition"
+                className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
               >
                 Extract
               </button>
@@ -826,7 +826,7 @@ export default function StrategistPage() {
                   setShowLinkInput(false);
                   setLinkInputValue("");
                 }}
-                className="px-2 py-2 text-zinc-500 hover:text-zinc-300 transition"
+                className="px-2 py-2 text-muted-foreground hover:text-foreground transition"
               >
                 ✕
               </button>
@@ -847,7 +847,7 @@ export default function StrategistPage() {
               onClick={() => fileInputRef.current?.click()}
               disabled={attachUploading || sending}
               title="Attach a file or image"
-              className="w-9 h-9 rounded-lg flex items-center justify-center bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 disabled:opacity-50 transition flex-shrink-0"
+              className="w-9 h-9 rounded-lg flex items-center justify-center bg-muted text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50 transition flex-shrink-0"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -872,8 +872,8 @@ export default function StrategistPage() {
               title="Attach a link"
               className={`w-9 h-9 rounded-lg flex items-center justify-center disabled:opacity-50 transition flex-shrink-0 ${
                 showLinkInput
-                  ? "bg-blue-600/20 text-blue-400"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               <svg
@@ -897,7 +897,7 @@ export default function StrategistPage() {
               onClick={() => setShowPicker(true)}
               disabled={attachUploading || sending}
               title="Attach from Knowledge or Inspo"
-              className="w-9 h-9 rounded-lg flex items-center justify-center bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 disabled:opacity-50 transition flex-shrink-0"
+              className="w-9 h-9 rounded-lg flex items-center justify-center bg-muted text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50 transition flex-shrink-0"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -926,7 +926,7 @@ export default function StrategistPage() {
                   : "Type your message..."
               }
               rows={2}
-              className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
+              className="flex-1 bg-muted border border-border rounded-xl px-4 py-2.5 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder:text-muted-foreground"
             />
 
             {/* Mic button */}
@@ -937,7 +937,7 @@ export default function StrategistPage() {
                 className={`w-9 h-9 rounded-lg flex items-center justify-center transition flex-shrink-0 ${
                   isListening
                     ? "bg-red-500 text-white animate-pulse"
-                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
                 <svg
@@ -959,7 +959,7 @@ export default function StrategistPage() {
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() || sending}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition flex-shrink-0"
+              className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition flex-shrink-0"
             >
               Send
             </button>
@@ -1001,7 +1001,7 @@ function UserBubble({ content }: { content: string }) {
         ? "bg-emerald-500/20 text-emerald-200"
         : icon === "💡"
         ? "bg-purple-500/20 text-purple-200"
-        : "bg-blue-500/20 text-blue-200";
+        : "bg-primary/20 text-primary";
 
     return (
       <div className="text-sm leading-relaxed">
@@ -1046,7 +1046,7 @@ function AttachmentPreview({
           ? "bg-emerald-500/10 border border-emerald-500/20"
           : isInspo
           ? "bg-purple-500/10 border border-purple-500/20"
-          : "bg-blue-500/10 border border-blue-500/20"
+          : "bg-primary/10 border border-primary/20"
       }`}
     >
       <span className="text-xs">
@@ -1058,7 +1058,7 @@ function AttachmentPreview({
             ? "text-emerald-400"
             : isInspo
             ? "text-purple-400"
-            : "text-blue-400"
+            : "text-primary"
         }`}
       >
         {label}
@@ -1068,12 +1068,12 @@ function AttachmentPreview({
           Gold
         </span>
       )}
-      <span className="text-zinc-500 text-xs">
+      <span className="text-muted-foreground text-xs">
         {textLength > 0 ? `${Math.round(textLength / 1000)}k chars` : "..."}
       </span>
       <button
         onClick={onRemove}
-        className="text-zinc-500 hover:text-red-400 transition"
+        className="text-muted-foreground hover:text-red-400 transition"
         title="Remove"
       >
         ✕

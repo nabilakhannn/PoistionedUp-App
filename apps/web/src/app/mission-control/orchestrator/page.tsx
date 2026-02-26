@@ -10,6 +10,7 @@ import {
   Deliverable,
   OrchestratorActivity,
 } from "@/lib/api/mission-control";
+import { orchestratorApi, OrchestratorStatus, ScheduleState } from "@/lib/api/orchestrator";
 import { STATUS_COLORS, ROLE_TYPE_BADGES, MESSAGE_TYPE_ICONS } from "../constants";
 
 /* ── Helpers ───────────────────────────────────────────── */
@@ -45,20 +46,26 @@ export default function OrchestratorPage() {
   const [hours, setHours] = useState(24);
   const [activeTab, setActiveTab] = useState<"timeline" | "delegations" | "sub-agents" | "deliverables">("timeline");
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+  const [orchStatus, setOrchStatus] = useState<OrchestratorStatus | null>(null);
+  const [pulsingSchedule, setPulsingSchedule] = useState<string | null>(null);
+  const [pulseRunning, setPulseRunning] = useState(false);
+  const [pulseMessage, setPulseMessage] = useState<string | null>(null);
 
-  const jarvis = agents.find((a) => a.id === "jarvis");
+  const jumbo = agents.find((a) => a.id === "jumbo");
   const subAgents = orchestratorData?.sub_agent_statuses || [];
 
   const loadData = useCallback(async () => {
     try {
-      const [orchRes, agentsRes, delivRes] = await Promise.all([
+      const [orchRes, agentsRes, delivRes, statusRes] = await Promise.all([
         missionControlApi.getOrchestratorActivity(hours),
         missionControlApi.listAgents(),
         missionControlApi.listDeliverables({ status: "review" }),
+        orchestratorApi.status().catch(() => null),
       ]);
       setOrchestratorData(orchRes);
       setAgents(agentsRes);
       setDeliverables(delivRes);
+      if (statusRes) setOrchStatus(statusRes);
       setError(null);
     } catch (err: any) {
       setError(err.message || "Failed to load orchestrator data");
@@ -66,6 +73,43 @@ export default function OrchestratorPage() {
       setLoading(false);
     }
   }, [hours]);
+
+  const handlePulse = async () => {
+    setPulseRunning(true);
+    setPulseMessage(null);
+    try {
+      const result = await orchestratorApi.pulse({ auto_execute: true, force: false });
+      const created = result.created_tasks.length;
+      const executed = result.executed.length;
+      setPulseMessage(
+        created > 0
+          ? `Created ${created} task${created > 1 ? "s" : ""}${executed > 0 ? `, executed ${executed}` : ""}`
+          : "All schedules up to date"
+      );
+      await loadData();
+    } catch (err: any) {
+      setPulseMessage(`Pulse failed: ${err.message}`);
+    } finally {
+      setPulseRunning(false);
+      setTimeout(() => setPulseMessage(null), 5000);
+    }
+  };
+
+  const handleTrigger = async (scheduleId: string) => {
+    setPulsingSchedule(scheduleId);
+    setPulseMessage(null);
+    try {
+      const result = await orchestratorApi.trigger(scheduleId, true);
+      const status = result.execution?.status || "created";
+      setPulseMessage(`Triggered ${scheduleId}: ${status}`);
+      await loadData();
+    } catch (err: any) {
+      setPulseMessage(`Trigger failed: ${err.message}`);
+    } finally {
+      setPulsingSchedule(null);
+      setTimeout(() => setPulseMessage(null), 5000);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -77,10 +121,10 @@ export default function OrchestratorPage() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-zinc-400">Loading Orchestrator view...</p>
+          <p className="text-sm text-muted-foreground">Loading Orchestrator view...</p>
         </div>
       </div>
     );
@@ -88,12 +132,12 @@ export default function OrchestratorPage() {
 
   if (error) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-sm">
           <div className="text-4xl mb-3">⚠️</div>
-          <h2 className="text-lg font-semibold text-zinc-200 mb-2">Load Error</h2>
-          <p className="text-sm text-zinc-400 mb-4">{error}</p>
-          <button onClick={loadData} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition">
+          <h2 className="text-lg font-semibold text-foreground mb-2">Load Error</h2>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <button onClick={loadData} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition">
             Retry
           </button>
         </div>
@@ -106,26 +150,44 @@ export default function OrchestratorPage() {
   const recentTasks = orchestratorData?.recent_tasks_created || [];
 
   return (
-    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="h-14 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-5">
+      <div className="h-14 border-b border-border bg-card flex items-center justify-between px-5">
         <div className="flex items-center gap-3">
           <span className="text-amber-400 text-lg">◇</span>
-          <h1 className="text-sm font-bold text-zinc-200 tracking-wider uppercase">Orchestrator View</h1>
-          {jarvis && (
-            <div className="flex items-center gap-2 ml-3 px-3 py-1 rounded-full bg-zinc-800 border border-zinc-700">
-              <span className="text-lg">{jarvis.avatar_emoji}</span>
-              <span className="text-xs font-medium text-zinc-300">{jarvis.name}</span>
+          <h1 className="text-sm font-bold text-foreground tracking-wider uppercase">Orchestrator View</h1>
+          {jumbo && (
+            <div className="flex items-center gap-2 ml-3 px-3 py-1 rounded-full bg-accent border border-border">
+              <span className="text-lg">{jumbo.avatar_emoji}</span>
+              <span className="text-xs font-medium text-foreground">{jumbo.name}</span>
               <span className={`w-1.5 h-1.5 rounded-full ${
-                (STATUS_COLORS[jarvis.status] || STATUS_COLORS.idle).dot
-              } ${jarvis.status === "working" ? "animate-pulse" : ""}`} />
+                (STATUS_COLORS[jumbo.status] || STATUS_COLORS.idle).dot
+              } ${jumbo.status === "working" ? "animate-pulse" : ""}`} />
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Pulse button */}
+          <button
+            onClick={handlePulse}
+            disabled={pulseRunning}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 ${
+              pulseRunning
+                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 cursor-wait"
+                : "bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25"
+            }`}
+          >
+            {pulseRunning ? (
+              <span className="w-3 h-3 border border-amber-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <span>&#9889;</span>
+            )}
+            {pulseRunning ? "Running..." : "Run Pulse"}
+          </button>
+
           {/* Time range selector */}
-          <div className="flex items-center gap-1 bg-zinc-800 rounded-lg border border-zinc-700 p-0.5">
+          <div className="flex items-center gap-1 bg-accent rounded-lg border border-border p-0.5">
             {([
               { val: 24, label: "24h" },
               { val: 72, label: "3d" },
@@ -136,8 +198,8 @@ export default function OrchestratorPage() {
                 onClick={() => { setHours(opt.val); setLoading(true); }}
                 className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition ${
                   hours === opt.val
-                    ? "bg-blue-600/20 text-blue-400"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {opt.label}
@@ -153,53 +215,125 @@ export default function OrchestratorPage() {
       </div>
 
       {/* Sub-navigation */}
-      <div className="h-10 border-b border-zinc-800 bg-zinc-900/50 flex items-center px-5 gap-1">
-        <Link href="/mission-control" className="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition">
+      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1">
+        <Link href="/mission-control" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
           Dashboard
         </Link>
-        <Link href="/mission-control/analytics" className="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition">
+        <Link href="/mission-control/analytics" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
           Analytics
         </Link>
-        <Link href="/mission-control/orchestrator" className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600/15 text-blue-400 border border-blue-500/20">
+        <Link href="/mission-control/orchestrator" className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/15 text-primary border border-primary/20">
           Orchestrator
+        </Link>
+        <Link href="/mission-control/gateway" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
+          Gateway
+        </Link>
+        <Link href="/mission-control/chat" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
+          Chat
         </Link>
       </div>
 
       {/* Main content: 2-panel layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* ── Left panel: Sub-agents + Stats ─────────────── */}
-        <div className="w-72 flex-shrink-0 border-r border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden">
-          {/* Jarvis stats */}
-          <div className="px-4 py-4 border-b border-zinc-800">
+        <div className="w-72 flex-shrink-0 border-r border-border bg-background flex flex-col overflow-hidden">
+          {/* Jumbo stats */}
+          <div className="px-4 py-4 border-b border-border">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-amber-500/30 flex items-center justify-center text-2xl">
-                {jarvis?.avatar_emoji || "🎯"}
+              <div className="w-12 h-12 rounded-full bg-accent border-2 border-amber-500/30 flex items-center justify-center text-2xl">
+                {jumbo?.avatar_emoji || "🎯"}
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-zinc-100">{jarvis?.name || "Jarvis"}</h3>
-                <p className="text-[10px] text-zinc-500">{jarvis?.role || "Orchestrator"}</p>
+                <h3 className="text-sm font-semibold text-card-foreground">{jumbo?.name || "Jumbo"}</h3>
+                <p className="text-[10px] text-muted-foreground">{jumbo?.role || "Orchestrator"}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <div className="text-center px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                <div className="text-lg font-bold text-zinc-100 font-mono">{delegations.length}</div>
-                <div className="text-[8px] text-zinc-500 uppercase">Delegated</div>
+              <div className="text-center px-2 py-1.5 rounded-lg bg-card border border-border">
+                <div className="text-lg font-bold text-card-foreground font-mono">{delegations.length}</div>
+                <div className="text-[8px] text-muted-foreground uppercase">Delegated</div>
               </div>
-              <div className="text-center px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                <div className="text-lg font-bold text-zinc-100 font-mono">{recentTasks.length}</div>
-                <div className="text-[8px] text-zinc-500 uppercase">Created</div>
+              <div className="text-center px-2 py-1.5 rounded-lg bg-card border border-border">
+                <div className="text-lg font-bold text-card-foreground font-mono">{recentTasks.length}</div>
+                <div className="text-[8px] text-muted-foreground uppercase">Created</div>
               </div>
-              <div className="text-center px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                <div className="text-lg font-bold text-zinc-100 font-mono">{timeline.length}</div>
-                <div className="text-[8px] text-zinc-500 uppercase">Messages</div>
+              <div className="text-center px-2 py-1.5 rounded-lg bg-card border border-border">
+                <div className="text-lg font-bold text-card-foreground font-mono">{timeline.length}</div>
+                <div className="text-[8px] text-muted-foreground uppercase">Messages</div>
               </div>
             </div>
           </div>
 
+          {/* Pulse message toast */}
+          {pulseMessage && (
+            <div className="px-4 py-2 border-b border-border bg-card/50">
+              <p className="text-[10px] text-amber-400 font-medium">{pulseMessage}</p>
+            </div>
+          )}
+
+          {/* Scheduled Automations */}
+          <div className="px-4 py-2.5 border-b border-border">
+            <h3 className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-2.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              Scheduled Automations
+            </h3>
+            {(orchStatus?.schedules || []).map((sched) => {
+              const isTriggering = pulsingSchedule === sched.id;
+              const agentMatch = agents.find((a) => a.id === sched.agent_id);
+              const typeIcon = sched.task_type === "research" ? "&#128269;" :
+                               sched.task_type === "analytics" ? "&#128202;" :
+                               sched.task_type === "competitor" ? "&#9876;" : "&#9889;";
+              return (
+                <div key={sched.id} className="mb-2 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-muted-foreground transition">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs" dangerouslySetInnerHTML={{ __html: typeIcon }} />
+                      <span className="text-[11px] font-medium text-foreground">{sched.name}</span>
+                    </div>
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold ${
+                      sched.is_due && !sched.has_recent_run
+                        ? "bg-green-500/20 text-green-400"
+                        : sched.has_recent_run
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {sched.is_due && !sched.has_recent_run ? "DUE" : sched.has_recent_run ? "RAN" : "WAITING"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] text-muted-foreground">
+                      {agentMatch ? `${agentMatch.avatar_emoji} ${agentMatch.name}` : sched.agent_id}
+                      {sched.last_run && (
+                        <span className="ml-1.5 text-muted-foreground">
+                          {sched.last_run.status === "done" ? "  OK" : sched.last_run.status === "failed" ? "  FAIL" : ""}
+                          {" "}{timeAgo(sched.last_run.created_at)}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleTrigger(sched.id)}
+                      disabled={isTriggering}
+                      className={`px-2 py-1 rounded text-[9px] font-bold transition ${
+                        isTriggering
+                          ? "bg-muted text-muted-foreground cursor-wait"
+                          : "bg-primary/15 text-primary border border-primary/20 hover:bg-primary/25"
+                      }`}
+                    >
+                      {isTriggering ? "..." : "Run"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {(!orchStatus || orchStatus.schedules.length === 0) && (
+              <p className="text-[10px] text-muted-foreground text-center py-2">Loading schedules...</p>
+            )}
+          </div>
+
           {/* Sub-agent roster */}
-          <div className="px-4 py-2.5 border-b border-zinc-800">
-            <h3 className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold flex items-center gap-1.5">
+          <div className="px-4 py-2.5 border-b border-border">
+            <h3 className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
               Sub-Agent Roster
             </h3>
@@ -212,20 +346,20 @@ export default function OrchestratorPage() {
               return (
                 <div
                   key={agent.id}
-                  className="px-4 py-3 border-b border-zinc-800/50 hover:bg-zinc-800/20 transition"
+                  className="px-4 py-3 border-b border-border/50 hover:bg-accent/20 transition"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-base border border-zinc-700 flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-base border border-border flex-shrink-0">
                       {agent.avatar_emoji}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-medium text-zinc-200 truncate">{agent.name}</span>
+                        <span className="text-xs font-medium text-foreground truncate">{agent.name}</span>
                         <span className={`text-[8px] px-1 py-0.5 rounded border font-bold ${roleStyle.color}`}>
                           {roleStyle.label}
                         </span>
                       </div>
-                      <span className="text-[10px] text-zinc-500">{agent.role}</span>
+                      <span className="text-[10px] text-muted-foreground">{agent.role}</span>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot} ${
@@ -237,12 +371,12 @@ export default function OrchestratorPage() {
                     </div>
                   </div>
                   {agent.status_reason && (
-                    <p className="text-[10px] text-zinc-400 mt-1.5 ml-10 line-clamp-2">
+                    <p className="text-[10px] text-muted-foreground mt-1.5 ml-10 line-clamp-2">
                       {agent.status_reason}
                     </p>
                   )}
                   {agent.last_heartbeat_at && (
-                    <p className="text-[9px] text-zinc-600 mt-0.5 ml-10">
+                    <p className="text-[9px] text-muted-foreground mt-0.5 ml-10">
                       Last heartbeat: {timeAgo(agent.last_heartbeat_at)}
                     </p>
                   )}
@@ -250,7 +384,7 @@ export default function OrchestratorPage() {
               );
             })}
             {subAgents.length === 0 && (
-              <div className="text-center py-8 text-xs text-zinc-600">
+              <div className="text-center py-8 text-xs text-muted-foreground">
                 No sub-agents found
               </div>
             )}
@@ -260,7 +394,7 @@ export default function OrchestratorPage() {
         {/* ── Right panel: Activity feed ─────────────────── */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Tabs */}
-          <div className="h-10 border-b border-zinc-800 flex items-center px-5 gap-4">
+          <div className="h-10 border-b border-border flex items-center px-5 gap-4">
             {([
               { key: "timeline" as const, label: "Timeline", icon: "📡", count: timeline.length },
               { key: "delegations" as const, label: "Delegations", icon: "📋", count: delegations.length },
@@ -272,14 +406,14 @@ export default function OrchestratorPage() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 pb-0 text-xs font-medium border-b-2 transition ${
                   activeTab === tab.key
-                    ? "text-blue-400 border-blue-400"
-                    : "text-zinc-500 border-transparent hover:text-zinc-300"
+                    ? "text-primary border-primary"
+                    : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
                 <span>{tab.icon}</span>
                 {tab.label}
                 <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                  activeTab === tab.key ? "bg-blue-500/20 text-blue-400" : "bg-zinc-800 text-zinc-500"
+                  activeTab === tab.key ? "bg-primary/20 text-primary" : "bg-accent text-muted-foreground"
                 }`}>
                   {tab.count}
                 </span>
@@ -309,7 +443,7 @@ export default function OrchestratorPage() {
                         <button
                           key={msg.id}
                           onClick={() => setExpandedMessage(isExpanded ? null : msg.id)}
-                          className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-zinc-800/40 transition group"
+                          className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-accent/40 transition group"
                         >
                           <div className="flex items-start gap-3">
                             {/* Icon */}
@@ -321,7 +455,7 @@ export default function OrchestratorPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
                                 {fromAgent ? (
-                                  <span className="text-xs font-medium text-zinc-200">
+                                  <span className="text-xs font-medium text-foreground">
                                     {fromAgent.avatar_emoji} {fromAgent.name}
                                   </span>
                                 ) : (
@@ -329,20 +463,20 @@ export default function OrchestratorPage() {
                                 )}
                                 {toAgent && (
                                   <>
-                                    <span className="text-zinc-600 text-[10px]">→</span>
-                                    <span className="text-xs text-zinc-400">
+                                    <span className="text-muted-foreground text-[10px]">→</span>
+                                    <span className="text-xs text-muted-foreground">
                                       {toAgent.avatar_emoji} {toAgent.name}
                                     </span>
                                   </>
                                 )}
                                 {!toAgent && msg.message_type === "broadcast" && (
                                   <>
-                                    <span className="text-zinc-600 text-[10px]">→</span>
+                                    <span className="text-muted-foreground text-[10px]">→</span>
                                     <span className="text-xs text-cyan-400">📢 All Agents</span>
                                   </>
                                 )}
                               </div>
-                              <p className={`text-xs text-zinc-400 ${isExpanded ? "" : "line-clamp-2"}`}>
+                              <p className={`text-xs text-muted-foreground ${isExpanded ? "" : "line-clamp-2"}`}>
                                 {msg.message}
                               </p>
                               <div className="flex items-center gap-2 mt-1">
@@ -352,11 +486,11 @@ export default function OrchestratorPage() {
                                   msg.message_type === "deliverable" ? "bg-purple-500/15 text-purple-400" :
                                   msg.message_type === "broadcast" ? "bg-cyan-500/15 text-cyan-400" :
                                   msg.message_type === "status" ? "bg-green-500/15 text-green-400" :
-                                  "bg-zinc-700/50 text-zinc-500"
+                                  "bg-muted text-muted-foreground"
                                 }`}>
                                   {msg.message_type.toUpperCase()}
                                 </span>
-                                <span className="text-[9px] text-zinc-600">{fmtDateTime(msg.created_at)}</span>
+                                <span className="text-[9px] text-muted-foreground">{fmtDateTime(msg.created_at)}</span>
                               </div>
                             </div>
                           </div>
@@ -375,7 +509,7 @@ export default function OrchestratorPage() {
                   <EmptyState
                     icon="📋"
                     title="No delegations"
-                    description={`Jarvis hasn't delegated any tasks in the last ${hours} hours.`}
+                    description={`Jumbo hasn't delegated any tasks in the last ${hours} hours.`}
                   />
                 ) : (
                   <div className="space-y-2">
@@ -385,7 +519,7 @@ export default function OrchestratorPage() {
                       return (
                         <div
                           key={msg.id}
-                          className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition"
+                          className="bg-card border border-border rounded-lg overflow-hidden hover:border-muted-foreground transition"
                         >
                           <button
                             onClick={() => setExpandedMessage(isExpanded ? null : msg.id)}
@@ -393,20 +527,20 @@ export default function OrchestratorPage() {
                           >
                             <div className="flex items-center gap-2.5 mb-1.5">
                               <span className="text-amber-400 text-sm">📋</span>
-                              <span className="text-xs font-medium text-zinc-200 flex-1">
+                              <span className="text-xs font-medium text-foreground flex-1">
                                 Delegated to {toAgent ? `${toAgent.avatar_emoji} ${toAgent.name}` : "Unknown Agent"}
                               </span>
-                              <span className="text-[9px] text-zinc-600">{timeAgo(msg.created_at)}</span>
+                              <span className="text-[9px] text-muted-foreground">{timeAgo(msg.created_at)}</span>
                             </div>
-                            <p className={`text-xs text-zinc-400 ml-6 ${isExpanded ? "" : "line-clamp-3"}`}>
+                            <p className={`text-xs text-muted-foreground ml-6 ${isExpanded ? "" : "line-clamp-3"}`}>
                               {msg.message}
                             </p>
                           </button>
 
                           {isExpanded && msg.task_id && (
-                            <div className="px-4 py-2.5 bg-zinc-800/30 border-t border-zinc-800/50">
-                              <p className="text-[10px] text-zinc-500">
-                                Task: <span className="text-zinc-300 font-mono">{msg.task_id}</span>
+                            <div className="px-4 py-2.5 bg-accent/30 border-t border-border/50">
+                              <p className="text-[10px] text-muted-foreground">
+                                Task: <span className="text-foreground font-mono">{msg.task_id}</span>
                               </p>
                             </div>
                           )}
@@ -434,54 +568,54 @@ export default function OrchestratorPage() {
                       return (
                         <div
                           key={task.id}
-                          className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 hover:border-zinc-700 transition"
+                          className="bg-card border border-border rounded-lg px-4 py-3 hover:border-muted-foreground transition"
                         >
                           <div className="flex items-start justify-between mb-1.5">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-zinc-600 font-mono">{task.id}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono">{task.id}</span>
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                                 task.priority === "P0" ? "bg-red-500/20 text-red-400" :
                                 task.priority === "P1" ? "bg-amber-500/20 text-amber-400" :
-                                task.priority === "P2" ? "bg-blue-500/20 text-blue-400" :
-                                "bg-zinc-700/50 text-zinc-500"
+                                task.priority === "P2" ? "bg-primary/20 text-primary" :
+                                "bg-muted text-muted-foreground"
                               }`}>
                                 {task.priority}
                               </span>
                             </div>
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                               task.status === "done" ? "bg-green-500/15 text-green-400" :
-                              task.status === "in_progress" ? "bg-blue-500/15 text-blue-400" :
+                              task.status === "in_progress" ? "bg-primary/15 text-primary" :
                               task.status === "review" ? "bg-purple-500/15 text-purple-400" :
                               task.status === "assigned" ? "bg-amber-500/15 text-amber-400" :
-                              "bg-zinc-700/50 text-zinc-500"
+                              "bg-muted text-muted-foreground"
                             }`}>
                               {task.status.replace("_", " ").toUpperCase()}
                             </span>
                           </div>
 
-                          <h4 className="text-sm font-medium text-zinc-200 mb-1">{task.title}</h4>
+                          <h4 className="text-sm font-medium text-foreground mb-1">{task.title}</h4>
 
                           {task.brief && (
-                            <p className="text-xs text-zinc-500 line-clamp-2 mb-2">{task.brief}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{task.brief}</p>
                           )}
 
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               {assignee ? (
-                                <span className="flex items-center gap-1 text-[11px] text-zinc-400">
+                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                   {assignee.avatar_emoji} {assignee.name}
                                 </span>
                               ) : (
-                                <span className="text-[11px] text-zinc-600 italic">Unassigned</span>
+                                <span className="text-[11px] text-muted-foreground italic">Unassigned</span>
                               )}
                             </div>
-                            <span className="text-[10px] text-zinc-600">{fmtDateTime(task.created_at)}</span>
+                            <span className="text-[10px] text-muted-foreground">{fmtDateTime(task.created_at)}</span>
                           </div>
 
                           {task.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {task.tags.map((tag) => (
-                                <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700">
+                                <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-accent text-muted-foreground border border-border">
                                   {tag}
                                 </span>
                               ))}
@@ -511,7 +645,7 @@ export default function OrchestratorPage() {
                       return (
                         <div
                           key={d.id}
-                          className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition"
+                          className="bg-card border border-border rounded-lg overflow-hidden hover:border-muted-foreground transition"
                         >
                           <div className="px-4 py-3">
                             <div className="flex items-center justify-between mb-1.5">
@@ -523,34 +657,34 @@ export default function OrchestratorPage() {
                                    d.deliverable_type === "report" ? "📊" :
                                    "📦"}
                                 </span>
-                                <h4 className="text-sm font-medium text-zinc-200">{d.title}</h4>
+                                <h4 className="text-sm font-medium text-foreground">{d.title}</h4>
                               </div>
                               <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                                 d.status === "approved" ? "bg-green-500/15 text-green-400" :
                                 d.status === "rejected" ? "bg-red-500/15 text-red-400" :
                                 d.status === "review" ? "bg-amber-500/15 text-amber-400" :
-                                "bg-zinc-700/50 text-zinc-500"
+                                "bg-muted text-muted-foreground"
                               }`}>
                                 {d.status.toUpperCase()}
                               </span>
                             </div>
 
                             {creator && (
-                              <p className="text-[11px] text-zinc-500 mb-2">
+                              <p className="text-[11px] text-muted-foreground mb-2">
                                 Created by {creator.avatar_emoji} {creator.name}
                               </p>
                             )}
 
                             {d.content && (
-                              <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-3 max-h-40 overflow-y-auto">
-                                <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-sans leading-relaxed">
+                              <div className="bg-accent/50 border border-border/50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                                <pre className="text-xs text-foreground whitespace-pre-wrap font-sans leading-relaxed">
                                   {d.content}
                                 </pre>
                               </div>
                             )}
 
                             {d.file_path && (
-                              <p className="text-[10px] text-zinc-600 mt-2 font-mono">
+                              <p className="text-[10px] text-muted-foreground mt-2 font-mono">
                                 📁 {d.file_path}
                               </p>
                             )}
@@ -558,18 +692,19 @@ export default function OrchestratorPage() {
                             {d.feedback && (
                               <div className="mt-2 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
                                 <p className="text-[10px] text-amber-500 uppercase tracking-wider font-bold mb-0.5">Feedback</p>
-                                <p className="text-xs text-zinc-300">{d.feedback}</p>
+                                <p className="text-xs text-foreground">{d.feedback}</p>
                               </div>
                             )}
                           </div>
 
                           {d.status === "review" && (
-                            <div className="px-4 py-2.5 bg-zinc-800/20 border-t border-zinc-800/50 flex items-center justify-end gap-2">
+                            <div className="px-4 py-2.5 bg-accent/20 border-t border-border/50 flex items-center justify-end gap-2">
                               <button
                                 onClick={async () => {
+                                  const reason = prompt("Rejection reason (optional):");
                                   try {
-                                    await missionControlApi.listDeliverables({ task_id: d.task_id });
-                                    // TODO: Implement approve/reject via deliverable status update
+                                    await missionControlApi.updateDeliverable(d.id, "rejected", reason || undefined);
+                                    await loadData();
                                   } catch {}
                                 }}
                                 className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-red-400 border border-red-500/30 hover:bg-red-500/10 transition"
@@ -579,8 +714,8 @@ export default function OrchestratorPage() {
                               <button
                                 onClick={async () => {
                                   try {
-                                    await missionControlApi.listDeliverables({ task_id: d.task_id });
-                                    // TODO: Implement approve
+                                    await missionControlApi.updateDeliverable(d.id, "approved");
+                                    await loadData();
                                   } catch {}
                                 }}
                                 className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-green-600 text-white hover:bg-green-500 transition"
@@ -609,8 +744,8 @@ function EmptyState({ icon, title, description }: { icon: string; title: string;
   return (
     <div className="text-center py-16">
       <div className="text-4xl mb-3">{icon}</div>
-      <h3 className="text-sm font-semibold text-zinc-300 mb-1">{title}</h3>
-      <p className="text-xs text-zinc-500 max-w-xs mx-auto">{description}</p>
+      <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground max-w-xs mx-auto">{description}</p>
     </div>
   );
 }

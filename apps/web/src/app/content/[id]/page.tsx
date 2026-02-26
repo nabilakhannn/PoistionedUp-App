@@ -201,21 +201,21 @@ export default function WorkflowDetailPage() {
   // Show a visual progress indicator while the pipeline executes inline
   if (executing || (workflow && workflow.status === "queued")) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-zinc-950">
+      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-background">
         <div className="text-center max-w-md">
           <div className="mb-4">
-            <svg className="animate-spin h-10 w-10 text-blue-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin h-10 w-10 text-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           </div>
-          <h2 className="text-lg font-bold text-white mb-2">
+          <h2 className="text-lg font-bold text-foreground mb-2">
             Running Pipeline...
           </h2>
-          <p className="text-zinc-400 text-sm mb-2">
+          <p className="text-muted-foreground text-sm mb-2">
             The AI is researching trends, analyzing gaps, and generating topic candidates.
           </p>
-          <p className="text-zinc-500 text-xs">
+          <p className="text-muted-foreground text-xs">
             This usually takes 30 to 90 seconds. The page will update automatically.
           </p>
         </div>
@@ -225,16 +225,16 @@ export default function WorkflowDetailPage() {
 
   if (error && !workflow) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-zinc-950">
+      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-background">
         <div className="text-center max-w-sm">
           <div className="text-4xl mb-3">&#x26A0;&#xFE0F;</div>
-          <h2 className="text-lg font-bold text-white mb-2">
+          <h2 className="text-lg font-bold text-foreground mb-2">
             Failed to load workflow
           </h2>
-          <p className="text-zinc-400 text-sm mb-4">{error}</p>
+          <p className="text-muted-foreground text-sm mb-4">{error}</p>
           <Link
             href="/content"
-            className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+            className="text-primary hover:text-primary text-sm font-medium"
           >
             Back to Content
           </Link>
@@ -245,15 +245,15 @@ export default function WorkflowDetailPage() {
 
   if (!workflow) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-zinc-950">
+      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-background">
         <div className="text-center">
           <div className="text-4xl mb-3">&#x1F50D;</div>
-          <h2 className="text-lg font-bold text-white mb-2">
+          <h2 className="text-lg font-bold text-foreground mb-2">
             Workflow not found
           </h2>
           <Link
             href="/content"
-            className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+            className="text-primary hover:text-primary text-sm font-medium"
           >
             Back to Content
           </Link>

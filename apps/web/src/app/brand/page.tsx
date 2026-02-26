@@ -133,9 +133,9 @@ export default function BrandDashboard() {
   const overallPercent = completeness?.overall_percent ?? 0;
 
   return (
-    <main className="max-w-4xl mx-auto p-8 bg-zinc-950 text-zinc-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-2 text-zinc-100">Your Personal Brand</h1>
-      <p className="text-zinc-400 mb-8">
+    <main className="max-w-4xl mx-auto p-8 bg-background text-card-foreground min-h-screen">
+      <h1 className="text-3xl font-bold mb-2 text-card-foreground">Your Personal Brand</h1>
+      <p className="text-muted-foreground mb-8">
         Build your brand step by step. Complete each stage in order — each one
         builds on the last.
       </p>
@@ -149,14 +149,14 @@ export default function BrandDashboard() {
       {completeness && (
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm font-medium text-zinc-300">
+            <span className="text-sm font-medium text-foreground">
               Overall progress
             </span>
-            <span className="text-sm text-zinc-500">{overallPercent}%</span>
+            <span className="text-sm text-muted-foreground">{overallPercent}%</span>
           </div>
-          <div className="w-full bg-zinc-800 rounded-full h-2">
+          <div className="w-full bg-accent rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
+              className="bg-primary h-2 rounded-full transition-all"
               style={{ width: `${overallPercent}%` }}
             />
           </div>
@@ -166,7 +166,7 @@ export default function BrandDashboard() {
       {/* Learning Path */}
       <div className="relative">
         {/* Vertical connector line */}
-        <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-zinc-800" />
+        <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-accent" />
 
         <div className="space-y-4">
           {stages.map((stage) => {
@@ -186,8 +186,8 @@ export default function BrandDashboard() {
                       : isStarted
                       ? "bg-yellow-500/20 border-yellow-500 text-yellow-400"
                       : stage.ready
-                      ? "bg-zinc-900 border-zinc-700 text-zinc-400"
-                      : "bg-zinc-900 border-zinc-800 text-zinc-500"
+                      ? "bg-card border-border text-muted-foreground"
+                      : "bg-card border-border text-muted-foreground"
                   }`}
                 >
                   {isComplete ? (
@@ -203,8 +203,8 @@ export default function BrandDashboard() {
                 <div
                   className={`flex-1 rounded-lg border p-5 ${
                     stage.ready
-                      ? "bg-zinc-900 border-zinc-800"
-                      : "bg-zinc-900/50 border-zinc-800/50"
+                      ? "bg-card border-border"
+                      : "bg-card/50 border-border/50"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-1">
@@ -212,12 +212,12 @@ export default function BrandDashboard() {
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold">{stage.title}</h2>
                         {!stage.ready && (
-                          <span className="text-xs bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded">
+                          <span className="text-xs bg-accent text-muted-foreground px-2 py-0.5 rounded">
                             Coming soon
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-blue-600 font-medium">
+                      <p className="text-sm text-primary font-medium">
                         {stage.question}
                       </p>
                     </div>
@@ -228,7 +228,7 @@ export default function BrandDashboard() {
                             ? "bg-green-500/20 text-green-400"
                             : isStarted
                             ? "bg-yellow-500/20 text-yellow-400"
-                            : "bg-zinc-800 text-zinc-500"
+                            : "bg-accent text-muted-foreground"
                         }`}
                       >
                         {pct}%
@@ -236,19 +236,19 @@ export default function BrandDashboard() {
                     )}
                   </div>
 
-                  <p className="text-zinc-400 text-sm mb-3">
+                  <p className="text-muted-foreground text-sm mb-3">
                     {stage.description}
                   </p>
 
                   {stage.ready && stage.percentKey && completeness && (
-                    <div className="w-full bg-zinc-800 rounded-full h-1.5 mb-4">
+                    <div className="w-full bg-accent rounded-full h-1.5 mb-4">
                       <div
                         className={`h-1.5 rounded-full transition-all ${
                           isComplete
                             ? "bg-green-500"
                             : isStarted
                             ? "bg-yellow-500"
-                            : "bg-zinc-700"
+                            : "bg-muted"
                         }`}
                         style={{ width: `${pct}%` }}
                       />
@@ -260,7 +260,7 @@ export default function BrandDashboard() {
                       {stage.chatPath && (
                         <Link
                           href={stage.chatPath}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
                         >
                           {isStarted ? "Continue chat" : "Start with AI"}
                         </Link>
@@ -268,7 +268,7 @@ export default function BrandDashboard() {
                       {stage.editPath && (
                         <Link
                           href={stage.editPath}
-                          className="px-4 py-2 border border-zinc-700 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-800 transition"
+                          className="px-4 py-2 border border-border text-foreground rounded-lg text-sm font-medium hover:bg-accent transition"
                         >
                           Edit manually
                         </Link>

@@ -620,7 +620,7 @@ async def chat(
         from app.services.brand_chat import _fetch_performance_context
         perf_context = _fetch_performance_context(user.id, brand_id=body.brand_id)
     except Exception:
-        pass
+        logger.warning("Failed to fetch performance context for user %s", user.id, exc_info=True)
 
     # Retrieve agent memory context (learned preferences and patterns)
     mem_context = ""
@@ -628,7 +628,7 @@ async def chat(
         from app.services.brand_chat import _fetch_memory_context
         mem_context = _fetch_memory_context(user.id, brand_id=body.brand_id)
     except Exception:
-        pass
+        logger.warning("Failed to fetch memory context for user %s", user.id, exc_info=True)
 
     # Retrieve real-time research context (live web, YouTube, Reddit)
     research_context = ""

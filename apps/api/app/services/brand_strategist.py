@@ -235,7 +235,7 @@ def build_strategist_system_prompt(
             if auto_ctx:
                 parts.append(auto_ctx)
         except Exception:
-            pass
+            logger.warning("Failed to build auto-context for user %s", user_id, exc_info=True)
 
     return "\n\n".join(parts)
 

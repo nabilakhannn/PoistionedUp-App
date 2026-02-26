@@ -5,7 +5,7 @@
   "gateway": {
     "mode": "local",
     "bind": "loopback",
-    "port": 3838,
+    "port": 18789,
     "auth": {
       "mode": "token",
       "token": "${OPENCLAW_GATEWAY_TOKEN}"
@@ -53,6 +53,19 @@
     }
   },
 
+  "mcp": {
+    "servers": {
+      "notebooklm": {
+        "command": "npx",
+        "args": ["notebooklm-mcp@latest"],
+        "env": {
+          "GOOGLE_ACCESS_TOKEN": "${GOOGLE_ACCESS_TOKEN}"
+        },
+        "_comment": "NotebookLM MCP server for zero-hallucination research synthesis. Agents query notebooks for grounded, citation-backed answers."
+      }
+    }
+  },
+
   "agents": {
     "defaults": {
       "sandbox": {
@@ -72,18 +85,18 @@
         "runTimeoutSeconds": 900,
         "archiveAfterMinutes": 60,
         "model": { "provider": "openai", "model": "gpt-4o-mini" },
-        "allowAgents": ["trend-analyzer", "copywriter", "visual-designer", "distributor", "analytics"]
+        "allowAgents": ["trend-analyzer", "copywriter", "visual-designer", "distributor", "analytics", "*"]
       }
     },
     "list": [
       {
-        "id": "jarvis",
-        "name": "Jarvis (Orchestrator)",
+        "id": "jumbo",
+        "name": "Jumbo (Orchestrator)",
         "default": true,
-        "workspace": "./agents/jarvis",
+        "workspace": "./agents/jumbo",
         "model": { "provider": "openai", "model": "gpt-4o" },
         "tools": {
-          "allow": ["read", "write", "edit", "sessions_list", "sessions_history", "sessions_send", "sessions_spawn", "session_status", "subagents", "message", "agents_list", "lobster"],
+          "allow": ["read", "write", "edit", "web_fetch", "sessions_list", "sessions_history", "sessions_send", "sessions_spawn", "session_status", "subagents", "message", "agents_list", "lobster"],
           "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "image"]
         },
         "subagents": {
@@ -149,7 +162,7 @@
     ],
 
     "routing": {
-      "default": "jarvis"
+      "default": "jumbo"
     }
   },
 
@@ -174,7 +187,7 @@
         "kind": "agentTurn",
         "message": "WEEKLY RESEARCH TRIGGER. Create a trend research task in task_board.md BACKLOG. Assign to trend-analyzer. Priority P1."
       },
-      "agentId": "jarvis"
+      "agentId": "jumbo"
     },
     {
       "name": "Weekly Analytics Report",
@@ -184,7 +197,7 @@
         "kind": "agentTurn",
         "message": "WEEKLY REPORT TRIGGER. Create a performance report task. Assign to analytics. Priority P1."
       },
-      "agentId": "jarvis"
+      "agentId": "jumbo"
     },
     {
       "name": "Weekly Competitor Intelligence",
@@ -192,9 +205,9 @@
       "sessionTarget": "isolated",
       "payload": {
         "kind": "agentTurn",
-        "message": "COMPETITOR SCAN TRIGGER. Create a competitor analysis task. Assign to trend-analyzer. Use NotebookLM for comparison. Priority P1."
+        "message": "COMPETITOR SCAN TRIGGER. Create a competitor analysis task. Assign to trend-analyzer. Use the Brand Research Pipeline via the Agent Bridge API. Priority P1."
       },
-      "agentId": "jarvis"
+      "agentId": "jumbo"
     }
   ],
 
@@ -206,6 +219,9 @@
       "OPENCLAW_GATEWAY_TOKEN"
     ],
     "optional": [
+      "POSITIONEDUP_API_URL",
+      "POSITIONEDUP_AGENT_KEY",
+      "GOOGLE_ACCESS_TOKEN",
       "FACEBOOK_PAGE_ACCESS_TOKEN",
       "INSTAGRAM_ACCESS_TOKEN"
     ]

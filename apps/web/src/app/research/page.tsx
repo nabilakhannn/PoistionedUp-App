@@ -116,9 +116,9 @@ export default function ResearchFeedPage() {
   });
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       {/* ── Header Bar ── */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50">
+      <div className="border-b border-border bg-card/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -128,11 +128,11 @@ export default function ResearchFeedPage() {
                     <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Research Feed</h1>
+                <h1 className="text-xl font-bold text-card-foreground tracking-tight">Research Feed</h1>
               </div>
 
               {lastUpdated && (
-                <span className="text-xs text-zinc-500 hidden sm:inline">
+                <span className="text-xs text-muted-foreground hidden sm:inline">
                   Last Updated: {lastUpdated}
                 </span>
               )}
@@ -142,7 +142,7 @@ export default function ResearchFeedPage() {
               {/* Saved topics pill */}
               <button
                 onClick={() => setShowTopicInput(!showTopicInput)}
-                className="flex items-center gap-2 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-xs text-zinc-300 hover:border-zinc-600 transition"
+                className="flex items-center gap-2 px-3 py-2 bg-accent border border-border rounded-lg text-xs text-foreground hover:border-border transition"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
@@ -167,19 +167,19 @@ export default function ResearchFeedPage() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* ── Platform Tabs ── */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex items-center bg-zinc-900/80 border border-zinc-800 rounded-xl p-1.5 gap-1">
+          <div className="inline-flex items-center bg-card/80 border border-border rounded-xl p-1.5 gap-1">
             {PLATFORMS.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setActivePlatform(p.id)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   activePlatform === p.id
-                    ? "bg-zinc-800 text-zinc-100 shadow-lg shadow-black/20"
-                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+                    ? "bg-accent text-card-foreground shadow-lg shadow-black/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${
-                  activePlatform === p.id ? p.dotColor : "bg-zinc-600"
+                  activePlatform === p.id ? p.dotColor : "bg-muted-foreground"
                 }`} />
                 {p.label}
               </button>
@@ -224,7 +224,7 @@ export default function ResearchFeedPage() {
                   onChange={(e) => setNewTopic(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTopic())}
                   placeholder="Add a tracked topic..."
-                  className="bg-zinc-800 border border-zinc-700 rounded-full px-3 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-40"
+                  className="bg-accent border border-border rounded-full px-3 py-1.5 text-xs text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 w-40"
                   autoFocus
                 />
                 <button
@@ -236,7 +236,7 @@ export default function ResearchFeedPage() {
                 </button>
                 <button
                   onClick={() => { setShowTopicInput(false); setNewTopic(""); }}
-                  className="text-zinc-500 hover:text-zinc-300 p-1"
+                  className="text-muted-foreground hover:text-foreground p-1"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -246,7 +246,7 @@ export default function ResearchFeedPage() {
             ) : savedTopics.length === 0 ? (
               <button
                 onClick={() => setShowTopicInput(true)}
-                className="text-xs text-zinc-600 hover:text-zinc-400 transition"
+                className="text-xs text-muted-foreground hover:text-muted-foreground transition"
               >
                 + Add tracked topic
               </button>
@@ -257,10 +257,10 @@ export default function ResearchFeedPage() {
           <div className="relative">
             <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200 transition"
+              className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition"
             >
-              <span className="text-zinc-600">Sort:</span>
-              <span className="font-medium text-zinc-300">
+              <span className="text-muted-foreground">Sort:</span>
+              <span className="font-medium text-foreground">
                 {SORT_OPTIONS.find((s) => s.id === sortBy)?.label || "Relevance"}
               </span>
               <svg className={`w-3.5 h-3.5 transition-transform ${showSortDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -268,15 +268,15 @@ export default function ResearchFeedPage() {
               </svg>
             </button>
             {showSortDropdown && (
-              <div className="absolute right-0 top-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-30 py-1 min-w-[120px]">
+              <div className="absolute right-0 top-full mt-1 bg-accent border border-border rounded-lg shadow-xl z-30 py-1 min-w-[120px]">
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
                     onClick={() => { setSortBy(opt.id); setShowSortDropdown(false); }}
                     className={`w-full text-left px-3 py-2 text-xs transition ${
                       sortBy === opt.id
-                        ? "bg-blue-600/20 text-blue-400 font-medium"
-                        : "text-zinc-300 hover:bg-zinc-700"
+                        ? "bg-primary/20 text-primary font-medium"
+                        : "text-foreground hover:bg-muted"
                     }`}
                   >
                     {opt.label}
@@ -290,7 +290,7 @@ export default function ResearchFeedPage() {
         {/* ── Search Bar ── */}
         <div className="mb-8">
           <div className="relative">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
             <input
@@ -300,12 +300,12 @@ export default function ResearchFeedPage() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search posts by keyword, creator, or topic..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+              className="w-full bg-card border border-border rounded-xl pl-12 pr-4 py-3.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/50 transition"
             />
             {query && (
               <button
                 onClick={() => { setQuery(""); setCards([]); setLastSearched(""); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -332,11 +332,11 @@ export default function ResearchFeedPage() {
         ) : cards.length > 0 ? (
           <>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 {sortedCards.length} result{sortedCards.length !== 1 ? "s" : ""} for &quot;{lastSearched}&quot;
                 {activePlatform !== "all" && ` on ${PLATFORMS.find(p => p.id === activePlatform)?.label}`}
               </p>
-              <p className="text-xs text-zinc-600">
+              <p className="text-xs text-muted-foreground">
                 {sortedCards.length} signals found
               </p>
             </div>
@@ -348,11 +348,11 @@ export default function ResearchFeedPage() {
           </>
         ) : lastSearched ? (
           <div className="text-center py-20">
-            <svg className="mx-auto h-12 w-12 text-zinc-700 mb-4" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+            <svg className="mx-auto h-12 w-12 text-muted mb-4" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
-            <h3 className="text-lg font-medium text-zinc-300 mb-1">No results found</h3>
-            <p className="text-zinc-500 text-sm">
+            <h3 className="text-lg font-medium text-foreground mb-1">No results found</h3>
+            <p className="text-muted-foreground text-sm">
               Try a different search term or switch platforms.
             </p>
           </div>
@@ -364,8 +364,8 @@ export default function ResearchFeedPage() {
                 <path d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-zinc-100 mb-3">Research the competition</h2>
-            <p className="text-zinc-400 text-sm max-w-md mx-auto leading-relaxed mb-8">
+            <h2 className="text-2xl font-bold text-card-foreground mb-3">Research the competition</h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed mb-8">
               Search across Reddit, LinkedIn, YouTube, and TikTok to find what&apos;s
               trending in your niche. Track topics and creators to stay ahead.
             </p>
@@ -377,7 +377,7 @@ export default function ResearchFeedPage() {
                     setQuery(suggestion);
                     handleSearch(suggestion);
                   }}
-                  className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition"
+                  className="px-4 py-2 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:text-foreground hover:border-border transition"
                 >
                   {suggestion}
                 </button>

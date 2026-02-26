@@ -26,28 +26,28 @@ export default function AdminTrainingPage() {
   const [activeTab, setActiveTab] = useState<Tab>("prompts");
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-6 md:p-8">
+    <div className="min-h-screen bg-background p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-zinc-100">
+          <h1 className="text-2xl font-bold text-card-foreground">
             Agent Training Dashboard
           </h1>
-          <p className="text-zinc-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Configure prompt sections, manage examples, and review user feedback
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-zinc-900 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-6 bg-card rounded-lg p-1 w-fit">
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab.key
-                  ? "bg-blue-600/20 text-blue-400"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
               }`}
             >
               {tab.label}
@@ -128,28 +128,28 @@ function PromptConfigTab() {
     <div className="space-y-6">
       {Object.entries(grouped).map(([type, items]) => (
         <div key={type}>
-          <h3 className="text-lg font-semibold text-zinc-200 mb-3 capitalize">
+          <h3 className="text-lg font-semibold text-foreground mb-3 capitalize">
             {type} Configs
           </h3>
           <div className="space-y-3">
             {items.map((cfg) => (
               <div
                 key={cfg.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg p-4"
+                className="bg-card border border-border rounded-lg p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <span className="text-zinc-200 font-medium">
+                    <span className="text-foreground font-medium">
                       {cfg.config_key}
                     </span>
-                    <span className="text-zinc-500 text-xs ml-2">
+                    <span className="text-muted-foreground text-xs ml-2">
                       v{cfg.version}
                     </span>
                   </div>
                   {editingKey !== cfg.config_key && (
                     <button
                       onClick={() => startEditing(cfg)}
-                      className="text-blue-400 hover:text-blue-300 text-sm"
+                      className="text-primary hover:text-primary/80 text-sm"
                     >
                       Edit
                     </button>
@@ -161,26 +161,26 @@ function PromptConfigTab() {
                     <textarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full h-64 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-zinc-200 text-sm font-mono resize-y focus:outline-none focus:border-blue-500"
+                      className="w-full h-64 bg-accent border border-border rounded-lg p-3 text-foreground text-sm font-mono resize-y focus:outline-none focus:border-primary"
                     />
                     <div className="flex gap-2">
                       <button
                         onClick={() => saveConfig(cfg.config_key)}
                         disabled={saving}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm disabled:opacity-50"
+                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm disabled:opacity-50"
                       >
                         {saving ? "Saving..." : "Save (New Version)"}
                       </button>
                       <button
                         onClick={cancelEditing}
-                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm"
+                        className="px-4 py-2 bg-accent hover:bg-accent/80 text-foreground rounded-lg text-sm"
                       >
                         Cancel
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <pre className="text-zinc-400 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
+                  <pre className="text-muted-foreground text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
                     {cfg.content.slice(0, 500)}
                     {cfg.content.length > 500 && "..."}
                   </pre>
@@ -287,7 +287,7 @@ function TrainingExamplesTab() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-3 py-2 text-sm"
+            className="bg-accent border border-border text-foreground rounded-lg px-3 py-2 text-sm"
           >
             <option value="">All Categories</option>
             {CATEGORIES.map((c) => (
@@ -299,7 +299,7 @@ function TrainingExamplesTab() {
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm"
+          className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm"
         >
           {showCreate ? "Cancel" : "+ Add Example"}
         </button>
@@ -307,17 +307,17 @@ function TrainingExamplesTab() {
 
       {/* Create Form */}
       {showCreate && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
-          <h3 className="text-zinc-200 font-medium">New Training Example</h3>
+        <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+          <h3 className="text-foreground font-medium">New Training Example</h3>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-zinc-400 text-xs block mb-1">
+              <label className="text-muted-foreground text-xs block mb-1">
                 Category
               </label>
               <select
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 rounded px-2 py-1.5 text-sm"
+                className="w-full bg-accent border border-border text-foreground rounded px-2 py-1.5 text-sm"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -327,59 +327,59 @@ function TrainingExamplesTab() {
               </select>
             </div>
             <div>
-              <label className="text-zinc-400 text-xs block mb-1">
+              <label className="text-muted-foreground text-xs block mb-1">
                 Module (optional)
               </label>
               <input
                 value={newModule}
                 onChange={(e) => setNewModule(e.target.value)}
                 placeholder="e.g. foundation"
-                className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 rounded px-2 py-1.5 text-sm"
+                className="w-full bg-accent border border-border text-foreground rounded px-2 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="text-zinc-400 text-xs block mb-1">
+              <label className="text-muted-foreground text-xs block mb-1">
                 Field (optional)
               </label>
               <input
                 value={newField}
                 onChange={(e) => setNewField(e.target.value)}
                 placeholder="e.g. what_you_do"
-                className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 rounded px-2 py-1.5 text-sm"
+                className="w-full bg-accent border border-border text-foreground rounded px-2 py-1.5 text-sm"
               />
             </div>
           </div>
           <div>
-            <label className="text-zinc-400 text-xs block mb-1">
+            <label className="text-muted-foreground text-xs block mb-1">
               User Input
             </label>
             <textarea
               value={newInput}
               onChange={(e) => setNewInput(e.target.value)}
               placeholder="What the user says..."
-              className="w-full h-20 bg-zinc-800 border border-zinc-700 text-zinc-200 rounded p-2 text-sm resize-y"
+              className="w-full h-20 bg-accent border border-border text-foreground rounded p-2 text-sm resize-y"
             />
           </div>
           <div>
-            <label className="text-zinc-400 text-xs block mb-1">
+            <label className="text-muted-foreground text-xs block mb-1">
               Ideal Response
             </label>
             <textarea
               value={newResponse}
               onChange={(e) => setNewResponse(e.target.value)}
               placeholder="How the agent should respond..."
-              className="w-full h-24 bg-zinc-800 border border-zinc-700 text-zinc-200 rounded p-2 text-sm resize-y"
+              className="w-full h-24 bg-accent border border-border text-foreground rounded p-2 text-sm resize-y"
             />
           </div>
           <div>
-            <label className="text-zinc-400 text-xs block mb-1">
+            <label className="text-muted-foreground text-xs block mb-1">
               Context Notes
             </label>
             <input
               value={newNotes}
               onChange={(e) => setNewNotes(e.target.value)}
               placeholder="Why this is a good/bad example"
-              className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 rounded px-2 py-1.5 text-sm"
+              className="w-full bg-accent border border-border text-foreground rounded px-2 py-1.5 text-sm"
             />
           </div>
           <button
@@ -397,7 +397,7 @@ function TrainingExamplesTab() {
         {examples.map((ex) => (
           <div
             key={ex.id}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg p-4"
+            className="bg-card border border-border rounded-lg p-4"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex gap-2">
@@ -409,13 +409,13 @@ function TrainingExamplesTab() {
                       ? "bg-red-500/20 text-red-400"
                       : ex.category === "pushback"
                       ? "bg-amber-500/20 text-amber-400"
-                      : "bg-blue-500/20 text-blue-400"
+                      : "bg-primary/20 text-primary"
                   }`}
                 >
                   {ex.category.replace(/_/g, " ")}
                 </span>
                 {ex.module && (
-                  <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">
+                  <span className="text-xs bg-accent text-muted-foreground px-2 py-0.5 rounded">
                     {ex.module}
                     {ex.field && `.${ex.field}`}
                   </span>
@@ -430,17 +430,17 @@ function TrainingExamplesTab() {
             </div>
             <div className="space-y-2">
               <div>
-                <span className="text-zinc-500 text-xs">User:</span>
-                <p className="text-zinc-300 text-sm">{ex.user_input}</p>
+                <span className="text-muted-foreground text-xs">User:</span>
+                <p className="text-foreground text-sm">{ex.user_input}</p>
               </div>
               <div>
-                <span className="text-zinc-500 text-xs">Ideal:</span>
-                <p className="text-zinc-200 text-sm">{ex.ideal_response}</p>
+                <span className="text-muted-foreground text-xs">Ideal:</span>
+                <p className="text-foreground text-sm">{ex.ideal_response}</p>
               </div>
               {ex.context_notes && (
                 <div>
-                  <span className="text-zinc-500 text-xs">Why:</span>
-                  <p className="text-zinc-400 text-sm italic">
+                  <span className="text-muted-foreground text-xs">Why:</span>
+                  <p className="text-muted-foreground text-sm italic">
                     {ex.context_notes}
                   </p>
                 </div>
@@ -501,8 +501,8 @@ function FeedbackTab() {
               onClick={() => setFilterType(type)}
               className={`px-3 py-1.5 rounded-lg text-sm ${
                 filterType === type
-                  ? "bg-blue-600/20 text-blue-400"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-accent text-muted-foreground hover:bg-accent/80"
               }`}
             >
               {type
@@ -524,7 +524,7 @@ function FeedbackTab() {
         {feedback.map((fb) => (
           <div
             key={fb.id}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg p-4"
+            className="bg-card border border-border rounded-lg p-4"
           >
             <div className="flex items-center gap-2 mb-2">
               <span className="text-lg">
@@ -536,24 +536,24 @@ function FeedbackTab() {
                   ? "✏️"
                   : "🔊"}
               </span>
-              <span className="text-zinc-400 text-xs">
+              <span className="text-muted-foreground text-xs">
                 {fb.created_at
                   ? new Date(fb.created_at).toLocaleDateString()
                   : ""}
               </span>
-              <span className="text-zinc-600 text-xs">
+              <span className="text-muted-foreground text-xs">
                 User: {fb.user_id?.slice(0, 8)}...
               </span>
             </div>
             {fb.feedback_text && (
-              <p className="text-zinc-300 text-sm mb-2">{fb.feedback_text}</p>
+              <p className="text-foreground text-sm mb-2">{fb.feedback_text}</p>
             )}
             {fb.original_response && (
-              <div className="bg-zinc-800 rounded p-2 mt-2">
-                <span className="text-zinc-500 text-xs block mb-1">
+              <div className="bg-accent rounded p-2 mt-2">
+                <span className="text-muted-foreground text-xs block mb-1">
                   Original response:
                 </span>
-                <p className="text-zinc-400 text-xs">
+                <p className="text-muted-foreground text-xs">
                   {fb.original_response.slice(0, 300)}
                   {fb.original_response.length > 300 && "..."}
                 </p>
@@ -606,13 +606,13 @@ function StatsTab() {
 
       {/* Feedback Breakdown */}
       {Object.keys(stats.feedback_by_type).length > 0 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <h3 className="text-zinc-200 font-medium mb-3">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h3 className="text-foreground font-medium mb-3">
             Feedback Breakdown
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {Object.entries(stats.feedback_by_type).map(([type, count]) => (
-              <div key={type} className="bg-zinc-800 rounded-lg p-3 text-center">
+              <div key={type} className="bg-accent rounded-lg p-3 text-center">
                 <div className="text-2xl mb-1">
                   {type === "thumbs_up"
                     ? "👍"
@@ -622,8 +622,8 @@ function StatsTab() {
                     ? "✏️"
                     : "🔊"}
                 </div>
-                <div className="text-zinc-200 font-bold">{count}</div>
-                <div className="text-zinc-500 text-xs">
+                <div className="text-foreground font-bold">{count}</div>
+                <div className="text-muted-foreground text-xs">
                   {type.replace(/_/g, " ")}
                 </div>
               </div>
@@ -634,15 +634,15 @@ function StatsTab() {
 
       {/* Recent Corrections */}
       {stats.recent_corrections.length > 0 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <h3 className="text-zinc-200 font-medium mb-3">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h3 className="text-foreground font-medium mb-3">
             Recent Corrections
           </h3>
           <div className="space-y-2">
             {stats.recent_corrections.map((fb) => (
               <div
                 key={fb.id}
-                className="bg-zinc-800 rounded p-3 text-sm text-zinc-300"
+                className="bg-accent rounded p-3 text-sm text-foreground"
               >
                 {fb.feedback_text || "(no text)"}
               </div>
@@ -658,9 +658,9 @@ function StatsTab() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-center">
-      <div className="text-3xl font-bold text-zinc-100">{value}</div>
-      <div className="text-zinc-400 text-sm mt-1">{label}</div>
+    <div className="bg-card border border-border rounded-lg p-4 text-center">
+      <div className="text-3xl font-bold text-card-foreground">{value}</div>
+      <div className="text-muted-foreground text-sm mt-1">{label}</div>
     </div>
   );
 }
@@ -671,11 +671,11 @@ function LoadingSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 animate-pulse"
+          className="bg-card border border-border rounded-lg p-4 animate-pulse"
         >
-          <div className="h-4 bg-zinc-800 rounded w-1/3 mb-3" />
-          <div className="h-3 bg-zinc-800 rounded w-full mb-2" />
-          <div className="h-3 bg-zinc-800 rounded w-2/3" />
+          <div className="h-4 bg-accent rounded w-1/3 mb-3" />
+          <div className="h-3 bg-accent rounded w-full mb-2" />
+          <div className="h-3 bg-accent rounded w-2/3" />
         </div>
       ))}
     </div>
@@ -694,13 +694,13 @@ function EmptyState({
   actionLabel?: string;
 }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
-      <h3 className="text-zinc-200 font-medium text-lg">{title}</h3>
-      <p className="text-zinc-400 mt-2">{description}</p>
+    <div className="bg-card border border-border rounded-lg p-8 text-center">
+      <h3 className="text-foreground font-medium text-lg">{title}</h3>
+      <p className="text-muted-foreground mt-2">{description}</p>
       {action && actionLabel && (
         <button
           onClick={action}
-          className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm"
+          className="mt-4 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm"
         >
           {actionLabel}
         </button>

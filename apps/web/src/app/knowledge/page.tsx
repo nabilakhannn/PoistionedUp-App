@@ -84,18 +84,18 @@ export default function KnowledgeBase() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-5xl mx-auto p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Knowledge Base</h1>
-            <p className="text-zinc-400 mt-1">
+            <p className="text-muted-foreground mt-1">
               Organize content by creator. Analyze their voice. Mimic their style.
             </p>
           </div>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
           >
             + New Collection
           </button>
@@ -112,22 +112,22 @@ export default function KnowledgeBase() {
 
         {/* Create collection form */}
         {showCreate && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4 text-zinc-100">Create Collection</h2>
+          <div className="bg-card border border-border rounded-xl p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4 text-card-foreground">Create Collection</h2>
             <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Creator name (e.g., Alex Hormozi)"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <input
                 type="text"
                 placeholder="Description (optional)"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <div>
                 <input
@@ -135,8 +135,8 @@ export default function KnowledgeBase() {
                   placeholder="YouTube channel URL (e.g. youtube.com/@creator)"
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
-                  className={`w-full px-3 py-2 bg-zinc-800 border rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    isChannel ? "border-red-500/50" : "border-zinc-700"
+                  className={`w-full px-3 py-2 bg-accent border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
+                    isChannel ? "border-red-500/50" : "border-border"
                   }`}
                 />
                 {isChannel && (
@@ -153,7 +153,7 @@ export default function KnowledgeBase() {
                 <button
                   onClick={handleCreate}
                   disabled={creating || !newName.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition"
                 >
                   {creating
                     ? "Creating..."
@@ -163,7 +163,7 @@ export default function KnowledgeBase() {
                 </button>
                 <button
                   onClick={() => setShowCreate(false)}
-                  className="px-4 py-2 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg text-sm transition"
+                  className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg text-sm transition"
                 >
                   Cancel
                 </button>
@@ -176,13 +176,13 @@ export default function KnowledgeBase() {
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 animate-pulse">
-                <div className="h-5 bg-zinc-800 rounded w-3/4 mb-3" />
-                <div className="h-3 bg-zinc-800 rounded w-full mb-2" />
-                <div className="h-3 bg-zinc-800 rounded w-2/3 mb-4" />
+              <div key={i} className="bg-card border border-border rounded-xl p-5 animate-pulse">
+                <div className="h-5 bg-accent rounded w-3/4 mb-3" />
+                <div className="h-3 bg-accent rounded w-full mb-2" />
+                <div className="h-3 bg-accent rounded w-2/3 mb-4" />
                 <div className="flex gap-4">
-                  <div className="h-3 bg-zinc-800 rounded w-20" />
-                  <div className="h-3 bg-zinc-800 rounded w-24" />
+                  <div className="h-3 bg-accent rounded w-20" />
+                  <div className="h-3 bg-accent rounded w-24" />
                 </div>
               </div>
             ))}
@@ -193,13 +193,13 @@ export default function KnowledgeBase() {
         {!loading && collections.length === 0 && (
           <div className="text-center py-16">
             <div className="text-4xl mb-4">📚</div>
-            <h2 className="text-xl font-semibold mb-2 text-zinc-200">No collections yet</h2>
-            <p className="text-zinc-500 mb-4 max-w-md mx-auto">
+            <h2 className="text-xl font-semibold mb-2 text-foreground">No collections yet</h2>
+            <p className="text-muted-foreground mb-4 max-w-md mx-auto">
               Create a collection for each creator whose style you want to study and mimic.
             </p>
             <button
               onClick={() => setShowCreate(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
             >
               Create your first collection
             </button>
@@ -213,10 +213,10 @@ export default function KnowledgeBase() {
               <Link
                 key={col.id}
                 href={`/knowledge/${col.id}`}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition group"
+                className="bg-card border border-border rounded-xl p-5 hover:border-border transition group"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-zinc-100 group-hover:text-blue-400 transition">
+                  <h3 className="text-lg font-semibold text-card-foreground group-hover:text-primary transition">
                     {col.name}
                   </h3>
                   {col.voice_dna_ready && (
@@ -226,11 +226,11 @@ export default function KnowledgeBase() {
                   )}
                 </div>
                 {col.description && (
-                  <p className="text-sm text-zinc-500 mb-3 line-clamp-2">
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                     {col.description}
                   </p>
                 )}
-                <div className="flex items-center gap-4 text-xs text-zinc-500">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>{col.resource_count} resources</span>
                   <span>
                     Updated {new Date(col.updated_at).toLocaleDateString()}

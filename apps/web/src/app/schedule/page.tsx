@@ -25,7 +25,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   twitter: "bg-sky-500/20 text-sky-300 border border-sky-500/30",
   tiktok: "bg-pink-500/20 text-pink-300 border border-pink-500/30",
   instagram: "bg-purple-500/20 text-purple-300 border border-purple-500/30",
-  other: "bg-zinc-700 text-zinc-300 border border-zinc-600",
+  other: "bg-muted text-foreground border border-border",
 };
 
 const COLOR_LABEL_STYLES: Record<string, string> = {
@@ -39,7 +39,7 @@ const COLOR_LABEL_STYLES: Record<string, string> = {
 };
 
 const COLUMN_HEADERS: Record<string, { label: string; bgClass: string; dotClass: string }> = {
-  draft: { label: "Draft", bgClass: "bg-zinc-900/80", dotClass: "bg-zinc-500" },
+  draft: { label: "Draft", bgClass: "bg-card/80", dotClass: "bg-muted-foreground" },
   scheduled: { label: "Scheduled", bgClass: "bg-blue-500/10", dotClass: "bg-blue-500" },
   published: { label: "Published", bgClass: "bg-green-500/10", dotClass: "bg-green-500" },
   archived: { label: "Archived", bgClass: "bg-yellow-500/10", dotClass: "bg-yellow-500" },
@@ -89,24 +89,24 @@ function KanbanCard({
     <div
       draggable
       onDragStart={(e) => onDragStart(e, item)}
-      className={`bg-zinc-800 rounded-lg border border-zinc-700 p-3 cursor-grab active:cursor-grabbing hover:border-zinc-600 transition-all group ${
+      className={`bg-accent rounded-lg border border-border p-3 cursor-grab active:cursor-grabbing hover:border-border transition-all group ${
         colorBorder ? `border-l-4 ${colorBorder}` : ""
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <h4 className="text-sm font-medium text-zinc-100 line-clamp-2 flex-1">
+        <h4 className="text-sm font-medium text-card-foreground line-clamp-2 flex-1">
           {item.title}
         </h4>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           <button
             onClick={() => onEdit(item)}
-            className="p-1 text-zinc-500 hover:text-zinc-300 rounded"
+            className="p-1 text-muted-foreground hover:text-foreground rounded"
           >
             <PencilIcon className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => onDelete(item.id)}
-            className="p-1 text-zinc-500 hover:text-red-400 rounded"
+            className="p-1 text-muted-foreground hover:text-red-400 rounded"
           >
             <TrashIcon className="h-3.5 w-3.5" />
           </button>
@@ -114,13 +114,13 @@ function KanbanCard({
       </div>
 
       {item.body_preview && (
-        <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{item.body_preview}</p>
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.body_preview}</p>
       )}
 
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         <PlatformBadge platform={item.platform} />
         {item.scheduled_at && (
-          <span className="text-xs text-zinc-500 flex items-center gap-1">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
             <CalendarIcon className="h-3 w-3" />
             {formatDate(item.scheduled_at)}
           </span>
@@ -128,7 +128,7 @@ function KanbanCard({
         {item.workflow_id && (
           <Link
             href={`/content/${item.workflow_id}`}
-            className="text-xs text-blue-400 hover:text-blue-300"
+            className="text-xs text-primary hover:text-primary"
             onClick={(e) => e.stopPropagation()}
           >
             workflow
@@ -137,7 +137,7 @@ function KanbanCard({
       </div>
 
       {item.notes && (
-        <p className="text-xs text-zinc-600 mt-1.5 italic line-clamp-1">{item.notes}</p>
+        <p className="text-xs text-muted-foreground mt-1.5 italic line-clamp-1">{item.notes}</p>
       )}
     </div>
   );
@@ -164,14 +164,14 @@ function KanbanColumn({
 
   return (
     <div
-      className={`flex-1 min-w-[260px] max-w-[340px] rounded-xl ${header.bgClass} border border-zinc-800 p-3`}
+      className={`flex-1 min-w-[260px] max-w-[340px] rounded-xl ${header.bgClass} border border-border p-3`}
       onDrop={(e) => onDrop(e, columnKey)}
       onDragOver={onDragOver}
     >
       <div className="flex items-center gap-2 mb-3 px-1">
         <div className={`w-2.5 h-2.5 rounded-full ${header.dotClass}`} />
-        <h3 className="text-sm font-semibold text-zinc-300">{header.label}</h3>
-        <span className="text-xs text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full ml-auto">
+        <h3 className="text-sm font-semibold text-foreground">{header.label}</h3>
+        <span className="text-xs text-muted-foreground bg-accent px-1.5 py-0.5 rounded-full ml-auto">
           {items.length}
         </span>
       </div>
@@ -186,7 +186,7 @@ function KanbanColumn({
           />
         ))}
         {items.length === 0 && (
-          <div className="text-center py-8 text-xs text-zinc-600">
+          <div className="text-center py-8 text-xs text-muted-foreground">
             Drag items here
           </div>
         )}
@@ -239,34 +239,34 @@ function NewItemModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl max-w-md w-full p-6">
+      <div className="bg-card border border-border rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-zinc-100">New Scheduled Item</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">
+          <h2 className="text-lg font-semibold text-card-foreground">New Scheduled Item</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">Title</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What are you publishing?"
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1">Platform</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Platform</label>
               <select
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:ring-2 focus:ring-ring"
               >
                 <option value="youtube">YouTube</option>
                 <option value="linkedin">LinkedIn</option>
@@ -277,11 +277,11 @@ function NewItemModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1">Content Type</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Content Type</label>
               <select
                 value={contentType}
                 onChange={(e) => setContentType(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:ring-2 focus:ring-ring"
               >
                 <option value="youtube_long">YouTube Long</option>
                 <option value="youtube_short">YouTube Short</option>
@@ -294,25 +294,25 @@ function NewItemModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Scheduled Date (optional)
             </label>
             <input
               type="datetime-local"
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">Notes (optional)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Notes (optional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Any notes or reminders..."
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
 
@@ -322,14 +322,14 @@ function NewItemModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !title.trim()}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg disabled:opacity-50 transition"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg disabled:opacity-50 transition"
             >
               {loading ? "Creating..." : "Create"}
             </button>
@@ -385,54 +385,54 @@ function EditItemModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl max-w-md w-full p-6">
+      <div className="bg-card border border-border rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-zinc-100">Edit Item</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">
+          <h2 className="text-lg font-semibold text-card-foreground">Edit Item</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">Title</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:ring-2 focus:ring-ring"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">Scheduled Date</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Scheduled Date</label>
             <input
               type="datetime-local"
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">Published URL</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Published URL</label>
             <input
               type="url"
               value={publishedUrl}
               onChange={(e) => setPublishedUrl(e.target.value)}
               placeholder="https://..."
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 bg-accent border border-border rounded-lg text-sm text-card-foreground focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
 
@@ -442,14 +442,14 @@ function EditItemModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg disabled:opacity-50 transition"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg disabled:opacity-50 transition"
             >
               {loading ? "Saving..." : "Save"}
             </button>
@@ -512,29 +512,29 @@ function CalendarView({ items }: { items: ScheduledItem[] }) {
     <div>
       {/* Month nav */}
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 hover:bg-zinc-800 rounded-lg transition">
-          <ChevronLeftIcon className="h-5 w-5 text-zinc-400" />
+        <button onClick={prevMonth} className="p-2 hover:bg-accent rounded-lg transition">
+          <ChevronLeftIcon className="h-5 w-5 text-muted-foreground" />
         </button>
-        <h3 className="text-lg font-semibold text-zinc-200">{monthLabel}</h3>
-        <button onClick={nextMonth} className="p-2 hover:bg-zinc-800 rounded-lg transition">
-          <ChevronRightIcon className="h-5 w-5 text-zinc-400" />
+        <h3 className="text-lg font-semibold text-foreground">{monthLabel}</h3>
+        <button onClick={nextMonth} className="p-2 hover:bg-accent rounded-lg transition">
+          <ChevronRightIcon className="h-5 w-5 text-muted-foreground" />
         </button>
       </div>
 
       {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div key={d} className="text-center text-xs font-medium text-zinc-500 py-2">
+          <div key={d} className="text-center text-xs font-medium text-muted-foreground py-2">
             {d}
           </div>
         ))}
       </div>
 
       {/* Day grid */}
-      <div className="grid grid-cols-7 border-t border-l border-zinc-800">
+      <div className="grid grid-cols-7 border-t border-l border-border">
         {/* Empty cells before first day */}
         {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-          <div key={`empty-${i}`} className="border-r border-b border-zinc-800 bg-zinc-900/50 min-h-[90px]" />
+          <div key={`empty-${i}`} className="border-r border-b border-border bg-card/50 min-h-[90px]" />
         ))}
 
         {/* Day cells */}
@@ -546,15 +546,15 @@ function CalendarView({ items }: { items: ScheduledItem[] }) {
           return (
             <div
               key={day}
-              className={`border-r border-b border-zinc-800 min-h-[90px] p-1 ${
-                isToday ? "bg-blue-500/10" : "bg-zinc-950"
+              className={`border-r border-b border-border min-h-[90px] p-1 ${
+                isToday ? "bg-primary/10" : "bg-background"
               }`}
             >
               <div
                 className={`text-xs font-medium mb-1 ${
                   isToday
-                    ? "text-white bg-blue-600 w-5 h-5 rounded-full flex items-center justify-center"
-                    : "text-zinc-500 px-0.5"
+                    ? "text-primary-foreground bg-primary w-5 h-5 rounded-full flex items-center justify-center"
+                    : "text-muted-foreground px-0.5"
                 }`}
               >
                 {day}
@@ -571,7 +571,7 @@ function CalendarView({ items }: { items: ScheduledItem[] }) {
                 </div>
               ))}
               {dItems.length > 3 && (
-                <div className="text-[10px] text-zinc-600 px-1">
+                <div className="text-[10px] text-muted-foreground px-1">
                   +{dItems.length - 3} more
                 </div>
               )}
@@ -689,13 +689,13 @@ export default function SchedulePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <main className="min-h-screen bg-background text-card-foreground">
         <div className="max-w-7xl mx-auto p-8 animate-pulse space-y-4">
-          <div className="h-8 bg-zinc-800 rounded w-48" />
-          <div className="h-4 bg-zinc-800 rounded w-72" />
+          <div className="h-8 bg-accent rounded w-48" />
+          <div className="h-4 bg-accent rounded w-72" />
           <div className="flex gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex-1 h-64 bg-zinc-900 border border-zinc-800 rounded-xl" />
+              <div key={i} className="flex-1 h-64 bg-card border border-border rounded-xl" />
             ))}
           </div>
         </div>
@@ -704,26 +704,26 @@ export default function SchedulePage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-background text-card-foreground">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Content Schedule</h1>
-            <p className="text-sm text-zinc-400 mt-1">
+            <h1 className="text-2xl font-bold text-card-foreground">Content Schedule</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Plan, schedule, and track your content across all platforms
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             {/* View toggle */}
-            <div className="flex bg-zinc-800 rounded-lg p-0.5">
+            <div className="flex bg-accent rounded-lg p-0.5">
               <button
                 onClick={() => setView("kanban")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
                   view === "kanban"
-                    ? "bg-zinc-700 text-zinc-100 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    ? "bg-muted text-card-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <ViewColumnsIcon className="h-4 w-4" />
@@ -733,8 +733,8 @@ export default function SchedulePage() {
                 onClick={() => setView("calendar")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
                   view === "calendar"
-                    ? "bg-zinc-700 text-zinc-100 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    ? "bg-muted text-card-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <CalendarIcon className="h-4 w-4" />
@@ -744,7 +744,7 @@ export default function SchedulePage() {
 
             <button
               onClick={() => setShowNewModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+              className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
             >
               <PlusIcon className="h-4 w-4" />
               New Item
@@ -784,13 +784,13 @@ export default function SchedulePage() {
         {/* Quick stats */}
         {board && (
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-zinc-300">{board.draft.length}</div>
-              <div className="text-xs text-zinc-500 mt-1">Drafts</div>
+            <div className="bg-card border border-border rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{board.draft.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">Drafts</div>
             </div>
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-blue-400">{board.scheduled.length}</div>
-              <div className="text-xs text-blue-400/70 mt-1">Scheduled</div>
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-primary">{board.scheduled.length}</div>
+              <div className="text-xs text-primary/70 mt-1">Scheduled</div>
             </div>
             <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-green-400">{board.published.length}</div>
@@ -805,14 +805,14 @@ export default function SchedulePage() {
 
         {/* Import hint */}
         {board && board.draft.length === 0 && board.scheduled.length === 0 && (
-          <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-xl p-6 text-center">
-            <h3 className="text-blue-300 font-medium mb-2">No content in your schedule yet</h3>
-            <p className="text-blue-400/70 text-sm mb-4">
+          <div className="mt-6 bg-primary/10 border border-primary/20 rounded-xl p-6 text-center">
+            <h3 className="text-primary font-medium mb-2">No content in your schedule yet</h3>
+            <p className="text-primary/70 text-sm mb-4">
               Create items manually or go to an approved workflow and import content into your schedule.
             </p>
             <Link
               href="/content"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition"
             >
               Go to Content Dashboard
             </Link>

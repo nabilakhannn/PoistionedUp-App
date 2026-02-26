@@ -38,7 +38,8 @@ async def get_current_user(request: Request) -> CurrentUser:
         resp = admin.auth.get_user(token)
     except Exception as e:
         # Log the actual error for debugging but return 401 to client
-        print(f"[auth] Token validation failed: {type(e).__name__}: {e}")
+        import logging
+        logging.getLogger("app.auth").warning("Token validation failed: %s: %s", type(e).__name__, e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
