@@ -539,6 +539,169 @@ class TestMockGateway:
             assert len(result["agents"]) == 6
 
 
+class TestWebSocketGatewayHandling:
+    """Test handling of OpenClaw 2026.2.26+ WebSocket-only gateway (returns HTML)."""
+
+    @pytest.mark.asyncio
+    async def test_agents_ws_success_returns_agents(self):
+        """When WebSocket succeeds, returns real agent list."""
+        from app.services.gateway_client import list_gateway_agents
+
+        mock_agents = [
+            {"id": "jumbo", "name": "Jumbo", "status": "loaded", "is_default": True},
+            {"id": "copywriter", "name": "Copywriter", "status": "loaded", "is_default": False},
+        ]
+
+        with patch("app.services.gateway_client.settings") as mock_settings, \
+             patch("app.services.gateway_ws.ws_list_agents", new_callable=AsyncMock) as mock_ws:
+            mock_settings.openclaw_mock_mode = False
+            mock_ws.return_value = mock_agents
+
+            agents = await list_gateway_agents()
+            assert len(agents) == 2
+            assert agents[0]["id"] == "jumbo"
+
+    @pytest.mark.asyncio
+    async def test_agents_ws_fails_falls_back_to_config(self):
+        """When WebSocket fails and HTTP returns HTML, falls back to config."""
+        from app.services.gateway_client import list_gateway_agents
+        from app.services.gateway_ws import GatewayWSError
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": "text/html; charset=utf-8"}
+
+        with patch("app.services.gateway_client.settings") as mock_settings, \
+             patch("app.services.gateway_ws.ws_list_agents", new_callable=AsyncMock) as mock_ws, \
+             patch("app.services.gateway_client.httpx.AsyncClient") as mock_client_cls:
+            mock_settings.openclaw_mock_mode = False
+            mock_settings.openclaw_gateway_url = "http://localhost:18789"
+            mock_settings.openclaw_gateway_token = ""
+            mock_ws.side_effect = GatewayWSError("Connection refused")
+
+            mock_client = AsyncMock()
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client.get = AsyncMock(return_value=mock_response)
+            mock_client_cls.return_value = mock_client
+
+            agents = await list_gateway_agents()
+            assert len(agents) == 6
+            assert agents[0]["id"] == "jumbo"
+
+    @pytest.mark.asyncio
+    async def test_sessions_ws_fails_returns_empty(self):
+        """When WebSocket fails and HTTP returns HTML, sessions returns empty."""
+        from app.services.gateway_client import get_gateway_sessions
+        from app.services.gateway_ws import GatewayWSError
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": "text/html; charset=utf-8"}
+
+        with patch("app.services.gateway_client.settings") as mock_settings, \
+             patch("app.services.gateway_ws.ws_list_sessions", new_callable=AsyncMock) as mock_ws, \
+             patch("app.services.gateway_client.httpx.AsyncClient") as mock_client_cls:
+            mock_settings.openclaw_mock_mode = False
+            mock_settings.openclaw_gateway_url = "http://localhost:18789"
+            mock_settings.openclaw_gateway_token = ""
+            mock_ws.side_effect = GatewayWSError("Connection refused")
+
+            mock_client = AsyncMock()
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client.get = AsyncMock(return_value=mock_response)
+            mock_client_cls.return_value = mock_client
+
+            sessions = await get_gateway_sessions()
+            assert sessions == []
+
+    @pytest.mark.asyncio
+    async def test_send_message_ws_success(self):
+        """WebSocket message send returns agent response."""
+        from app.services.gateway_client import send_message_to_agent
+
+        with patch("app.services.gateway_client.settings") as mock_settings, \
+             patch("app.services.gateway_ws.ws_send_message", new_callable=AsyncMock) as mock_ws:
+            mock_settings.openclaw_mock_mode = False
+            mock_ws.return_value = {
+                "session_id": "agent:jumbo:api:positionedup",
+                "agent_id": "jumbo",
+                "status": "delivered",
+                "response": "Hello! I'm Jumbo, your orchestrator.",
+            }
+
+            result = await send_message_to_agent("jumbo", "Hello")
+            assert result["status"] == "delivered"
+            assert result["agent_id"] == "jumbo"
+            assert "Jumbo" in result["response"]
+
+    @pytest.mark.asyncio
+    async def test_send_message_ws_error_raises_gateway_error(self):
+        """When WebSocket send fails, raises GatewayError with relay message."""
+        from app.services.gateway_client import send_message_to_agent, GatewayError
+        from app.services.gateway_ws import GatewayWSError
+
+        with patch("app.services.gateway_client.settings") as mock_settings, \
+             patch("app.services.gateway_ws.ws_send_message", new_callable=AsyncMock) as mock_ws:
+            mock_settings.openclaw_mock_mode = False
+            mock_ws.side_effect = GatewayWSError("Connection refused")
+
+            with pytest.raises(GatewayError, match="Message relay failed"):
+                await send_message_to_agent("jumbo", "Hello")
+
+    @pytest.mark.asyncio
+    async def test_health_check_ws_success(self):
+        """Health check via WebSocket returns full health info."""
+        from app.services.gateway_client import check_health
+
+        with patch("app.services.gateway_client.settings") as mock_settings, \
+             patch("app.services.gateway_ws.ws_check_health", new_callable=AsyncMock) as mock_ws:
+            mock_settings.openclaw_mock_mode = False
+            mock_settings.openclaw_gateway_url = "http://localhost:18789"
+            mock_ws.return_value = {
+                "connected": True,
+                "status": "healthy",
+                "protocol": "websocket",
+                "version": "2026.2.26",
+            }
+
+            result = await check_health()
+            assert result["connected"] is True
+            assert result["status"] == "healthy"
+            assert result["version"] == "2026.2.26"
+            assert result["protocol"] == "websocket"
+
+    @pytest.mark.asyncio
+    async def test_health_check_ws_fails_http_fallback(self):
+        """When WebSocket fails, falls back to HTTP health check."""
+        from app.services.gateway_client import check_health
+        from app.services.gateway_ws import GatewayWSError
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": "text/html; charset=utf-8"}
+
+        with patch("app.services.gateway_client.settings") as mock_settings, \
+             patch("app.services.gateway_ws.ws_check_health", new_callable=AsyncMock) as mock_ws, \
+             patch("app.services.gateway_client.httpx.AsyncClient") as mock_client_cls:
+            mock_settings.openclaw_mock_mode = False
+            mock_settings.openclaw_gateway_url = "http://localhost:18789"
+            mock_settings.openclaw_gateway_token = ""
+            mock_ws.side_effect = GatewayWSError("Connection refused")
+
+            mock_client = AsyncMock()
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client.get = AsyncMock(return_value=mock_response)
+            mock_client_cls.return_value = mock_client
+
+            result = await check_health()
+            assert result["connected"] is True
+            assert result["status"] == "healthy"
+            assert result["version"] == "unknown"
+
+
 class TestConfigAgentsFallback:
     """Test the fallback config agent list."""
 

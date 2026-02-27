@@ -31,6 +31,9 @@ google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
 httplib2>=0.22.0
 
+# WebSocket (OpenClaw gateway relay)
+websockets>=14.0
+
 # Analytics
 posthog>=3.0.0
 

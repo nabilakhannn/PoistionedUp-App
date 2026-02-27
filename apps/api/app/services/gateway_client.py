@@ -4,6 +4,11 @@ This service provides an HTTP client to interact with the OpenClaw gateway
 running on the Hostinger VPS. It handles health checks, agent listing,
 session management, and message relay.
 
+OpenClaw 2026.2.26+ uses WebSocket for API communication. HTTP requests
+return the Clawdbot Control UI (HTML SPA). This client handles that
+gracefully: health checks work via HTTP 200 detection, agent/session
+listing falls back to config, and message relay is not available via REST.
+
 When OPENCLAW_MOCK_MODE=true, all functions delegate to gateway_mock.py
 instead of making real HTTP calls. This enables local dev without a VPS.
 
@@ -73,6 +78,22 @@ async def check_health() -> Dict[str, Any]:
     base_url = _get_base_url()
     start = datetime.now(timezone.utc)
 
+    # Try WebSocket RPC first (native OpenClaw protocol)
+    try:
+        from app.services.gateway_ws import ws_check_health, GatewayWSError
+        ws_result = await ws_check_health()
+        latency_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
+        return {
+            **ws_result,
+            "latency_ms": round(latency_ms, 1),
+            "gateway_url": _mask_url(base_url),
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+        }
+    except Exception as e:
+        logger.debug("WebSocket health check failed, falling back to HTTP: %s", e)
+
+    # Fallback: HTTP health check (works for reachability detection)
+    start = datetime.now(timezone.utc)
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             resp = await client.get(
@@ -144,8 +165,15 @@ async def list_gateway_agents() -> List[Dict[str, Any]]:
         from app.services.gateway_mock import mock_list_agents
         return await mock_list_agents()
 
-    base_url = _get_base_url()
+    # Try WebSocket RPC first
+    try:
+        from app.services.gateway_ws import ws_list_agents
+        return await ws_list_agents()
+    except Exception as e:
+        logger.debug("WebSocket agents list failed, trying HTTP: %s", e)
 
+    # Fallback: HTTP (may return HTML for WebSocket-only gateways)
+    base_url = _get_base_url()
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             resp = await client.get(
@@ -154,15 +182,17 @@ async def list_gateway_agents() -> List[Dict[str, Any]]:
             )
 
         if resp.status_code == 200:
-            data = resp.json()
-            # Normalize: gateway may return list or {agents: [...]}
-            agents = data if isinstance(data, list) else data.get("agents", [])
-            return [_sanitize_agent(a) for a in agents]
+            if not resp.headers.get("content-type", "").startswith("application/json"):
+                logger.debug("Gateway /api/agents returned HTML (WebSocket-only gateway)")
+            else:
+                data = resp.json()
+                agents = data if isinstance(data, list) else data.get("agents", [])
+                return [_sanitize_agent(a) for a in agents]
 
     except Exception as e:
         logger.debug("Gateway /api/agents not available: %s", e)
 
-    # Fallback: return agent list from openclaw.json config
+    # Final fallback: return agent list from openclaw.json config
     return _get_config_agents()
 
 
@@ -175,8 +205,15 @@ async def get_gateway_sessions() -> List[Dict[str, Any]]:
         from app.services.gateway_mock import mock_get_sessions
         return await mock_get_sessions()
 
-    base_url = _get_base_url()
+    # Try WebSocket RPC first
+    try:
+        from app.services.gateway_ws import ws_list_sessions
+        return await ws_list_sessions()
+    except Exception as e:
+        logger.debug("WebSocket sessions list failed, trying HTTP: %s", e)
 
+    # Fallback: HTTP
+    base_url = _get_base_url()
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             resp = await client.get(
@@ -185,9 +222,12 @@ async def get_gateway_sessions() -> List[Dict[str, Any]]:
             )
 
         if resp.status_code == 200:
-            data = resp.json()
-            sessions = data if isinstance(data, list) else data.get("sessions", [])
-            return [_sanitize_session(s) for s in sessions[:50]]
+            if not resp.headers.get("content-type", "").startswith("application/json"):
+                logger.debug("Gateway /api/sessions returned HTML (WebSocket-only gateway)")
+            else:
+                data = resp.json()
+                sessions = data if isinstance(data, list) else data.get("sessions", [])
+                return [_sanitize_session(s) for s in sessions[:50]]
 
     except Exception as e:
         logger.debug("Gateway /api/sessions not available: %s", e)
@@ -218,36 +258,13 @@ async def send_message_to_agent(
         from app.services.gateway_mock import mock_send_message
         return await mock_send_message(agent_id, message, session_id=session_id)
 
-    base_url = _get_base_url()
-
-    payload: Dict[str, Any] = {
-        "agent_id": agent_id,
-        "message": message[:10000],  # Cap message length
-    }
-    if session_id:
-        payload["session_id"] = session_id
-
+    # Use WebSocket protocol (native OpenClaw communication)
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=5.0, read=60.0, write=10.0, pool=5.0)) as client:
-            resp = await client.post(
-                f"{base_url}/api/messages",
-                headers=_get_headers(),
-                json=payload,
-            )
-
-        if resp.status_code in (200, 201):
-            return _sanitize_message_response(resp.json())
-        else:
-            logger.warning("Gateway message error: %s %s", resp.status_code, resp.text[:200])
-            raise GatewayError(
-                f"Gateway rejected the request (HTTP {resp.status_code})",
-                status_code=resp.status_code,
-            )
-
-    except httpx.TimeoutException:
-        raise GatewayError("Message delivery timed out (60s)")
-    except httpx.ConnectError:
-        raise GatewayError("Cannot reach gateway — is it running?")
+        from app.services.gateway_ws import ws_send_message, GatewayWSError
+        return await ws_send_message(agent_id, message, session_id=session_id)
+    except Exception as e:
+        logger.warning("WebSocket message relay failed: %s", e)
+        raise GatewayError(f"Message relay failed: {e}")
 
 
 # ── Full Status Aggregate ──────────────────────────────────
