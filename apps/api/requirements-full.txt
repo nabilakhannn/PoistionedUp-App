@@ -1,0 +1,42 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+supabase==2.11.0
+python-dotenv==1.0.1
+pydantic>=2.12.5
+pydantic-settings==2.7.1
+httpx==0.28.1
+python-multipart==0.0.20
+
+# Text extraction (Slice 5: Resources)
+pypdf==5.1.0
+PyMuPDF>=1.26.0
+python-docx==1.1.2
+youtube-transcript-api==1.2.4
+trafilatura==2.0.0
+yt-dlp==2025.10.14
+openai>=2.21.0
+anthropic>=0.39.0
+
+# Real-time research
+ddgs>=9.0.0
+tavily-python>=0.5.0
+
+# LangGraph
+langgraph==0.2.62
+langgraph-checkpoint-postgres==2.0.12
+
+# Google Docs + Notion export
+google-api-python-client==2.131.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+httplib2>=0.22.0
+
+# Analytics
+posthog>=3.0.0
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
+
+# Linting
+ruff==0.8.6
