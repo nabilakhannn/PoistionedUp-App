@@ -1,0 +1,31 @@
+# Slim requirements for Vercel serverless deployment.
+# Heavy packages (PyMuPDF, yt-dlp, langgraph, trafilatura, Google SDK)
+# are excluded to stay under Vercel's 250MB bundle limit.
+# These features degrade gracefully — endpoints return errors at runtime
+# only when the specific functionality is invoked.
+# Full requirements in requirements.txt (for local dev / VPS).
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+supabase==2.11.0
+python-dotenv==1.0.1
+pydantic>=2.12.5
+pydantic-settings==2.7.1
+httpx==0.28.1
+python-multipart==0.0.20
+
+# LLM providers
+openai>=2.21.0
+anthropic>=0.39.0
+
+# Lightweight text extraction (kept — small packages)
+pypdf==5.1.0
+python-docx==1.1.2
+youtube-transcript-api==1.2.4
+
+# Real-time research
+ddgs>=9.0.0
+tavily-python>=0.5.0
+
+# Analytics
+posthog>=3.0.0
