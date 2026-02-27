@@ -30,15 +30,33 @@ export default function SignupPage() {
       return;
     }
 
-    // email confirmations are disabled — user is logged in immediately
+    // If session exists, user is logged in immediately
     if (data.session) {
       identifyUser(data.session.user.id, {
         email: data.session.user.email,
       });
       trackEvent("user_signed_up", { method: "email" });
       window.location.href = "/brands";
+      return;
+    }
+
+    // Supabase returns no session when the email already exists (user
+    // enumeration protection) or when confirmation is pending. Try
+    // signing in with the same credentials as a fallback.
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInData?.session) {
+      identifyUser(signInData.session.user.id, {
+        email: signInData.session.user.email,
+      });
+      trackEvent("user_signed_up", { method: "email" });
+      window.location.href = "/brands";
     } else {
-      setError("Signup succeeded but no session created. Please try again.");
+      setError(
+        signInError?.message ||
+          "Could not create session. Please try signing in instead."
+      );
       setLoading(false);
     }
   };
