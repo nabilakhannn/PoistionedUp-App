@@ -21,9 +21,9 @@ PASS=0
 FAIL=0
 WARN=0
 
-pass()  { echo -e "  ${GREEN}PASS${NC} $1"; ((PASS++)); }
-fail()  { echo -e "  ${RED}FAIL${NC} $1"; ((FAIL++)); }
-warn()  { echo -e "  ${YELLOW}WARN${NC} $1"; ((WARN++)); }
+pass()  { echo -e "  ${GREEN}PASS${NC} $1"; PASS=$((PASS + 1)); }
+fail()  { echo -e "  ${RED}FAIL${NC} $1"; FAIL=$((FAIL + 1)); }
+warn()  { echo -e "  ${YELLOW}WARN${NC} $1"; WARN=$((WARN + 1)); }
 info()  { echo -e "  ${BLUE}INFO${NC} $1"; }
 
 echo ""
