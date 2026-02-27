@@ -28,6 +28,8 @@ class Settings(BaseSettings):
         "https://positionedup.vercel.app",
         "https://poistioned-up-app.vercel.app",
         "https://poistioned-up-app-git-main-nabilas-projects-db41bc0c.vercel.app",
+        "https://web-tau-dun-23.vercel.app",
+        "https://web-nabilas-projects-db41bc0c.vercel.app",
     ]
 
     # LLM

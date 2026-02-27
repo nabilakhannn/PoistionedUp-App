@@ -8,7 +8,7 @@
 import { createClient } from "@/lib/supabase/client";
 
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://poistionedup.vercel.app";
+  process.env.NEXT_PUBLIC_API_URL || "https://api-iota-puce.vercel.app";
 
 // ── Token refresh lock ──────────────────────────────────────
 // Prevents concurrent requests from triggering multiple token
