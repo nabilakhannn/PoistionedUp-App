@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useBrand } from "@/lib/brand-context";
+import { NotificationBell } from "@/app/mission-control/components/notification-bell";
 
 /* ── Icon components ─────────────────────────────────── */
 
@@ -234,6 +235,9 @@ export function NavBar() {
     { href: "/mission-control/orchestrator", label: "Orchestrator" },
     { href: "/mission-control/gateway", label: "Gateway" },
     { href: "/mission-control/chat", label: "Agent Chat" },
+    { href: "/mission-control/goals", label: "Goals" },
+    { href: "/mission-control/competitors", label: "Competitors" },
+    { href: "/mission-control/qa", label: "QA" },
   ];
 
   const adminLinks = [
@@ -396,7 +400,11 @@ export function NavBar() {
       </nav>
 
       {/* Bottom section */}
-      <div className="px-3 pb-4 mt-auto border-t border-sidebar-border pt-3">
+      <div className="px-3 pb-4 mt-auto border-t border-sidebar-border pt-3 space-y-1">
+        <div className="flex items-center gap-3 px-3 py-2">
+          <NotificationBell />
+          <span className="text-sm text-muted-foreground">Notifications</span>
+        </div>
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"

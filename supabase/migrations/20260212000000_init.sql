@@ -127,7 +127,11 @@ CREATE TRIGGER set_workflows_updated_at
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
 -- Enable Supabase Realtime for live status updates to frontend
-ALTER PUBLICATION supabase_realtime ADD TABLE public.workflows;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.workflows;
+EXCEPTION WHEN duplicate_object THEN
+  NULL;
+END $$;
 
 
 -- 2e. workflow_snapshots

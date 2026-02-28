@@ -3,7 +3,26 @@
     "allow": [
       "Bash(xargs basename -a)",
       "Bash(xargs -n1)",
-      "Read(//Users/a16094/Desktop/SB's Content Automation Agent - positionedup/**)"
+      "Read(//Users/a16094/Desktop/SB's Content Automation Agent - positionedup/**)",
+      "WebFetch(domain:poistioned-up-app.vercel.app)",
+      "WebFetch(domain:positionedup-app.vercel.app)",
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:poistionedup.vercel.app)",
+      "WebFetch(domain:poistionedup-9rpmedejb-nabilas-projects-db41bc0c.vercel.app)",
+      "WebFetch(domain:poistionedup-f0imwglqs-nabilas-projects-db41bc0c.vercel.app)",
+      "WebFetch(domain:poistioned-up-app-git-main-nabilas-projects-db41bc0c.vercel.app)",
+      "WebFetch(domain:poistioned-up-3kifk0aau-nabilas-projects-db41bc0c.vercel.app)",
+      "Bash(git add apps/web/src/lib/api/client.ts deploy/verify-deployment.sh)",
+      "Bash(git push origin main)",
+      "Bash(git add apps/api/app/config.py)",
+      "Bash(while read chunk)",
+      "Bash(do curl -s \"https://poistioned-up-app.vercel.app/$chunk\")",
+      "Bash(git add apps/api/vercel.json)",
+      "Bash(grep -r \"process\\\\.env\" apps/web/next.config.* apps/web/tsconfig.json apps/web/package.json)",
+      "Bash(nslookup db.jwnwjleomuzzxjbqylsz.supabase.co)",
+      "Bash(nslookup aws-0-us-east-1.pooler.supabase.com)",
+      "Bash(vercel --version)",
+      "Bash(vercel env add OPENCLAW_MOCK_MODE production)"
     ],
     "additionalDirectories": [
       "/Users/a16094/Desktop/SB''s Content Automation Agent - positionedup/.git"

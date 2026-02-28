@@ -11,7 +11,7 @@ import {
   OrchestratorActivity,
 } from "@/lib/api/mission-control";
 import { orchestratorApi, OrchestratorStatus, ScheduleState } from "@/lib/api/orchestrator";
-import { STATUS_COLORS, ROLE_TYPE_BADGES, MESSAGE_TYPE_ICONS } from "../constants";
+import { STATUS_COLORS, ROLE_TYPE_BADGES, MESSAGE_TYPE_ICONS, MC_SUB_NAV } from "../constants";
 
 /* ── Helpers ───────────────────────────────────────────── */
 
@@ -215,22 +215,20 @@ export default function OrchestratorPage() {
       </div>
 
       {/* Sub-navigation */}
-      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1">
-        <Link href="/mission-control" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Dashboard
-        </Link>
-        <Link href="/mission-control/analytics" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Analytics
-        </Link>
-        <Link href="/mission-control/orchestrator" className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/15 text-primary border border-primary/20">
-          Orchestrator
-        </Link>
-        <Link href="/mission-control/gateway" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Gateway
-        </Link>
-        <Link href="/mission-control/chat" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Chat
-        </Link>
+      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1 overflow-x-auto">
+        {MC_SUB_NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+              item.href === "/mission-control/orchestrator"
+                ? "bg-primary/15 text-primary border border-primary/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
       </div>
 
       {/* Main content: 2-panel layout */}

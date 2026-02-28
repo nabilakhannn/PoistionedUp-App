@@ -20,6 +20,9 @@ class AgentBase(BaseModel):
     skills: List[str] = []
     about: Optional[str] = None
     workspace_path: Optional[str] = None
+    autonomy_enabled: bool = False
+    confidence_threshold: float = 0.8
+    auto_execute: bool = False
 
 
 class AgentCreate(AgentBase):
@@ -34,6 +37,9 @@ class AgentUpdate(BaseModel):
     avatar_emoji: Optional[str] = None
     skills: Optional[List[str]] = None
     about: Optional[str] = None
+    autonomy_enabled: Optional[bool] = None
+    confidence_threshold: Optional[float] = None
+    auto_execute: Optional[bool] = None
 
 
 class AgentOut(AgentBase):

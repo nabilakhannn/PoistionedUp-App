@@ -31,6 +31,7 @@ from app.schemas.agent_bridge import (
     TaskSyncRequest,
     TaskSyncResponse,
 )
+from app.schemas.notifications import AgentNotifyRequest
 
 logger = logging.getLogger("app.routers.agent_bridge")
 
@@ -416,6 +417,28 @@ async def trigger_pipeline(body: PipelineTriggerRequest, caller: AgentCaller = D
     return PipelineTriggerResponse(workflow_id=workflow_id, status="queued")
 
 
+# ── 4b. Pipeline Status ──────────────────────────────────
+
+@router.get("/pipeline/{workflow_id}")
+async def agent_pipeline_status(
+    workflow_id: str,
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """Agent checks the status of a triggered pipeline/workflow."""
+    sb = get_admin_client()
+    resp = (
+        sb.table("workflows")
+        .select("id, status, current_step, error_message, updated_at")
+        .eq("id", workflow_id)
+        .eq("user_id", caller.user_id)
+        .limit(1)
+        .execute()
+    )
+    if not resp.data:
+        raise HTTPException(404, "Workflow not found")
+    return resp.data[0]
+
+
 # ── 5. Task Sync ─────────────────────────────────────────
 
 @router.post("/tasks/sync", response_model=TaskSyncResponse)
@@ -555,3 +578,238 @@ async def get_active_brand(caller: AgentCaller = Depends(get_agent_caller)):
     if not result.data:
         raise HTTPException(404, "No active brand found")
     return result.data[0]
+
+
+# ── 10. Agent Notification ─────────────────────────────────
+
+@router.post("/notify")
+async def agent_notify(body: AgentNotifyRequest, caller: AgentCaller = Depends(get_agent_caller)):
+    """Agent creates a notification for the user.
+
+    Used for briefings, alerts, reminders, and suggestions.
+    """
+    sb = get_admin_client()
+    now = datetime.now(timezone.utc).isoformat()
+
+    row = {
+        "user_id": caller.user_id,
+        "title": body.title,
+        "body": body.body,
+        "notification_type": body.notification_type,
+        "priority": body.priority,
+        "from_agent_id": body.agent_id,
+        "related_task_id": body.related_task_id,
+        "action_url": body.action_url,
+        "created_at": now,
+    }
+    resp = sb.table("agent_notifications").insert(row).execute()
+    if not resp.data:
+        raise HTTPException(500, "Failed to create notification")
+
+    return {"ok": True, "notification_id": resp.data[0].get("id")}
+
+
+# ── 11. QA Review ──────────────────────────────────────────
+
+@router.post("/qa/review")
+async def agent_qa_review(body: dict, caller: AgentCaller = Depends(get_agent_caller)):
+    """Agent submits content for QA review.
+
+    Expects JSON body with:
+      - content_text (required): The text to review
+      - platform (optional): Target platform
+      - content_ref_type (optional): 'scheduled_item' | 'deliverable' | 'workflow' | 'freeform'
+      - content_ref_id (optional): ID of the source content
+      - brand_id (optional): Brand to check voice against
+    """
+    from app.schemas.qa_review import QAReviewRequest
+    from app.services.qa_review import review_content
+
+    content_text = body.get("content_text", "")
+    if not content_text:
+        raise HTTPException(400, "content_text is required")
+
+    request = QAReviewRequest(
+        content_text=content_text[:50000],
+        platform=body.get("platform"),
+        content_ref_type=body.get("content_ref_type", "freeform"),
+        content_ref_id=body.get("content_ref_id"),
+        brand_id=body.get("brand_id"),
+    )
+
+    sb = get_admin_client()
+    result = review_content(caller.user_id, request, sb)
+
+    return {
+        "ok": True,
+        "review_id": result.id,
+        "overall_score": result.overall_score,
+        "verdict": result.verdict,
+        "feedback": result.feedback,
+        "scores": result.scores.model_dump(),
+        "issues": [i.model_dump() for i in result.issues],
+        "revision_triggered": result.revision_triggered,
+    }
+
+
+# ── 12-17. Competitor Intelligence (agent-facing) ─────────────
+
+@router.get("/competitors")
+async def agent_list_competitors(
+    brand_id: Optional[str] = Query(None),
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """List all tracked competitors for the user."""
+    from app.services.competitor_intel import list_competitors
+
+    sb = get_admin_client()
+    competitors = list_competitors(caller.user_id, sb, brand_id=brand_id)
+    return {"ok": True, "competitors": competitors}
+
+
+@router.get("/competitors/{competitor_id}")
+async def agent_get_competitor(
+    competitor_id: str,
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """Get full competitor detail with metrics history and content."""
+    from app.services.competitor_intel import get_competitor
+
+    sb = get_admin_client()
+    comp = get_competitor(competitor_id, caller.user_id, sb)
+    if not comp:
+        raise HTTPException(404, "Competitor not found")
+    return {"ok": True, "competitor": comp}
+
+
+@router.post("/competitors/{competitor_id}/analyze")
+async def agent_analyze_competitor(
+    competitor_id: str,
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """Trigger LLM analysis for a specific competitor."""
+    from app.services.competitor_intel import generate_analysis_report
+
+    sb = get_admin_client()
+    report = generate_analysis_report(caller.user_id, competitor_id, sb)
+    if report.get("error"):
+        raise HTTPException(404, report["error"])
+    return {"ok": True, "report": report}
+
+
+@router.post("/competitors/{competitor_id}/refresh")
+async def agent_refresh_competitor(
+    competitor_id: str,
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """Refresh competitor data from web and recalculate threat score."""
+    from app.services.competitor_intel import refresh_competitor_data
+
+    sb = get_admin_client()
+    result = refresh_competitor_data(competitor_id, caller.user_id, sb)
+    if result.get("error"):
+        raise HTTPException(404, result["error"])
+    return {"ok": True, **result}
+
+
+@router.post("/competitor-alerts")
+async def agent_submit_competitor_alert(
+    body: dict,
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """Agent submits a structured competitor alert.
+
+    Expects JSON body with:
+      - agent_id (required): Reporting agent ID
+      - competitor_id (required): Competitor being reported on
+      - alert_type (required): follower_surge | engagement_drop | positioning_shift | content_spike | new_strategy
+      - detail (required): Human-readable alert detail (max 5000 chars)
+      - metric_before (optional): Previous metric value
+      - metric_after (optional): Current metric value
+      - severity (optional): low | medium | high (default: medium)
+      - brand_id (optional): Brand context
+    """
+    from datetime import datetime as dt, timezone as tz
+
+    valid_types = {
+        "follower_surge", "engagement_drop", "positioning_shift",
+        "content_spike", "new_strategy",
+    }
+    alert_type = body.get("alert_type", "")
+    if alert_type not in valid_types:
+        raise HTTPException(400, f"Invalid alert_type. Valid: {sorted(valid_types)}")
+
+    detail = (body.get("detail") or "")[:5000]
+    if not detail:
+        raise HTTPException(400, "detail is required")
+
+    competitor_id = body.get("competitor_id")
+    if not competitor_id:
+        raise HTTPException(400, "competitor_id is required")
+
+    severity = body.get("severity", "medium")
+    if severity not in ("low", "medium", "high"):
+        severity = "medium"
+
+    # Fetch competitor name
+    sb = get_admin_client()
+    comp_resp = (
+        sb.table("competitors")
+        .select("name")
+        .eq("id", competitor_id)
+        .eq("user_id", caller.user_id)
+        .limit(1)
+        .execute()
+    )
+    comp_name = comp_resp.data[0]["name"] if comp_resp.data else "Unknown"
+
+    now = dt.now(tz.utc).isoformat()
+    row = {
+        "user_id": caller.user_id,
+        "title": f"Competitor Alert: {comp_name} — {alert_type.replace('_', ' ').title()}",
+        "body": detail,
+        "notification_type": "alert",
+        "priority": severity,
+        "from_agent_id": body.get("agent_id", "competitor-analyst"),
+        "action_url": f"/mission-control/competitors/{competitor_id}",
+        "metadata": {
+            "competitor_id": competitor_id,
+            "competitor_name": comp_name,
+            "alert_type": alert_type,
+            "metric_before": body.get("metric_before"),
+            "metric_after": body.get("metric_after"),
+        },
+        "created_at": now,
+    }
+    resp = sb.table("agent_notifications").insert(row).execute()
+    notif_id = resp.data[0]["id"] if resp.data else None
+
+    return {"ok": True, "notification_id": notif_id, "alert_type": alert_type}
+
+
+@router.get("/competitive-landscape")
+async def agent_competitive_landscape(
+    brand_id: Optional[str] = Query(None),
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """Get aggregated competitive landscape — all competitors + gaps."""
+    from app.services.competitor_intel import list_competitors, get_content_gap_analysis
+
+    sb = get_admin_client()
+    competitors = list_competitors(caller.user_id, sb, brand_id=brand_id)
+    gaps = get_content_gap_analysis(caller.user_id, sb, brand_id=brand_id)
+
+    # Build threat summary
+    threat_summary = {}
+    for comp in competitors:
+        level = comp.get("threat_level", 3)
+        threat_summary.setdefault(level, [])
+        threat_summary[level].append(comp.get("name", "Unknown"))
+
+    return {
+        "ok": True,
+        "total_competitors": len(competitors),
+        "competitors": competitors,
+        "content_gaps": gaps,
+        "threat_summary": threat_summary,
+    }

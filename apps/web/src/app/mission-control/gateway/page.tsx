@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { MC_SUB_NAV } from "../constants";
 import {
   gatewayApi,
   GatewayStatus,
@@ -159,22 +160,20 @@ export default function GatewayPage() {
       </div>
 
       {/* Sub-navigation */}
-      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1">
-        <Link href="/mission-control" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Dashboard
-        </Link>
-        <Link href="/mission-control/analytics" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Analytics
-        </Link>
-        <Link href="/mission-control/orchestrator" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Orchestrator
-        </Link>
-        <Link href="/mission-control/gateway" className="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
-          Gateway
-        </Link>
-        <Link href="/mission-control/chat" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Chat
-        </Link>
+      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1 overflow-x-auto">
+        {MC_SUB_NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+              item.href === "/mission-control/gateway"
+                ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
       </div>
 
       {/* Main content */}

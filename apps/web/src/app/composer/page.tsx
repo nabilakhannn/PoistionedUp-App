@@ -10,6 +10,8 @@ import {
   estimateReadTime,
   LINKEDIN_CHAR_LIMIT,
 } from "@/lib/api/composer";
+import { qaApi, QAReviewResult, VERDICT_STYLES, SCORE_DIMENSIONS } from "@/lib/api/qa";
+import { ScoreBadge } from "@/app/mission-control/qa/components/score-badge";
 
 // ── Constants ─────────────────────────────────────────
 
@@ -337,6 +339,8 @@ export default function ComposerPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [error, setError] = useState("");
   const [draftId, setDraftId] = useState<string | null>(null);
+  const [qaResult, setQaResult] = useState<QAReviewResult | null>(null);
+  const [qaLoading, setQaLoading] = useState(false);
 
   // Computed values
   const config = PLATFORM_CONFIG[platform];
@@ -353,6 +357,12 @@ export default function ComposerPage() {
       ta.style.height = "auto";
       ta.style.height = `${Math.max(ta.scrollHeight, 300)}px`;
     }
+  }, [body]);
+
+  // Clear stale QA result when body changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (qaResult) setQaResult(null);
   }, [body]);
 
   // Formatting helpers
@@ -422,6 +432,12 @@ export default function ComposerPage() {
 
   const handleSchedule = async (dateTime: string) => {
     if (!body.trim()) return;
+    if (!qaResult) {
+      if (!confirm("You haven't run a QA check yet. Schedule anyway?")) return;
+    }
+    if (qaResult && qaResult.verdict === "fail") {
+      if (!confirm(`QA score is ${qaResult.overall_score}/100 (Fail). Schedule anyway?`)) return;
+    }
     setScheduling(true);
     setError("");
     try {
@@ -444,6 +460,12 @@ export default function ComposerPage() {
 
   const handleAddToQueue = async () => {
     if (!body.trim()) return;
+    if (!qaResult) {
+      if (!confirm("You haven't run a QA check yet. Add to queue anyway?")) return;
+    }
+    if (qaResult && qaResult.verdict === "fail") {
+      if (!confirm(`QA score is ${qaResult.overall_score}/100 (Fail). Add to queue anyway?`)) return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -481,6 +503,28 @@ export default function ComposerPage() {
       setTimeout(() => setSuccessMsg(""), 2000);
     } catch {
       setError("Failed to copy");
+    }
+  };
+
+  const handleQACheck = async () => {
+    if (!body.trim() || qaLoading) return;
+    setQaLoading(true);
+    setQaResult(null);
+    setError("");
+    try {
+      const result = await qaApi.review({
+        content_text: body,
+        platform,
+        content_ref_type: draftId ? "scheduled_item" : "freeform",
+        content_ref_id: draftId || undefined,
+        brand_id: currentBrand?.id,
+      });
+      setQaResult(result);
+      trackEvent("composer_qa_check", { platform, score: result.overall_score, verdict: result.verdict });
+    } catch (err: any) {
+      setError(err.message || "QA check failed");
+    } finally {
+      setQaLoading(false);
     }
   };
 
@@ -637,6 +681,20 @@ export default function ComposerPage() {
             {/* Action buttons */}
             <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-border">
               <button
+                onClick={handleQACheck}
+                disabled={!body.trim() || qaLoading}
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-medium bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-40 transition"
+              >
+                {qaLoading ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  "QA Check"
+                )}
+              </button>
+              {qaResult && (
+                <ScoreBadge score={qaResult.overall_score} size="md" />
+              )}
+              <button
                 onClick={handleSaveDraft}
                 disabled={saving || !body.trim()}
                 className="px-5 py-2.5 text-sm font-medium text-foreground bg-accent border border-border rounded-lg hover:bg-muted disabled:opacity-50 transition"
@@ -697,6 +755,67 @@ export default function ComposerPage() {
                 viewMode={viewMode}
               />
             </div>
+
+            {/* QA Result Panel */}
+            {qaResult && (
+              <div className="border border-zinc-800 rounded-xl p-4 bg-zinc-900/50 space-y-3">
+                {/* Header with score + verdict */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ScoreBadge score={qaResult.overall_score} size="md" />
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${VERDICT_STYLES[qaResult.verdict]?.bg} ${VERDICT_STYLES[qaResult.verdict]?.color}`}>
+                      {VERDICT_STYLES[qaResult.verdict]?.label || qaResult.verdict}
+                    </span>
+                  </div>
+                  <button onClick={() => setQaResult(null)} className="text-xs text-zinc-500 hover:text-zinc-300">
+                    Dismiss
+                  </button>
+                </div>
+
+                {/* Dimension scores */}
+                <div className="grid grid-cols-2 gap-2">
+                  {SCORE_DIMENSIONS.map((dim) => {
+                    const score = qaResult.scores[dim.key] ?? 0;
+                    return (
+                      <div key={dim.key} className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">{dim.label}</span>
+                        <span className={`font-bold ${score >= 80 ? "text-green-400" : score >= 50 ? "text-yellow-400" : "text-red-400"}`}>
+                          {score}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Feedback */}
+                <p className="text-xs text-zinc-300 leading-relaxed">{qaResult.feedback}</p>
+
+                {/* Issues */}
+                {qaResult.issues.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Issues</span>
+                    {qaResult.issues.map((issue, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <span className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          issue.severity === "critical" ? "bg-red-400" : issue.severity === "warning" ? "bg-yellow-400" : "bg-zinc-400"
+                        }`} />
+                        <span className="text-zinc-400">{issue.detail}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Risk flags */}
+                {qaResult.risk_flags.length > 0 && (
+                  <div className="p-2 rounded-lg bg-red-900/20 border border-red-800/30">
+                    <span className="text-[10px] text-red-400 uppercase tracking-wider font-bold block mb-1">Risk Flags</span>
+                    {qaResult.risk_flags.map((flag, i) => (
+                      <p key={i} className="text-xs text-red-300">{flag.type}: {flag.detail}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Writing tips */}
             <div className="bg-card/50 border border-border rounded-xl p-4">

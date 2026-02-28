@@ -132,6 +132,22 @@ def _save_pack_assets(
             "version": 1,
         }).execute()
 
+    for i, ad in enumerate(pack.get("ad_copy", [])):
+        client.table("content_assets").insert({
+            "workflow_id": workflow_id,
+            "type": "ad_copy",
+            "content_json": {**ad, "ad_index": i + 1},
+            "version": 1,
+        }).execute()
+
+    for i, carousel in enumerate(pack.get("carousel_slides", [])):
+        client.table("content_assets").insert({
+            "workflow_id": workflow_id,
+            "type": "carousel",
+            "content_json": carousel,
+            "version": 1,
+        }).execute()
+
 
 def _save_test_report(
     client: Client,

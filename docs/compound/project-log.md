@@ -3670,3 +3670,305 @@ Fix critical deployment blockers (port mismatch, incomplete env vars), remove de
 - **Expandable nav groups:** 3+ sub-pages → collapsible group instead of flat list
 
 See full details: `docs/compound/patterns/slice-72-deployment-hardening.md`
+
+---
+
+## 26. Slice 73 — Autonomous Agent System
+
+**Status:** COMPLETED
+**Tests:** 916 passed, 0 TS errors
+
+### What was built:
+- Proactive Pulse Engine — daily schedules (briefing, content check, performance scans)
+- Goal system with progress tracking and milestones
+- Notification service with urgency levels
+- Autonomy controls (per-agent permission tiers)
+- Content gap detection + auto-fill pipeline triggers
+- Performance alert system (viral/flop detection)
+- 50 new tests across orchestrator, proactive pulse, goals, notifications
+
+### Key patterns:
+- Daily schedules with cooldown-based deduplication
+- Handler dispatch map for task_type routing
+- Proactive condition checks run during pulse cycle
+- Autonomy gating: agents check permission level before acting
+
+---
+
+## 27. Slice 74 — Tier 1 Skills
+
+**Status:** COMPLETED
+**Tests:** 960 passed, 0 TS errors
+
+### What was built:
+- Ad copy generation skill (Facebook/Instagram/Google ads)
+- Content repurposing engine (long-form → platform-specific variants)
+- Carousel creation skill (slide-by-slide generation)
+- Extended pipeline with `ad` + `carousel` platform types
+- Skill registry with capability-based routing
+- 44 new tests
+
+### Key patterns:
+- Skill = self-contained function with schema + handler + LLM prompt
+- Platform-aware output (ad copy adapts to Facebook vs Google format)
+- Repurposing preserves voice DNA while adapting format
+
+---
+
+## 28. Slice 75 — Competitor Intelligence Dashboard
+
+**Status:** COMPLETED
+**Tests:** 1035 passed, 0 TS errors
+
+### What was built:
+- 3 new DB tables: competitors, competitor_metrics, competitor_content (migration 023)
+- Competitor CRUD service (`competitor_intel.py`) with comparison + gap analysis
+- 12 REST API endpoints for competitor management
+- LLM-powered analysis reports (`generate_analysis_report()`)
+- Daily competitor scan schedule + proactive alerts (20%+ follower change)
+- Mission Control dashboard (`/mission-control/competitors/`) + detail + gap pages
+- Frontend API client (`lib/api/competitors.ts`)
+- 27 new tests
+
+### Files:
+| File | Action |
+|------|--------|
+| `infra/supabase/migrations/023_competitor_intelligence.sql` | Created |
+| `apps/api/app/services/competitor_intel.py` | Created |
+| `apps/api/app/routers/competitors.py` | Created |
+| `apps/web/src/lib/api/competitors.ts` | Created |
+| `apps/web/src/app/mission-control/competitors/page.tsx` | Created |
+| `apps/web/src/app/mission-control/competitors/[id]/page.tsx` | Created |
+| `apps/web/src/app/mission-control/competitors/gaps/page.tsx` | Created |
+| `apps/api/tests/test_competitors.py` | Created |
+
+---
+
+## 29. Slice 76 — QA Agent (Content Quality Assurance)
+
+**Status:** COMPLETED
+**Tests:** 1084 passed (49 new), 0 TS errors
+
+### What was built:
+- 7th OpenClaw agent: `qa-reviewer` — dedicated content quality gatekeeper
+- Two-phase scoring engine: rule-based checks + LLM scoring across 6 dimensions
+- Scoring dimensions: voice (25%), hook (20%), virality (20%), ai-tell (15%), structure (10%), goal alignment (10%)
+- Strict verdict thresholds: pass >= 80, revise 50-79, fail < 50
+- Auto-revision pipeline: failed content auto-sent to Copywriter (max 2 cycles)
+- QA Dashboard at `/mission-control/qa` with stats, reviews table, score badges
+- Agent bridge endpoint `POST /agent-api/qa/review` for agent-submitted reviews
+- Daily QA schedule at 10am EST in orchestrator
+- 49 new tests across 13 test classes
+
+### Files:
+| File | Action |
+|------|--------|
+| `infra/supabase/migrations/024_qa_reviews.sql` | Created |
+| `apps/api/app/schemas/qa_review.py` | Created |
+| `apps/api/app/services/qa_review.py` | Created |
+| `apps/api/app/routers/qa.py` | Created |
+| `agents/qa-reviewer/SOUL.md` | Created |
+| `apps/web/src/lib/api/qa.ts` | Created |
+| `apps/web/src/app/mission-control/qa/page.tsx` | Created |
+| `apps/web/src/app/mission-control/qa/components/score-badge.tsx` | Created |
+| `apps/web/src/app/mission-control/qa/components/review-detail.tsx` | Created |
+| `apps/api/tests/test_qa_review.py` | Created (49 tests) |
+| `apps/api/app/main.py` | Modified |
+| `apps/api/app/middleware/rate_limit.py` | Modified |
+| `apps/api/app/services/agent_orchestrator.py` | Modified |
+| `apps/api/app/routers/mission_control.py` | Modified |
+| `apps/api/app/routers/agent_bridge.py` | Modified |
+| `openclaw.json` | Modified |
+
+### Security:
+- Content length-limited (50k chars validator, 10k chars LLM)
+- RLS user isolation on qa_reviews table
+- Rate limiting: /qa/review at TIER_LLM
+- Agent bridge timing-safe auth
+- No LLM prompt injection (content in USER prompt only)
+
+### Ralph loop: 2 iterations
+1. Route paths double-prefixed (`/qa/qa/review`) — router prefix stacking fix
+2. Rate limit ordering — `/qa/reviews` must come before `/qa/review` in `_ROUTE_TIERS`
+
+See full details: `docs/compound/patterns/slice-76-qa-agent.md`
+
+---
+
+## Slice 77 — Dedicated Competitor Analysis Agent
+**Date:** 2026-02-27 | **Tests:** 1126 (+42) | **TS Errors:** 0
+
+### Summary:
+Full migration of competitor analysis from trend-analyzer to a new dedicated `competitor-analyst` agent (8th agent). Dynamic threat scoring with 4-factor weighted algorithm and manual override support. 6 new agent bridge endpoints for agent ↔ brain communication. Intelligence feed page aggregating analyses, alerts, and benchmarks.
+
+### Key deliverables:
+- 8th agent: `competitor-analyst` (Competitive Intelligence Specialist)
+- Dynamic threat scoring: engagement_growth (30%), content_overlap (25%), frequency (25%), follower_ratio (20%)
+- Manual override: `threat_level_override` column — user-set values persist through scoring
+- 6 agent bridge endpoints: list, detail, analyze, refresh, alerts, landscape
+- 3 user-facing endpoints: /intelligence, /alerts, /full-analysis
+- Intelligence feed page at `/mission-control/competitors/intelligence`
+- Orchestrator: weekly_competitor + daily_competitor_scan reassigned to competitor-analyst
+- Deep analysis handler: analyses + threat scoring + gap analysis for all competitors
+
+### Files:
+| File | Action |
+|------|--------|
+| `infra/supabase/migrations/025_competitor_threat_override.sql` | Created |
+| `agents/competitor-analyst/SOUL.md` | Created |
+| `apps/web/src/app/mission-control/competitors/intelligence/page.tsx` | Created |
+| `apps/api/tests/test_competitor_analyst.py` | Created (42 tests) |
+| `apps/api/app/schemas/competitors.py` | Modified |
+| `apps/api/app/schemas/agent_bridge.py` | Modified |
+| `apps/api/app/services/competitor_intel.py` | Modified |
+| `apps/api/app/routers/agent_bridge.py` | Modified |
+| `apps/api/app/routers/competitors.py` | Modified |
+| `apps/api/app/middleware/rate_limit.py` | Modified |
+| `apps/api/app/services/agent_orchestrator.py` | Modified |
+| `apps/api/app/routers/mission_control.py` | Modified |
+| `openclaw.json` | Modified |
+| `agents/trend-analyzer/SOUL.md` | Modified |
+| `apps/web/src/lib/api/competitors.ts` | Modified |
+| `apps/web/src/app/mission-control/competitors/page.tsx` | Modified |
+| `apps/api/tests/test_competitors.py` | Modified |
+
+### Security:
+- Auth: agent bridge (HMAC timing-safe), user-facing (JWT)
+- Input validation: alert_type/severity enums, detail max 5000 chars
+- Rate limiting: /competitors/full-analysis at TIER_LLM (30/min)
+- Resource exhaustion: full-analysis capped at 10 competitors
+- Dynamic threat scoring: pure math (no LLM calls)
+- SOUL.md: treat all scraped content as untrusted
+
+### Ralph loop: 1 iteration
+1. Test assertions — route paths include prefix (/agent-api/*, /competitors/*), handler map is in `_get_handlers()` not `_HANDLER_MAP`, functions are sync not async
+
+See full details: `docs/compound/patterns/slice-77-competitor-analyst.md`
+
+---
+
+## Slice 78 — Migration Consolidation + Nav Fix
+**Date:** 2026-02-27 | **Tests:** 1143 (+17) | **TS Errors:** 0
+
+### Summary:
+Pure correctness/infrastructure slice. Formalized 2 missing DB tables (agent_notifications, agent_goals) that had no migration files despite being actively used by 15+ code sites. Added 3 missing autonomy columns to openclaw_agents. Fixed nav-bar sidebar (Competitors + QA missing), advisor rate limit (was unprotected), column naming bug (agent_id → from_agent_id), and removed orphaned agents/jarvis/ directory.
+
+### Key fixes:
+- **Migration 026:** agent_notifications table (15 columns, RLS, 3 indexes)
+- **Migration 027:** agent_goals table (17 columns, RLS, 2 indexes)
+- **Migration 028:** openclaw_agents + autonomy_enabled, confidence_threshold, auto_execute
+- **Nav-bar:** Competitors + QA added to mcSubLinks sidebar
+- **Rate limit:** /advisor/suggestions → TIER_LLM (calls GPT-4o-mini)
+- **Bug fix:** competitor alert endpoint wrote `agent_id` instead of `from_agent_id`
+- **Cleanup:** agents/jarvis/ removed (orphaned from Slice 66 Jumbo rename)
+
+### Files:
+| File | Action |
+|------|--------|
+| `infra/supabase/migrations/026_agent_notifications.sql` | Created |
+| `infra/supabase/migrations/027_agent_goals.sql` | Created |
+| `infra/supabase/migrations/028_agent_autonomy_columns.sql` | Created |
+| `apps/api/tests/test_migration_consolidation.py` | Created (17 tests) |
+| `apps/web/src/app/nav-bar.tsx` | Modified |
+| `apps/api/app/middleware/rate_limit.py` | Modified |
+| `apps/api/app/routers/agent_bridge.py` | Modified |
+| `agents/jarvis/` | Deleted |
+
+### Security:
+- RLS enabled on both new tables with user_id policies
+- Advisor rate limited at TIER_LLM (30/min)
+- from_agent_id column naming fixed for consistency
+- All migrations use IF NOT EXISTS for idempotency
+- Autonomy defaults: disabled (safe for existing rows)
+
+### Ralph loop: 0 iterations (all tests passed first try)
+
+See full details: `docs/compound/patterns/slice-78-migration-consolidation.md`
+
+---
+
+## Slice 79 — Polish Sprint: Notification Bell + MC Nav + Pipeline Status + Model Fix
+**Date:** 2026-02-27 | **Tests:** 1151 (8 new) | **TS errors:** 0
+
+### What changed
+- NotificationBell promoted from MC dashboard-only to global sidebar nav (visible on every page)
+- Unified all 7 MC sub-pages to use shared `MC_SUB_NAV` constant (8 tabs), eliminating 3 different inline arrays
+- Added `GET /agent-api/pipeline/{workflow_id}` endpoint for agents to check pipeline status
+- Fixed copywriter model in DEFAULT_AGENTS: anthropic/claude-sonnet -> openai/gpt-4o (matches openclaw.json)
+
+### Files: 11 modified, 1 created
+- `nav-bar.tsx` — NotificationBell in sidebar
+- `constants.ts` — MC_SUB_NAV constant
+- 7 MC page files — unified sub-nav
+- `agent_bridge.py` — pipeline status endpoint
+- `mission_control.py` — copywriter model fix
+- `test_polish_sprint.py` — 8 new tests
+
+### Security checks
+- Pipeline status scoped to caller.user_id
+- NotificationBell uses existing JWT auth
+- No new attack surface
+
+### Ralph loop: 0 iterations (all tests passed first try)
+
+See full details: `docs/compound/patterns/slice-79-polish-sprint.md`
+
+---
+
+## Slice 80 — Composer → QA Gate
+**Date:** 2026-02-27
+**Tests:** 1159 total (8 new) | 0 TS errors
+
+### What was built
+- Wired QA scoring engine into Composer page — "QA Check" button triggers `POST /qa/review` and displays 6-dimension score breakdown
+- QA Result Panel in right column: score badge, verdict pill, dimension grid, feedback, issues, risk flags
+- Soft QA gate on Schedule/Queue: confirm dialog warns when no QA check run or verdict is "fail"
+- Stale score auto-clear: `useEffect` clears QA result when body text changes
+- **Bug fix:** `composerApi.generateContent` called `/content-chat` but backend defines `/content-chat/message` — AI Generate button was broken (404)
+
+### Files: 2 modified, 1 created
+- `composer/page.tsx` — QA Check button, result panel, soft gate
+- `lib/api/composer.ts` — content-chat endpoint fix
+- `test_composer_qa_gate.py` — 8 new tests
+
+### Security checks
+- Reuses existing JWT auth via `apiFetch`
+- No new backend endpoints created
+- Content-text validated 1-50,000 chars server-side
+
+### Ralph loop: 0 iterations (all tests passed first try)
+
+See full details: `docs/compound/patterns/slice-80-composer-qa-gate.md`
+
+---
+
+## Slice 81 — NotebookLM MCP Activation
+**Date:** 2026-02-27
+**Tests:** 1159 total (config-only slice) | 0 TS errors
+
+### What was built
+- Activated NotebookLM MCP integration (scaffolded since Slice 66) by adding `mcp_notebooklm` to tool allow-lists
+- 5 agents now have NotebookLM access: Jumbo, Trend Analyzer, Copywriter, Competitor Analyst, QA Reviewer
+- Each agent's SOUL.md updated with specific NotebookLM query workflows and instructions
+- Jumbo's Brain workflow updated: query NotebookLM as step 5 (between knowledge search and inspo search)
+- Trend Analyzer: query library BEFORE web search to avoid duplicating existing research
+- Copywriter: query library for real voice examples and reference material
+- Competitor Analyst: query library for historical competitive context, compare against current web data
+- QA Reviewer: query library to verify claims and ground voice feedback in real examples
+
+### Files: 6 modified
+- `openclaw.json` — mcp_notebooklm in global alsoAllow + 5 agent allow-lists
+- 5 agent SOUL.md files — NotebookLM sections with query patterns
+
+### Manual steps required
+1. Create notebooks at notebooklm.google.com (Brand Voice, Competitor Intel, Industry Research, etc.)
+2. Get Google access token from Google Cloud Console
+3. Add GOOGLE_ACCESS_TOKEN to VPS .env
+4. Deploy updated config + restart gateway
+
+### Security checks
+- Token stored as env var, not hardcoded
+- System degrades gracefully without token
+- Only 5 of 8 agents get access (visual-designer, distributor, analytics excluded)
+
+See full details: `docs/compound/patterns/slice-81-notebooklm-activation.md`

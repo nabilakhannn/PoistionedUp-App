@@ -51,6 +51,10 @@ class ContentPack(TypedDict, total=False):
     twitter_thread: Dict[str, Any]
     # Short-form (TikTok, Reels, Shorts beyond YouTube)
     short_form_scripts: List[Dict[str, Any]]
+    # Ad copy (Facebook, Instagram, LinkedIn ads)
+    ad_copy: List[Dict[str, Any]]
+    # Carousel slides (LinkedIn + Instagram carousels)
+    carousel_slides: List[Dict[str, Any]]
 
 
 class TestResult(TypedDict):

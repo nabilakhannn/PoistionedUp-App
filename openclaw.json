@@ -32,7 +32,7 @@
   "tools": {
     "profile": "messaging",
     "deny": ["gateway", "cron", "sessions_spawn", "sessions_send"],
-    "alsoAllow": ["lobster"],
+    "alsoAllow": ["lobster", "mcp_notebooklm"],
     "fs": {
       "workspaceOnly": true
     },
@@ -57,11 +57,11 @@
     "servers": {
       "notebooklm": {
         "command": "npx",
-        "args": ["notebooklm-mcp@latest"],
+        "args": ["-y", "notebooklm-mcp@latest"],
         "env": {
-          "GOOGLE_ACCESS_TOKEN": "${GOOGLE_ACCESS_TOKEN}"
+          "NOTEBOOKLM_PROFILE": "standard"
         },
-        "_comment": "NotebookLM MCP server for zero-hallucination research synthesis. Agents query notebooks for grounded, citation-backed answers."
+        "_comment": "NotebookLM MCP server — browser-based auth (run setup_auth once to log in). Agents query notebooks for grounded, citation-backed answers."
       }
     }
   },
@@ -85,7 +85,7 @@
         "runTimeoutSeconds": 900,
         "archiveAfterMinutes": 60,
         "model": { "provider": "openai", "model": "gpt-4o-mini" },
-        "allowAgents": ["trend-analyzer", "copywriter", "visual-designer", "distributor", "analytics", "*"]
+        "allowAgents": ["trend-analyzer", "copywriter", "visual-designer", "distributor", "analytics", "qa-reviewer", "competitor-analyst", "*"]
       }
     },
     "list": [
@@ -96,7 +96,7 @@
         "workspace": "./agents/jumbo",
         "model": { "provider": "openai", "model": "gpt-4o" },
         "tools": {
-          "allow": ["read", "write", "edit", "web_fetch", "sessions_list", "sessions_history", "sessions_send", "sessions_spawn", "session_status", "subagents", "message", "agents_list", "lobster"],
+          "allow": ["read", "write", "edit", "web_fetch", "sessions_list", "sessions_history", "sessions_send", "sessions_spawn", "session_status", "subagents", "message", "agents_list", "lobster", "mcp_notebooklm"],
           "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "image"]
         },
         "subagents": {
@@ -110,7 +110,7 @@
         "workspace": "./agents/trend-analyzer",
         "model": { "provider": "openai", "model": "gpt-4o-mini" },
         "tools": {
-          "allow": ["read", "write", "edit", "web_search", "web_fetch"],
+          "allow": ["read", "write", "edit", "web_search", "web_fetch", "mcp_notebooklm"],
           "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "image"]
         },
         "channels": []
@@ -121,7 +121,7 @@
         "workspace": "./agents/copywriter",
         "model": { "provider": "openai", "model": "gpt-4o" },
         "tools": {
-          "allow": ["read", "write", "edit"],
+          "allow": ["read", "write", "edit", "mcp_notebooklm"],
           "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "web_search", "web_fetch", "image"]
         },
         "channels": []
@@ -155,6 +155,28 @@
         "model": { "provider": "openai", "model": "gpt-4o-mini" },
         "tools": {
           "allow": ["read", "write", "edit", "web_fetch"],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "image"]
+        },
+        "channels": []
+      },
+      {
+        "id": "qa-reviewer",
+        "name": "QA Reviewer",
+        "workspace": "./agents/qa-reviewer",
+        "model": { "provider": "openai", "model": "gpt-4o-mini" },
+        "tools": {
+          "allow": ["read", "write", "edit", "web_fetch", "mcp_notebooklm"],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "image"]
+        },
+        "channels": []
+      },
+      {
+        "id": "competitor-analyst",
+        "name": "Competitor Analyst",
+        "workspace": "./agents/competitor-analyst",
+        "model": { "provider": "openai", "model": "gpt-4o-mini" },
+        "tools": {
+          "allow": ["read", "write", "edit", "web_search", "web_fetch", "mcp_notebooklm"],
           "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "sessions_spawn", "sessions_send", "image"]
         },
         "channels": []
@@ -205,9 +227,59 @@
       "sessionTarget": "isolated",
       "payload": {
         "kind": "agentTurn",
-        "message": "COMPETITOR SCAN TRIGGER. Create a competitor analysis task. Assign to trend-analyzer. Use the Brand Research Pipeline via the Agent Bridge API. Priority P1."
+        "message": "COMPETITOR SCAN TRIGGER. Create a competitor analysis task. Assign to competitor-analyst. Use the Brain API endpoints at /agent-api/competitors/* for data. Priority P1."
       },
       "agentId": "jumbo"
+    },
+    {
+      "name": "Daily Morning Briefing",
+      "schedule": { "kind": "cron", "expr": "0 8 * * *", "tz": "America/New_York" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "DAILY BRIEFING TRIGGER. Call the Brain API POST /agent-api/notify to generate and deliver a daily briefing. Include: upcoming schedule, pending tasks, performance summary, goal progress, and proactive suggestions."
+      },
+      "agentId": "jumbo"
+    },
+    {
+      "name": "Daily Content Calendar Check",
+      "schedule": { "kind": "cron", "expr": "0 9 * * *", "tz": "America/New_York" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "CONTENT CHECK TRIGGER. Check the content calendar for gaps in the next 7 days. If fewer than 3 items are scheduled, create content tasks to fill the gaps via POST /agent-api/pipeline/trigger."
+      },
+      "agentId": "jumbo"
+    },
+    {
+      "name": "Midday Performance Scan",
+      "schedule": { "kind": "cron", "expr": "0 12 * * *", "tz": "America/New_York" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "PERFORMANCE SCAN TRIGGER. Check for viral posts (engagement > 2x average) or flops (engagement < 0.3x average). Create alerts via POST /agent-api/notify for significant outliers."
+      },
+      "agentId": "analytics"
+    },
+    {
+      "name": "Evening Performance Scan",
+      "schedule": { "kind": "cron", "expr": "0 18 * * *", "tz": "America/New_York" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "PERFORMANCE SCAN TRIGGER. End-of-day check. Compare today's posts against weekly averages. Create alerts for outliers. Update goal progress via the Brain API."
+      },
+      "agentId": "analytics"
+    },
+    {
+      "name": "Daily QA Review",
+      "schedule": { "kind": "cron", "expr": "0 10 * * *", "tz": "America/New_York" },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "QA REVIEW TRIGGER. Review all pending draft content that hasn't been QA'd yet. Use the Brain API POST /agent-api/qa/review endpoint to score each piece. Report results to Jumbo."
+      },
+      "agentId": "qa-reviewer"
     }
   ],
 

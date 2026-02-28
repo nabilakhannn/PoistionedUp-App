@@ -1,6 +1,7 @@
 "use client";
 
 import { DashboardStats } from "@/lib/api/mission-control";
+import { NotificationBell } from "./notification-bell";
 
 interface StatsBarProps {
   stats: DashboardStats | null;
@@ -46,6 +47,8 @@ export function StatsBar({ stats, filterAgent, agentName, onBroadcast }: StatsBa
 
       {/* Right: Actions and time */}
       <div className="flex items-center gap-3">
+        <NotificationBell />
+
         <button
           onClick={onBroadcast}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 hover:bg-zinc-700 transition"

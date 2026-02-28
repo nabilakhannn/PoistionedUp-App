@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Agent, AgentMessage, AgentTask } from "@/lib/api/mission-control";
+import { Agent, AgentMessage, AgentTask, missionControlApi } from "@/lib/api/mission-control";
 import { ROLE_TYPE_BADGES, STATUS_COLORS, MESSAGE_TYPE_ICONS } from "../constants";
 
 interface AgentProfileProps {
@@ -108,6 +108,45 @@ export function AgentProfile({ agent, messages, tasks, onClose, onSendMessage }:
               {skill}
             </span>
           ))}
+        </div>
+      </div>
+
+      {/* Autonomy Controls */}
+      <div className="px-5 py-3 border-b border-zinc-800">
+        <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Autonomy</p>
+        <div className="space-y-2">
+          <label className="flex items-center justify-between cursor-pointer">
+            <span className="text-xs text-zinc-300">Enable Autonomy</span>
+            <button
+              onClick={async () => {
+                const newVal = !(agent as Agent & { autonomy_enabled?: boolean }).autonomy_enabled;
+                await missionControlApi.updateAgent(agent.id, { autonomy_enabled: newVal } as Partial<Agent>);
+              }}
+              className={`w-8 h-4 rounded-full relative transition ${
+                (agent as Agent & { autonomy_enabled?: boolean }).autonomy_enabled ? "bg-green-500" : "bg-zinc-700"
+              }`}
+            >
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+                (agent as Agent & { autonomy_enabled?: boolean }).autonomy_enabled ? "translate-x-4" : "translate-x-0.5"
+              }`} />
+            </button>
+          </label>
+          <label className="flex items-center justify-between cursor-pointer">
+            <span className="text-xs text-zinc-300">Auto-Execute Tasks</span>
+            <button
+              onClick={async () => {
+                const newVal = !(agent as Agent & { auto_execute?: boolean }).auto_execute;
+                await missionControlApi.updateAgent(agent.id, { auto_execute: newVal } as Partial<Agent>);
+              }}
+              className={`w-8 h-4 rounded-full relative transition ${
+                (agent as Agent & { auto_execute?: boolean }).auto_execute ? "bg-amber-500" : "bg-zinc-700"
+              }`}
+            >
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+                (agent as Agent & { auto_execute?: boolean }).auto_execute ? "translate-x-4" : "translate-x-0.5"
+              }`} />
+            </button>
+          </label>
         </div>
       </div>
 

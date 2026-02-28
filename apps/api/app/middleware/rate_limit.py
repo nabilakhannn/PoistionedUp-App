@@ -52,6 +52,13 @@ _ROUTE_TIERS: List[Tuple[str, Tuple[int, int]]] = [
     ("/brand/strategist/chat", TIER_LLM),
     ("/brands/", TIER_LLM),   # research/run endpoints hit LLM
     ("/content-chat/", TIER_LLM),
+    ("/repurpose", TIER_LLM),
+    ("/advisor/suggestions", TIER_LLM),
+    ("/competitors/full-analysis", TIER_LLM),
+    ("/competitors", TIER_WRITE),
+    ("/qa/reviews", TIER_READ),
+    ("/qa/stats", TIER_READ),
+    ("/qa/review", TIER_LLM),
     ("/workflows", TIER_LLM),
 
     # Orchestrator (strictest LLM tier — spawns multiple pipelines per call)
@@ -85,6 +92,11 @@ def _get_tier(path: str, method: str) -> Tuple[int, int]:
             # The research /run endpoint hits LLM, but GET endpoints are reads
             if "research" in path and method == "GET":
                 return TIER_READ
+            # Competitor /analyze and /refresh hit LLM — stricter tier
+            if path.startswith("/competitors") and (
+                path.endswith("/analyze") or path.endswith("/refresh")
+            ):
+                return TIER_LLM
             return tier
     return TIER_READ
 

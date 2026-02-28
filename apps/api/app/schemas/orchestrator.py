@@ -14,13 +14,15 @@ class PulseResult(BaseModel):
     created_tasks: List[Dict[str, Any]] = []
     skipped: List[Dict[str, Any]] = []
     executed: List[Dict[str, Any]] = []
+    proactive_findings: List[str] = []
+    notifications_created: int = 0
     active_brand: Optional[Dict[str, Any]] = None
 
 
 class TriggerRequest(BaseModel):
     schedule_id: str = Field(
         ...,
-        pattern=r"^(weekly_research|weekly_analytics|weekly_competitor)$",
+        pattern=r"^(weekly_research|weekly_analytics|weekly_competitor|daily_briefing|daily_content_check|midday_performance|evening_performance)$",
     )
     auto_execute: bool = Field(True, description="Execute immediately after creation")
 
@@ -51,5 +53,7 @@ class ScheduleState(BaseModel):
 class OrchestratorStatus(BaseModel):
     timestamp: str
     schedules: List[ScheduleState] = []
+    daily_schedules: List[ScheduleState] = []
     active_tasks: List[Dict[str, Any]] = []
     recent_completed: List[Dict[str, Any]] = []
+    active_goals: List[Dict[str, Any]] = []

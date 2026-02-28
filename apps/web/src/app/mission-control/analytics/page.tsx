@@ -9,7 +9,7 @@ import {
   AgentMessage,
   DashboardStats,
 } from "@/lib/api/mission-control";
-import { STATUS_COLORS, ROLE_TYPE_BADGES } from "../constants";
+import { STATUS_COLORS, ROLE_TYPE_BADGES, MC_SUB_NAV } from "../constants";
 
 /* ── Helpers ───────────────────────────────────────────── */
 
@@ -183,22 +183,20 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Sub-navigation */}
-      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1">
-        <Link href="/mission-control" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Dashboard
-        </Link>
-        <Link href="/mission-control/analytics" className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/15 text-primary border border-primary/20">
-          Analytics
-        </Link>
-        <Link href="/mission-control/orchestrator" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Orchestrator
-        </Link>
-        <Link href="/mission-control/gateway" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Gateway
-        </Link>
-        <Link href="/mission-control/chat" className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition">
-          Chat
-        </Link>
+      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1 overflow-x-auto">
+        {MC_SUB_NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+              item.href === "/mission-control/analytics"
+                ? "bg-primary/15 text-primary border border-primary/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
       </div>
 
       <div className="p-5 space-y-5 max-w-7xl mx-auto">

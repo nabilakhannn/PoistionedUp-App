@@ -176,7 +176,7 @@ export const composerApi = {
     }
   ) =>
     apiFetch<{ id: string; messages: { role: string; content: string }[] }>(
-      "/content-chat",
+      "/content-chat/message",
       {
         method: "POST",
         body: JSON.stringify({

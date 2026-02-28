@@ -138,3 +138,38 @@ class AgentHeartbeat(BaseModel):
     status: str = "idle"
     status_reason: Optional[str] = None
     current_task_id: Optional[str] = None
+
+
+# ── Competitor intelligence (agent-facing) ────────────────
+
+VALID_COMPETITOR_ALERT_TYPES = {
+    "follower_surge", "engagement_drop", "positioning_shift",
+    "content_spike", "new_strategy",
+}
+
+
+class CompetitorAlertSubmission(BaseModel):
+    """Agent submits a structured competitor alert."""
+    agent_id: str
+    competitor_id: str
+    alert_type: str
+    detail: str = Field(..., min_length=1, max_length=5000)
+    metric_before: Optional[float] = None
+    metric_after: Optional[float] = None
+    severity: str = Field("medium")
+    brand_id: Optional[str] = None
+
+    @classmethod
+    def validate_alert_type(cls, v: str) -> str:
+        if v not in VALID_COMPETITOR_ALERT_TYPES:
+            raise ValueError(
+                f"Invalid alert_type: {v}. "
+                f"Valid: {sorted(VALID_COMPETITOR_ALERT_TYPES)}"
+            )
+        return v
+
+    @classmethod
+    def validate_severity(cls, v: str) -> str:
+        if v not in ("low", "medium", "high"):
+            raise ValueError("severity must be 'low', 'medium', or 'high'")
+        return v

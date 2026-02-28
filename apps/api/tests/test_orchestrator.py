@@ -99,7 +99,7 @@ class TestHandlerDispatch:
         from app.services.agent_orchestrator import _get_handlers
 
         handlers = _get_handlers()
-        assert set(handlers.keys()) == {"research", "content", "analytics", "competitor"}
+        assert set(handlers.keys()) == {"research", "content", "analytics", "competitor", "competitor_scan", "daily_briefing", "content_gap_fill", "performance_alert", "qa_review_pending"}
 
     def test_all_handlers_callable(self):
         from app.services.agent_orchestrator import _get_handlers
@@ -167,19 +167,21 @@ class TestPulseLogic:
 
     @patch("app.services.agent_orchestrator.get_admin_client")
     @patch("app.services.agent_orchestrator._is_schedule_due", return_value=False)
-    def test_pulse_skips_when_not_due(self, mock_due, mock_client):
-        from app.services.agent_orchestrator import pulse
+    @patch("app.services.agent_orchestrator._is_daily_due", return_value=False)
+    def test_pulse_skips_when_not_due(self, mock_daily_due, mock_due, mock_client):
+        from app.services.agent_orchestrator import pulse, SCHEDULES, DAILY_SCHEDULES
 
         mock_client.return_value = self._mock_sb()
         result = pulse("user-123")
 
         assert len(result["created_tasks"]) == 0
-        assert len(result["skipped"]) == 3  # all 3 schedules skipped
+        assert len(result["skipped"]) == len(SCHEDULES) + len(DAILY_SCHEDULES)  # all schedules skipped
 
     @patch("app.services.agent_orchestrator.get_admin_client")
     @patch("app.services.agent_orchestrator._is_schedule_due", return_value=True)
+    @patch("app.services.agent_orchestrator._is_daily_due", return_value=True)
     @patch("app.services.agent_orchestrator._has_recent_task", return_value=True)
-    def test_pulse_skips_within_cooldown(self, mock_recent, mock_due, mock_client):
+    def test_pulse_skips_within_cooldown(self, mock_recent, mock_daily_due, mock_due, mock_client):
         from app.services.agent_orchestrator import pulse
 
         mock_client.return_value = self._mock_sb()

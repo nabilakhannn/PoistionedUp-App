@@ -16,6 +16,7 @@ import { AgentProfile } from "./components/agent-profile";
 import { StatsBar } from "./components/stats-bar";
 import { ActivityFeed } from "./components/activity-feed";
 import { DeliverablesPanel } from "./components/deliverables-panel";
+import { DailyBriefingCard } from "./components/daily-briefing-card";
 
 export default function MissionControlPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -167,6 +168,24 @@ export default function MissionControlPage() {
         >
           Chat
         </Link>
+        <Link
+          href="/mission-control/goals"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
+        >
+          Goals
+        </Link>
+        <Link
+          href="/mission-control/competitors"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
+        >
+          Competitors
+        </Link>
+        <Link
+          href="/mission-control/qa"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
+        >
+          QA
+        </Link>
 
         <div className="flex-1" />
 
@@ -192,6 +211,9 @@ export default function MissionControlPage() {
           <span>+</span> New Task
         </button>
       </div>
+
+      {/* Daily Briefing */}
+      <DailyBriefingCard />
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">

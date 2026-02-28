@@ -47,3 +47,14 @@ export const MESSAGE_TYPE_ICONS: Record<string, string> = {
   escalation: "🚨",
   broadcast: "📢",
 };
+
+export const MC_SUB_NAV = [
+  { href: "/mission-control", label: "Dashboard" },
+  { href: "/mission-control/analytics", label: "Analytics" },
+  { href: "/mission-control/orchestrator", label: "Orchestrator" },
+  { href: "/mission-control/gateway", label: "Gateway" },
+  { href: "/mission-control/chat", label: "Agent Chat" },
+  { href: "/mission-control/goals", label: "Goals" },
+  { href: "/mission-control/competitors", label: "Competitors" },
+  { href: "/mission-control/qa", label: "QA" },
+];

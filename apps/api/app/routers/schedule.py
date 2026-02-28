@@ -350,6 +350,38 @@ async def import_from_workflow(
                 "column_order": i,
             })
 
+    # Ad copy variants
+    for i, ad in enumerate(pack.get("ad_copy", [])):
+        if "ad" in platforms:
+            ad_platform = ad.get("platform", "facebook")
+            items_created.append({
+                "user_id": user.id,
+                "title": f"Ad: {ad.get('headline', goal)[:80]}",
+                "platform": ad_platform,
+                "content_type": "ad_copy",
+                "body_preview": ad.get("body", ad.get("script", ""))[:200],
+                "content_json": ad,
+                "workflow_id": workflow_id,
+                "status": "draft",
+                "column_order": i,
+            })
+
+    # Carousel slides
+    for i, carousel in enumerate(pack.get("carousel_slides", [])):
+        if "carousel" in platforms:
+            carousel_platform = carousel.get("platform", "linkedin")
+            items_created.append({
+                "user_id": user.id,
+                "title": f"Carousel: {carousel.get('cover_text', goal)[:80]}",
+                "platform": carousel_platform,
+                "content_type": "carousel",
+                "body_preview": carousel.get("cover_text", "")[:200],
+                "content_json": carousel,
+                "workflow_id": workflow_id,
+                "status": "draft",
+                "column_order": i,
+            })
+
     if not items_created:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -503,12 +535,13 @@ async def delete_scheduled_item(
 # Map research idea formats → schedule content_type
 _FORMAT_MAP = {
     "video": "youtube_long",
-    "carousel": "linkedin_post",
+    "carousel": "carousel",
     "post": "linkedin_post",
     "thread": "twitter_post",
     "story": "short_form",
     "reel": "short_form",
     "short": "youtube_short",
+    "ad": "ad_copy",
 }
 
 # Map research idea platforms → schedule platform

@@ -22,6 +22,9 @@ export interface Agent {
   created_at: string;
   updated_at: string;
   task_count?: number;
+  autonomy_enabled?: boolean;
+  confidence_threshold?: number;
+  auto_execute?: boolean;
 }
 
 export interface AgentTask {

@@ -309,6 +309,47 @@ def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
         sf_result = parse_json_response(sf_resp["content"])
         content_pack["short_form_scripts"] = sf_result.get("short_form_scripts", [])
 
+    # ── Ad Copy: multi-platform ad variants ──
+    if "ad" in platforms:
+        from worker.graph.prompts import ad_copy as ad_prompts
+        ad_resp = llm.chat(
+            messages=[
+                {"role": "system", "content": ad_prompts.SYSTEM + extra_context},
+                {"role": "user", "content": ad_prompts.USER.format(
+                    topic_title=topic.get("title", ""),
+                    audience_pain=topic.get("audience_pain", ""),
+                    voice=voice,
+                    brand_context=brand_context,
+                    offer_context=offer_context,
+                )},
+            ],
+            model=get_model_for_step("script_generation"),
+            temperature=0.7,
+            response_format={"type": "json_object"},
+        )
+        ad_result = parse_json_response(ad_resp["content"])
+        content_pack["ad_copy"] = ad_result.get("ad_copy", [])
+
+    # ── Carousel: LinkedIn + Instagram slide decks ──
+    if "carousel" in platforms:
+        from worker.graph.prompts import carousel as carousel_prompts
+        carousel_resp = llm.chat(
+            messages=[
+                {"role": "system", "content": carousel_prompts.SYSTEM + extra_context},
+                {"role": "user", "content": carousel_prompts.USER.format(
+                    topic_title=topic.get("title", ""),
+                    audience_pain=topic.get("audience_pain", ""),
+                    voice=voice,
+                    brand_context=brand_context,
+                )},
+            ],
+            model=get_model_for_step("script_generation"),
+            temperature=0.7,
+            response_format={"type": "json_object"},
+        )
+        carousel_result = parse_json_response(carousel_resp["content"])
+        content_pack["carousel_slides"] = carousel_result.get("carousel_slides", [])
+
     # Log summary
     parts = []
     if "youtube_long" in content_pack:
@@ -321,6 +362,10 @@ def script_generation(state: Dict[str, Any]) -> Dict[str, Any]:
         parts.append("%d tweets" % len(content_pack["twitter_posts"]))
     if "short_form_scripts" in content_pack:
         parts.append("%d short-form" % len(content_pack["short_form_scripts"]))
+    if "ad_copy" in content_pack:
+        parts.append("%d ad variants" % len(content_pack["ad_copy"]))
+    if "carousel_slides" in content_pack:
+        parts.append("%d carousels" % len(content_pack["carousel_slides"]))
 
     logger.info(
         "script_generation: pack created for platforms=%s (%s)",
