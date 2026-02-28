@@ -176,12 +176,15 @@ def _research(queries: List[str], max_per_query: int = 5) -> str:
     """Run multiple web searches and return combined context string."""
     all_results = []
     for q in queries:
-        results = search_web(q, max_results=max_per_query)
-        for r in results:
-            all_results.append(f"- {r['title']}: {r['snippet']}")
+        try:
+            results = search_web(q, max_results=max_per_query)
+            for r in results:
+                all_results.append(f"- {r['title']}: {r['snippet']}")
+        except Exception as e:
+            logger.warning("Web search failed for query '%s': %s", q[:50], e)
 
     if not all_results:
-        return "(No web results found)"
+        return "(No web results available — use your own knowledge)"
 
     return "\n".join(all_results[:30])  # Cap at 30 results
 
