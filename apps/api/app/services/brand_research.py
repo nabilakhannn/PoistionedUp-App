@@ -138,7 +138,9 @@ def _llm_call(
     temperature: float = 0.7,
     max_tokens: int = 4000,
 ) -> str:
-    """Make an LLM call and return the content string."""
+    """Make an LLM call and return the content string. Retries on connection errors."""
+    import time
+
     if not model:
         from worker.graph.llm import get_model_for_chat
         model = get_model_for_chat()
@@ -148,13 +150,26 @@ def _llm_call(
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
-    response = llm.chat(
-        messages=messages,
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
-    return response["content"]
+
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = llm.chat(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return response["content"]
+        except Exception as e:
+            last_error = e
+            error_name = type(e).__name__
+            if "Connection" in error_name or "Timeout" in error_name:
+                logger.warning("LLM call attempt %d failed (%s), retrying...", attempt + 1, error_name)
+                time.sleep(2 * (attempt + 1))
+            else:
+                raise
+    raise last_error  # type: ignore[misc]
 
 
 def _llm_json_call(
