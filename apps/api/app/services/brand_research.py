@@ -501,10 +501,12 @@ def run_stage(session_id: str, user_id: str) -> Dict[str, Any]:
     try:
         stage_result = runner(seed, prior_results)
     except Exception as e:
-        logger.error("Stage %s failed for session %s: %s", current_stage, session_id, e)
+        error_type = type(e).__name__
+        error_detail = f"{error_type}: {str(e)[:400]}"
+        logger.error("Stage %s failed for session %s: [%s] %s", current_stage, session_id, error_type, e)
         _update_session(session_id, user_id, {
             "status": "failed",
-            "error": f"Stage {current_stage} failed: {str(e)[:500]}",
+            "error": f"Stage {current_stage} failed: {error_detail}",
         })
         raise
 
