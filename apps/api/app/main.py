@@ -276,6 +276,23 @@ async def llm_health_check():
         result["status"] = "error"
         result["error_type"] = type(e).__name__
         result["detail"] = str(e)[:500]
+        # Dig into the error chain to find the real cause
+        cause = e.__cause__
+        if cause:
+            result["cause_type"] = type(cause).__name__
+            result["cause_detail"] = str(cause)[:500]
+            inner = cause.__cause__
+            if inner:
+                result["inner_cause"] = f"{type(inner).__name__}: {str(inner)[:300]}"
+
+    # Also test raw HTTPS connectivity to api.openai.com
+    try:
+        import httpx as _httpx
+        r = _httpx.get("https://api.openai.com/v1/models", headers={"Authorization": f"Bearer {settings.openai_api_key}"}, timeout=10.0)
+        result["raw_httpx_status"] = r.status_code
+        result["raw_httpx_ok"] = r.status_code == 200
+    except Exception as raw_err:
+        result["raw_httpx_error"] = f"{type(raw_err).__name__}: {str(raw_err)[:300]}"
 
     return result
 
