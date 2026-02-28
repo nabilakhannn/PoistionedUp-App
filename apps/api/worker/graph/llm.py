@@ -29,10 +29,10 @@ from app.config import settings
 logger = logging.getLogger("worker.graph.llm")
 
 # ── Retry configuration ──────────────────────────────────────
-MAX_RETRIES = 3
+MAX_RETRIES = 2
 RETRY_BASE_DELAY = 1.0  # seconds
 RETRY_BACKOFF_FACTOR = 2.0
-RETRY_MAX_DELAY = 16.0  # cap so we don't wait forever
+RETRY_MAX_DELAY = 8.0  # cap — must fit within Vercel's 120s serverless timeout
 
 
 # ── Cost estimation (USD per 1K tokens) ──────────────────────
@@ -427,9 +427,14 @@ class OpenAIClient:
     """
 
     def __init__(self, api_key: Optional[str] = None, anthropic_api_key: Optional[str] = None):
+        import httpx
         from openai import OpenAI
 
-        self._client = OpenAI(api_key=api_key or settings.openai_api_key)
+        self._client = OpenAI(
+            api_key=api_key or settings.openai_api_key,
+            timeout=httpx.Timeout(60.0, connect=5.0),
+            max_retries=0,  # We handle retries ourselves in _chat_openai
+        )
         self._anthropic_client = None
         self._anthropic_key = anthropic_api_key or settings.anthropic_api_key
 

@@ -138,9 +138,10 @@ def _llm_call(
     temperature: float = 0.7,
     max_tokens: int = 4000,
 ) -> str:
-    """Make an LLM call and return the content string. Retries on connection errors."""
-    import time
+    """Make an LLM call and return the content string.
 
+    Retry logic is handled by the LLM client (llm.py) — no duplicate retries here.
+    """
     if not model:
         from worker.graph.llm import get_model_for_chat
         model = get_model_for_chat()
@@ -151,25 +152,13 @@ def _llm_call(
         {"role": "user", "content": user_prompt},
     ]
 
-    last_error = None
-    for attempt in range(3):
-        try:
-            response = llm.chat(
-                messages=messages,
-                model=model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-            return response["content"]
-        except Exception as e:
-            last_error = e
-            error_name = type(e).__name__
-            if "Connection" in error_name or "Timeout" in error_name:
-                logger.warning("LLM call attempt %d failed (%s), retrying...", attempt + 1, error_name)
-                time.sleep(2 * (attempt + 1))
-            else:
-                raise
-    raise last_error  # type: ignore[misc]
+    response = llm.chat(
+        messages=messages,
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+    return response["content"]
 
 
 def _llm_json_call(
@@ -517,7 +506,10 @@ def run_stage(session_id: str, user_id: str) -> Dict[str, Any]:
         stage_result = runner(seed, prior_results)
     except Exception as e:
         error_type = type(e).__name__
-        error_detail = f"{error_type}: {str(e)[:400]}"
+        if "Connection" in error_type or "Timeout" in error_type:
+            error_detail = "AI service temporarily unavailable. Please try again in a moment."
+        else:
+            error_detail = f"{error_type}: {str(e)[:400]}"
         logger.error("Stage %s failed for session %s: [%s] %s", current_stage, session_id, error_type, e)
         _update_session(session_id, user_id, {
             "status": "failed",

@@ -521,21 +521,21 @@ async def run_research_stage(
     run_all: bool = False,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Run the next research stage (or all remaining stages).
+    """Run the next research stage.
 
     Query params:
-      - run_all: bool = false — if true, runs all remaining stages sequentially
+      - run_all: bool = false — ignored (kept for backwards compat).
+        Running all stages in one request exceeds Vercel's serverless timeout.
+        The frontend runs stages one at a time.
     """
-    from app.services.brand_research import run_stage, run_all_stages, STAGES, STAGE_LABELS
+    from app.services.brand_research import run_stage, STAGES, STAGE_LABELS
 
     admin = get_admin_client()
     _verify_brand_ownership(admin, brand_id, user.id)
 
     try:
-        if run_all:
-            session = run_all_stages(session_id, user.id)
-        else:
-            session = run_stage(session_id, user.id)
+        # Always run one stage at a time — run_all would timeout on serverless
+        session = run_stage(session_id, user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
