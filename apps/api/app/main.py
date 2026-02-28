@@ -236,6 +236,50 @@ async def health_check():
     return health
 
 
+@app.get("/health/llm")
+async def llm_health_check():
+    """Test OpenAI API connectivity. Returns connection status + latency."""
+    import time
+    from app.config import settings
+
+    result = {
+        "openai_key_set": bool(settings.openai_api_key),
+        "openai_key_prefix": settings.openai_api_key[:8] + "..." if settings.openai_api_key else "(empty)",
+    }
+
+    if not settings.openai_api_key:
+        result["status"] = "error"
+        result["detail"] = "OPENAI_API_KEY not configured"
+        return result
+
+    try:
+        import httpx
+        from openai import OpenAI
+
+        start = time.time()
+        client = OpenAI(
+            api_key=settings.openai_api_key,
+            timeout=httpx.Timeout(15.0, connect=5.0),
+            max_retries=0,
+        )
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": "Say OK"}],
+            max_tokens=5,
+        )
+        elapsed = time.time() - start
+        result["status"] = "ok"
+        result["response"] = resp.choices[0].message.content
+        result["latency_ms"] = round(elapsed * 1000)
+        result["model"] = resp.model
+    except Exception as e:
+        result["status"] = "error"
+        result["error_type"] = type(e).__name__
+        result["detail"] = str(e)[:500]
+
+    return result
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch all unhandled exceptions and return structured error response."""
