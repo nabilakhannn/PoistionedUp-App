@@ -238,13 +238,15 @@ async def health_check():
 
 @app.get("/health/llm")
 async def llm_health_check():
-    """Test OpenAI API connectivity. Returns connection status + latency."""
+    """Test OpenAI API connectivity. Returns connection status + latency.
+
+    Never exposes API keys or raw error details containing secrets.
+    """
     import time
     from app.config import settings
 
     result = {
-        "openai_key_set": bool(settings.openai_api_key),
-        "openai_key_prefix": settings.openai_api_key[:8] + "..." if settings.openai_api_key else "(empty)",
+        "openai_key_configured": bool(settings.openai_api_key),
     }
 
     if not settings.openai_api_key:
@@ -269,30 +271,16 @@ async def llm_health_check():
         )
         elapsed = time.time() - start
         result["status"] = "ok"
-        result["response"] = resp.choices[0].message.content
         result["latency_ms"] = round(elapsed * 1000)
         result["model"] = resp.model
     except Exception as e:
         result["status"] = "error"
         result["error_type"] = type(e).__name__
-        result["detail"] = str(e)[:500]
-        # Dig into the error chain to find the real cause
-        cause = e.__cause__
-        if cause:
-            result["cause_type"] = type(cause).__name__
-            result["cause_detail"] = str(cause)[:500]
-            inner = cause.__cause__
-            if inner:
-                result["inner_cause"] = f"{type(inner).__name__}: {str(inner)[:300]}"
-
-    # Also test raw HTTPS connectivity to api.openai.com
-    try:
-        import httpx as _httpx
-        r = _httpx.get("https://api.openai.com/v1/models", headers={"Authorization": f"Bearer {settings.openai_api_key}"}, timeout=10.0)
-        result["raw_httpx_status"] = r.status_code
-        result["raw_httpx_ok"] = r.status_code == 200
-    except Exception as raw_err:
-        result["raw_httpx_error"] = f"{type(raw_err).__name__}: {str(raw_err)[:300]}"
+        # Sanitize error details — never expose API keys
+        detail = str(e)[:500]
+        if "sk-" in detail:
+            detail = "Connection failed (details redacted for security)"
+        result["detail"] = detail
 
     return result
 
