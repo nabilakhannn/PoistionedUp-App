@@ -227,11 +227,24 @@ export default function AgentChatPage() {
         [selectedAgent]: [...(prev[selectedAgent] || []), agentMsg],
       }));
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "Failed to send message";
+      const rawMsg = err instanceof Error ? err.message : "Failed to send message";
+      const isHandshake = rawMsg.toLowerCase().includes("handshake");
+      const isTimeout = rawMsg.toLowerCase().includes("timeout");
+      const isNetwork = rawMsg.toLowerCase().includes("connection") || rawMsg.toLowerCase().includes("network");
+
+      let friendlyMsg: string;
+      if (isHandshake || isNetwork) {
+        friendlyMsg = "Could not connect to the agent gateway. The VPS may be restarting or temporarily unreachable. Try again in a moment, or message Jumbo on Telegram (@Jumbohere_bot) — that connection is always reliable.";
+      } else if (isTimeout) {
+        friendlyMsg = "The agent is taking too long to respond. This can happen with complex requests on Vercel's serverless environment. Try a shorter message, or use Telegram (@Jumbohere_bot) for longer conversations.";
+      } else {
+        friendlyMsg = `Something went wrong: ${rawMsg}`;
+      }
+
       const errorResponse: ChatMessage = {
         id: generateId(),
         role: "agent",
-        content: `Error: ${errMsg}`,
+        content: friendlyMsg,
         agentId: selectedAgent,
         timestamp: new Date().toISOString(),
         status: "error",
