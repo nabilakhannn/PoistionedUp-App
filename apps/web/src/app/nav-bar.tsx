@@ -41,6 +41,14 @@ function ContentIcon({ className }: { className?: string }) {
   );
 }
 
+function AdCreativeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+    </svg>
+  );
+}
+
 function ComposerIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -223,6 +231,7 @@ export function NavBar() {
     { href: "/inspo", label: "Inspo", icon: InspoIcon },
     { href: "/content", label: "Content", icon: ContentIcon },
     { href: "/composer", label: "Composer", icon: ComposerIcon },
+    { href: "/ad-creative", label: "Ad Creative", icon: AdCreativeIcon },
     { href: "/research", label: "Research", icon: ResearchIcon },
     { href: "/schedule", label: "Schedule", icon: ScheduleIcon },
     { href: "/performance", label: "Performance", icon: PerformanceIcon },

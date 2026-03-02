@@ -34,3 +34,4 @@ export * from "./orchestrator";
 export * from "./agent-bridge";
 export * from "./composer";
 export * from "./gateway";
+export * from "./ad-creative";
