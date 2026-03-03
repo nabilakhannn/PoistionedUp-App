@@ -2,450 +2,444 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import {
-  missionControlApi,
-  Agent,
-  AgentTask,
-  AgentMessage,
-  Deliverable,
-  DashboardStats,
-} from "@/lib/api/mission-control";
-import { AgentSidebar } from "./components/agent-sidebar";
-import { TaskBoard } from "./components/task-board";
-import { AgentProfile } from "./components/agent-profile";
-import { StatsBar } from "./components/stats-bar";
-import { ActivityFeed } from "./components/activity-feed";
-import { DeliverablesPanel } from "./components/deliverables-panel";
-import { DailyBriefingCard } from "./components/daily-briefing-card";
+import { missionControlApi, Agent, Deliverable } from "@/lib/api/mission-control";
+import { notificationsApi, AgentNotification } from "@/lib/api/notifications";
+import { scheduleApi, ScheduledItem } from "@/lib/api/schedule";
+import { agentBridgeApi } from "@/lib/api/agent-bridge";
+import { MC_SUB_NAV } from "./constants";
+import { QuickCapture } from "./components/quick-capture";
 
-export default function MissionControlPage() {
+// ── Helpers ────────────────────────────────────────────────
+
+function todayLabel(): string {
+  return new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function weekDays(): Date[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return d;
+  });
+}
+
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+const REJECT_TAGS = ["Wrong voice", "Bad hook", "Needs research", "Off-topic"] as const;
+type RejectTag = typeof REJECT_TAGS[number];
+
+const AGENT_ICONS: Record<string, string> = {
+  jumbo: "🧠",
+  "trend-analyzer": "🔍",
+  copywriter: "✍️",
+  "qa-reviewer": "✅",
+  "competitor-analyst": "🕵️",
+  distributor: "📤",
+  "visual-designer": "🎨",
+  "analytics": "📊",
+};
+
+// ── Component ──────────────────────────────────────────────
+
+export default function MissionControlHome() {
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [tasks, setTasks] = useState<AgentTask[]>([]);
-  const [messages, setMessages] = useState<AgentMessage[]>([]);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [filterAgent, setFilterAgent] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
-  const [showBroadcast, setShowBroadcast] = useState(false);
-  const [broadcastMsg, setBroadcastMsg] = useState("");
-  const [showNewTask, setShowNewTask] = useState(false);
-  const [showLiveFeed, setShowLiveFeed] = useState(false);
+  const [notifications, setNotifications] = useState<AgentNotification[]>([]);
+  const [scheduled, setScheduled] = useState<ScheduledItem[]>([]);
+  const [briefing, setBriefing] = useState<AgentNotification | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const selectedAgent = agents.find((a) => a.id === selectedAgentId) || null;
-
-  const loadData = useCallback(async () => {
+  const loadAll = useCallback(async () => {
     try {
-      const [agentsRes, tasksRes, messagesRes, statsRes, deliverablesRes] = await Promise.all([
-        missionControlApi.listAgents(),
-        missionControlApi.listTasks(),
-        missionControlApi.listMessages({ limit: 100 }),
-        missionControlApi.getStats(),
+      const [agentsRes, deliverablesRes, notifsRes, boardRes, briefingRes] = await Promise.all([
+        missionControlApi.listAgents().catch(() => [] as Agent[]),
         missionControlApi.listDeliverables().catch(() => [] as Deliverable[]),
+        notificationsApi.list({ status: "unread", limit: 10 }).catch(() => [] as AgentNotification[]),
+        scheduleApi.getBoard().catch(() => ({ draft: [], scheduled: [], published: [], archived: [] })),
+        notificationsApi.latestBriefing().catch(() => null),
       ]);
       setAgents(agentsRes);
-      setTasks(tasksRes);
-      setMessages(messagesRes);
-      setStats(statsRes);
-      setDeliverables(deliverablesRes);
-      setError(null);
-    } catch (err: any) {
-      console.error("Mission Control load error:", err);
-      setError(err.message || "Failed to load data");
+      setDeliverables(deliverablesRes.filter((d) => d.status === "review"));
+      setNotifications(notifsRes.filter((n) => n.priority === "high" || n.priority === "urgent"));
+      // Merge scheduled + draft for the 7-day strip
+      setScheduled([...boardRes.scheduled, ...boardRes.draft, ...boardRes.published]);
+      setBriefing(briefingRes);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadData();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
-  }, [loadData]);
+    loadAll();
+    const t = setInterval(loadAll, 30000);
+    return () => clearInterval(t);
+  }, [loadAll]);
 
-  const handleSendMessage = async (message: string) => {
-    if (!selectedAgentId) return;
+  const handleApprove = async (id: string) => {
+    setActionLoading(id);
     try {
-      await missionControlApi.sendMessage({
-        to_agent_id: selectedAgentId,
-        message,
-        message_type: "chat",
-      });
-      loadData();
-    } catch (err) {
-      console.error("Send message error:", err);
+      await missionControlApi.updateDeliverable(id, "approved", "");
+      await loadAll();
+    } catch (e) {
+      console.error("Approve error:", e);
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const handleBroadcast = async () => {
-    if (!broadcastMsg.trim()) return;
+  const handleReject = async (id: string, tag: RejectTag) => {
+    setActionLoading(id);
     try {
-      await missionControlApi.broadcast(broadcastMsg.trim());
-      setBroadcastMsg("");
-      setShowBroadcast(false);
-      loadData();
-    } catch (err) {
-      console.error("Broadcast error:", err);
+      await missionControlApi.updateDeliverable(id, "rejected", tag);
+      // Post structured feedback to agent memory
+      await agentBridgeApi.submitReport({
+        agent_id: "jumbo",
+        report_type: "voice_feedback",
+        title: `Rejection: ${tag}`,
+        content: `Deliverable ${id} rejected with tag: ${tag}`,
+        tags: [tag.toLowerCase().replace(/\s+/g, "_")],
+        save_to_memory: true,
+      }).catch(() => {});
+      setRejectTarget(null);
+      await loadAll();
+    } catch (e) {
+      console.error("Reject error:", e);
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const handleTaskClick = (task: AgentTask) => {
-    if (task.assignee_id) {
-      setSelectedAgentId(task.assignee_id);
-    }
+  const handleMarkRead = async (id: string) => {
+    await notificationsApi.markRead(id).catch(() => {});
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
-  if (loading) {
-    return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Loading Mission Control...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-sm">
-          <div className="text-4xl mb-3">⚠️</div>
-          <h2 className="text-lg font-semibold text-foreground mb-2">Connection Error</h2>
-          <p className="text-sm text-muted-foreground mb-4">{error}</p>
-          <button
-            onClick={loadData}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const approvalCount = deliverables.length + notifications.length;
+  const days = weekDays();
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      {/* Stats Bar */}
-      <StatsBar
-        stats={stats}
-        filterAgent={filterAgent}
-        agentName={agents.find((a) => a.id === filterAgent)?.name || null}
-        onBroadcast={() => setShowBroadcast(true)}
-      />
-
-      {/* Sub-navigation */}
-      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1">
-        <Link
-          href="/mission-control"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/15 text-primary border border-primary/20"
-        >
-          Dashboard
-        </Link>
-        <Link
-          href="/mission-control/analytics"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
-        >
-          Analytics
-        </Link>
-        <Link
-          href="/mission-control/orchestrator"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
-        >
-          Orchestrator
-        </Link>
-        <Link
-          href="/mission-control/gateway"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
-        >
-          Gateway
-        </Link>
-        <Link
-          href="/mission-control/chat"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
-        >
-          Chat
-        </Link>
-        <Link
-          href="/mission-control/goals"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
-        >
-          Goals
-        </Link>
-        <Link
-          href="/mission-control/competitors"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
-        >
-          Competitors
-        </Link>
-        <Link
-          href="/mission-control/qa"
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition"
-        >
-          QA
-        </Link>
-
-        <div className="flex-1" />
-
-        <button
-          onClick={() => setShowLiveFeed((v) => !v)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-            showLiveFeed
-              ? "bg-red-500/15 text-red-400 border-red-500/20"
-              : "bg-accent text-muted-foreground border-border hover:text-foreground"
-          }`}
-        >
-          <span className="relative flex h-1.5 w-1.5">
-            <span className={`absolute inline-flex h-full w-full rounded-full bg-red-400 ${showLiveFeed ? "animate-ping" : ""} opacity-75`} />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
-          </span>
-          Live Feed
-        </button>
-
-        <button
-          onClick={() => setShowNewTask(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-medium border border-amber-500/20 hover:bg-amber-500/20 transition"
-        >
-          <span>+</span> New Task
-        </button>
+    <div className="min-h-screen bg-background">
+      {/* Sub-nav */}
+      <div className="h-12 border-b border-border bg-card/50 flex items-center px-5 gap-1">
+        {MC_SUB_NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+              item.href === "/mission-control"
+                ? "bg-primary/15 text-primary border border-primary/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
       </div>
 
-      {/* Daily Briefing */}
-      <DailyBriefingCard />
+      <div className="max-w-3xl mx-auto px-5 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Good morning!</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">{todayLabel()}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/mission-control/content"
+              className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition"
+            >
+              + New post
+            </Link>
+          </div>
+        </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Agent Sidebar */}
-        <AgentSidebar
-          agents={agents}
-          selectedAgentId={selectedAgentId}
-          onSelectAgent={setSelectedAgentId}
-          filterAgent={filterAgent}
-          onFilterAgent={setFilterAgent}
-        />
+        {/* ── NEEDS YOUR APPROVAL ───────────────────────── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Needs your approval
+            </h2>
+            {approvalCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">
+                {approvalCount}
+              </span>
+            )}
+          </div>
 
-        {/* Center: Task Board + Deliverables */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <TaskBoard
-            tasks={tasks}
-            agents={agents}
-            filterAgent={filterAgent}
-            onTaskClick={handleTaskClick}
-          />
+          {loading ? (
+            <div className="text-xs text-muted-foreground">Loading...</div>
+          ) : approvalCount === 0 ? (
+            <div className="rounded-xl border border-border bg-card/30 px-5 py-8 text-center">
+              <div className="text-2xl mb-2">✅</div>
+              <p className="text-sm text-muted-foreground">All caught up! No items need review.</p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+              {/* Deliverables */}
+              {deliverables.map((d) => (
+                <div key={d.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm">✍️</span>
+                        <span className="text-sm font-medium text-foreground truncate">
+                          {d.title}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {timeAgo(d.created_at)}
+                        </span>
+                      </div>
+                      {d.content && (
+                        <p className="text-xs text-muted-foreground truncate ml-6">{d.content}</p>
+                      )}
+                    </div>
 
-          {/* Deliverables Review (collapsible at bottom) */}
-          {deliverables.length > 0 && (
-            <div className="border-t border-border px-4 py-3 bg-card/30">
-              <DeliverablesPanel
-                deliverables={deliverables}
-                agents={agents}
-                onUpdate={loadData}
-              />
+                    {rejectTarget === d.id ? (
+                      <div className="flex flex-wrap gap-1 shrink-0">
+                        {REJECT_TAGS.map((tag) => (
+                          <button
+                            key={tag}
+                            onClick={() => handleReject(d.id, tag)}
+                            disabled={actionLoading === d.id}
+                            className="px-2 py-1 text-[10px] rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition"
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setRejectTarget(null)}
+                          className="px-2 py-1 text-[10px] rounded border border-border text-muted-foreground hover:text-foreground transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => setRejectTarget(d.id)}
+                          disabled={actionLoading === d.id}
+                          className="px-2.5 py-1.5 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-red-500/40 transition"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => handleApprove(d.id)}
+                          disabled={actionLoading === d.id}
+                          className="px-2.5 py-1.5 text-xs rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 font-medium transition"
+                        >
+                          {actionLoading === d.id ? "..." : "Approve ✓"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* High-priority notifications */}
+              {notifications.map((n) => (
+                <div key={n.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm">
+                          {n.priority === "urgent" ? "🚨" : "🔔"}
+                        </span>
+                        <span className="text-sm font-medium text-foreground truncate">
+                          {n.title}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {timeAgo(n.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate ml-6">{n.body}</p>
+                    </div>
+                    <button
+                      onClick={() => handleMarkRead(n.id)}
+                      className="px-2.5 py-1.5 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground transition shrink-0"
+                    >
+                      Read
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Right panel: Agent Profile OR Live Feed */}
-        {selectedAgent && !showLiveFeed && (
-          <AgentProfile
-            agent={selectedAgent}
-            messages={messages}
-            tasks={tasks}
-            onClose={() => setSelectedAgentId(null)}
-            onSendMessage={handleSendMessage}
-          />
-        )}
+        {/* ── 7-DAY CONTENT STRIP ───────────────────────── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              This week
+            </h2>
+            <Link
+              href="/mission-control/content"
+              className="text-xs text-muted-foreground hover:text-foreground transition"
+            >
+              Full calendar →
+            </Link>
+          </div>
 
-        {showLiveFeed && (
-          <ActivityFeed
-            messages={messages}
-            agents={agents}
-            onClose={() => setShowLiveFeed(false)}
-          />
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="grid grid-cols-7 gap-1">
+              {days.map((day, i) => {
+                const dayItems = scheduled.filter((item) => {
+                  const itemDate = item.scheduled_at
+                    ? new Date(item.scheduled_at)
+                    : item.published_at
+                    ? new Date(item.published_at)
+                    : null;
+                  return itemDate && isSameDay(itemDate, day);
+                });
+                const isToday = i === 0;
+                const published = dayItems.filter((it) => it.status === "published");
+                const hasDraft = dayItems.some((it) => it.status === "draft");
+                const hasScheduled = dayItems.some((it) => it.status === "scheduled");
+
+                return (
+                  <div key={i} className="text-center space-y-1">
+                    <div className="text-[10px] text-muted-foreground">
+                      {day.toLocaleDateString("en-US", { weekday: "short" })}
+                    </div>
+                    <div
+                      className={`text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center mx-auto ${
+                        isToday
+                          ? "bg-amber-500 text-black"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {day.getDate()}
+                    </div>
+                    <div className="text-sm leading-none">
+                      {published.length > 0 ? "✅" : hasScheduled ? "📅" : hasDraft ? "📝" : "·"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ── AGENT STATUS ──────────────────────────────── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Your agents
+            </h2>
+            <Link
+              href="/mission-control/orchestrator"
+              className="text-xs text-muted-foreground hover:text-foreground transition"
+            >
+              Full team →
+            </Link>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+            {loading ? (
+              <div className="px-4 py-3 text-xs text-muted-foreground">Loading agents...</div>
+            ) : agents.length === 0 ? (
+              <div className="px-4 py-3 text-xs text-muted-foreground">No agents found.</div>
+            ) : (
+              agents.slice(0, 4).map((agent) => {
+                const icon = AGENT_ICONS[agent.id] || AGENT_ICONS[agent.name?.toLowerCase()] || "🤖";
+                const isWorking = agent.status === "working";
+                return (
+                  <div key={agent.id} className="px-4 py-2.5 flex items-center gap-3">
+                    <span className="text-base">{icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-foreground capitalize">
+                        {agent.name}
+                      </span>
+                      {agent.status_reason && isWorking && (
+                        <span className="text-xs text-muted-foreground ml-2 truncate">
+                          — {agent.status_reason}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isWorking
+                            ? "bg-green-400 animate-pulse"
+                            : agent.status === "error"
+                            ? "bg-red-400"
+                            : "bg-zinc-400"
+                        }`}
+                      />
+                      <span
+                        className={`text-xs ${
+                          isWorking
+                            ? "text-green-400"
+                            : agent.status === "error"
+                            ? "text-red-400"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {agent.status === "working" ? "Working" : agent.status === "error" ? "Error" : "Idle"}
+                      </span>
+                      {agent.last_heartbeat_at && (
+                        <span className="text-[10px] text-muted-foreground/60">
+                          · {timeAgo(agent.last_heartbeat_at)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        {/* ── LATEST FROM JUMBO ─────────────────────────── */}
+        {briefing && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Latest from Jumbo
+              </h2>
+              <span className="text-[10px] text-muted-foreground">{timeAgo(briefing.created_at)}</span>
+            </div>
+            <div className="rounded-xl border border-border bg-card px-4 py-4">
+              <p className="text-sm font-medium text-foreground mb-1">{briefing.title}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                {briefing.body}
+              </p>
+              <button
+                onClick={() => notificationsApi.markRead(briefing.id).catch(() => {})}
+                className="mt-3 text-xs text-muted-foreground hover:text-foreground transition"
+              >
+                Mark as read
+              </button>
+            </div>
+          </section>
         )}
       </div>
 
-      {/* Broadcast modal */}
-      {showBroadcast && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
-              <span>📢</span> Broadcast to All Agents
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Send a message to every agent in your squad. They will all receive this on their next heartbeat.
-            </p>
-            <textarea
-              value={broadcastMsg}
-              onChange={(e) => setBroadcastMsg(e.target.value)}
-              placeholder="Type your broadcast message..."
-              className="w-full bg-accent border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground resize-none h-24"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => { setShowBroadcast(false); setBroadcastMsg(""); }}
-                className="px-4 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBroadcast}
-                disabled={!broadcastMsg.trim()}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 disabled:opacity-40 transition"
-              >
-                Send Broadcast
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* New Task modal */}
-      {showNewTask && (
-        <NewTaskModal
-          agents={agents}
-          onClose={() => setShowNewTask(false)}
-          onCreate={async (data) => {
-            try {
-              await missionControlApi.createTask(data);
-              setShowNewTask(false);
-              loadData();
-            } catch (err) {
-              console.error("Create task error:", err);
-            }
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-// ── New Task Modal ──────────────────────────────────────
-
-function NewTaskModal({
-  agents,
-  onClose,
-  onCreate,
-}: {
-  agents: Agent[];
-  onClose: () => void;
-  onCreate: (data: { id: string; title: string; brief?: string; priority?: string; assignee_id?: string; tags?: string[] }) => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [brief, setBrief] = useState("");
-  const [priority, setPriority] = useState("P2");
-  const [assigneeId, setAssigneeId] = useState("");
-  const [tagsStr, setTagsStr] = useState("");
-
-  // Generate next task ID
-  const taskId = `PU-${String(Date.now()).slice(-4)}`;
-
-  const handleSubmit = () => {
-    if (!title.trim()) return;
-    onCreate({
-      id: taskId,
-      title: title.trim(),
-      brief: brief.trim() || undefined,
-      priority,
-      assignee_id: assigneeId || undefined,
-      tags: tagsStr ? tagsStr.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl">
-        <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-          <span>📋</span> New Agent Task
-          <span className="text-[10px] text-muted-foreground font-mono ml-auto">{taskId}</span>
-        </h3>
-
-        <div className="space-y-3">
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Task title..."
-              className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground"
-              autoFocus
-            />
-          </div>
-
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Brief</label>
-            <textarea
-              value={brief}
-              onChange={(e) => setBrief(e.target.value)}
-              placeholder="What needs to be done..."
-              className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground resize-none h-20"
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Priority</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-muted-foreground"
-              >
-                <option value="P0">P0 - Critical</option>
-                <option value="P1">P1 - High</option>
-                <option value="P2">P2 - Normal</option>
-                <option value="P3">P3 - Low</option>
-              </select>
-            </div>
-
-            <div className="flex-1">
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Assign To</label>
-              <select
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-muted-foreground"
-              >
-                <option value="">Unassigned</option>
-                {agents.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.avatar_emoji} {a.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Tags (comma separated)</label>
-            <input
-              type="text"
-              value={tagsStr}
-              onChange={(e) => setTagsStr(e.target.value)}
-              placeholder="research, content, social-media"
-              className="w-full bg-accent border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-5">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!title.trim()}
-            className="px-4 py-2 rounded-lg bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 disabled:opacity-40 transition"
-          >
-            Create Task
-          </button>
-        </div>
-      </div>
+      <QuickCapture />
     </div>
   );
 }

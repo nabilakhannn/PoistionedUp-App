@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import { NavBar } from "./nav-bar";
 import { BrandProvider } from "@/lib/brand-context";
+import { OnboardingGuard } from "./onboarding-guard";
 import { PostHogProvider } from "./posthog-provider";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({
           <PostHogProvider />
         </Suspense>
         <BrandProvider>
+          <OnboardingGuard />
           <NavBar />
           {/* Main content area: offset by sidebar width on desktop, offset by top bar on mobile */}
           <main className="md:pl-60 pt-14 md:pt-0 min-h-screen">

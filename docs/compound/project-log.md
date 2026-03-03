@@ -4239,3 +4239,67 @@ Closed 11 architectural gaps across security, performance, reliability, UX, and 
 ### OWASP coverage: A01, A03, A05, A07, A09, A10
 
 See full details: `docs/compound/patterns/slice-84-infrastructure-hardening.md`
+
+## Slice 88 — UX Overhaul: Onboarding + Home Inbox + 5-Tab Nav
+**Date:** 2026-03-03
+**Tests:** 1273 total (+19) | 18/18 slice tests pass | 0 TS errors
+
+### What was built
+Rebuilt the user-facing UX from scratch. New users now get a 4-step onboarding wizard. Daily approval workflow surfaces on the Home page. 11 technical tabs replaced with 5 user-friendly tabs.
+
+**5-Tab Nav (replacing 11):**
+- Home → `/mission-control` — approval inbox, 7-day calendar, agent status, briefing
+- Content → `/mission-control/content` — pipeline stages, trending topics, content queue
+- My Team → `/mission-control/orchestrator` — existing orchestrator page
+- Results → `/mission-control/analytics` — existing analytics page
+- Settings → `/mission-control/settings` — Connectors + Playbooks + History + System sub-tabs
+
+**Onboarding Wizard (`/onboarding/page.tsx`):**
+- Step 1: Name + role → `POST /brands`
+- Step 2: Brand voice (3 post samples) → `PATCH /brands/{id}/foundation` with `{ beliefs: [...] }`
+- Step 3: Connect Telegram (@Jumbohere_bot deep-link, skippable)
+- Step 4: Ready → sets `localStorage.onboarding_done`, redirect to Mission Control
+
+**Onboarding Guard (`onboarding-guard.tsx`):**
+- Client component inside BrandProvider
+- Redirects to `/onboarding` if `!localStorage.onboarding_done && brands.length === 0`
+- Skips auth pages and onboarding page itself
+
+**Home Inbox (`/mission-control/page.tsx` redesigned):**
+- "Needs your approval" section with deliverables (status=review) + high/urgent notifications
+- Inline approve button; reject shows 4 structured tags (Wrong voice / Bad hook / Needs research / Off-topic)
+- Reject tags POST to `agentBridgeApi.submitReport` with `report_type: "voice_feedback"` → stored in agent_memory
+- 7-day content calendar strip (✅ published / 📅 scheduled / 📝 draft)
+- Agent status strip (top 4, live/idle indicator)
+- Latest from Jumbo (today's briefing notification)
+- `<QuickCapture />` floating + button
+
+**Content Tab (`/mission-control/content/page.tsx`):**
+- Pipeline flow bar: Researching → Writing → QA → Ready (counts from deliverables + active tasks)
+- Trending topics (last Trend Analyzer deliverable content, fallback to static)
+- Content queue: filter by draft / scheduled / published
+
+**Quick Capture (`/mission-control/components/quick-capture.tsx`):**
+- Fixed `bottom-6 right-6 z-50` amber `+` button
+- Opens modal: Write a post → /composer, Save an idea → /inspo, Voice note → t.me/Jumbohere_bot
+
+**Settings Expansion:**
+- Added `SETTINGS_TABS` constant: Connectors (inline), Playbooks (→/playbooks), History (→/ledger), System (→/gateway)
+- `activeTab` state defaults to "connectors"; other tabs use Link routing
+
+### Files changed
+| File | Change |
+|------|--------|
+| `apps/web/src/app/mission-control/constants.ts` | MC_SUB_NAV: 11 → 5 tabs |
+| `apps/web/src/app/onboarding/page.tsx` | NEW — 4-step wizard |
+| `apps/web/src/app/onboarding-guard.tsx` | NEW — client redirect guard |
+| `apps/web/src/app/layout.tsx` | Added OnboardingGuard |
+| `apps/web/src/app/mission-control/page.tsx` | Redesigned as Home Inbox |
+| `apps/web/src/app/mission-control/content/page.tsx` | NEW — Content tab |
+| `apps/web/src/app/mission-control/components/quick-capture.tsx` | NEW — floating + |
+| `apps/web/src/app/mission-control/settings/page.tsx` | 4 settings sub-tabs |
+| `apps/api/tests/test_slice88.py` | NEW — 18 tests |
+| `apps/api/tests/test_polish_sprint.py` | Updated nav count assertion (8 → 5) |
+| `docs/compound/patterns/slice-88-ux-overhaul.md` | NEW — pattern doc |
+
+See full details: `docs/compound/patterns/slice-88-ux-overhaul.md`

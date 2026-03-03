@@ -49,15 +49,9 @@ export const MESSAGE_TYPE_ICONS: Record<string, string> = {
 };
 
 export const MC_SUB_NAV = [
-  { href: "/mission-control", label: "Dashboard" },
-  { href: "/mission-control/analytics", label: "Analytics" },
-  { href: "/mission-control/orchestrator", label: "Orchestrator" },
-  { href: "/mission-control/gateway", label: "Gateway" },
-  { href: "/mission-control/chat", label: "Agent Chat" },
-  { href: "/mission-control/goals", label: "Goals" },
-  { href: "/mission-control/competitors", label: "Competitors" },
-  { href: "/mission-control/qa", label: "QA" },
-  { href: "/mission-control/playbooks", label: "Playbooks" },
-  { href: "/mission-control/ledger", label: "Ledger" },
+  { href: "/mission-control", label: "Home" },
+  { href: "/mission-control/content", label: "Content" },
+  { href: "/mission-control/orchestrator", label: "My Team" },
+  { href: "/mission-control/analytics", label: "Results" },
   { href: "/mission-control/settings", label: "Settings" },
 ];

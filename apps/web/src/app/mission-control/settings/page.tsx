@@ -106,7 +106,17 @@ const STATUS_BADGE: Record<string, { label: string; color: string; dot: string }
   untested: { label: "Untested", color: "text-amber-400", dot: "bg-amber-400" },
 };
 
+const SETTINGS_TABS = [
+  { key: "connectors", label: "Connectors" },
+  { key: "playbooks", label: "Playbooks", href: "/mission-control/playbooks" },
+  { key: "history", label: "History", href: "/mission-control/ledger" },
+  { key: "system", label: "System", href: "/mission-control/gateway" },
+] as const;
+
+type SettingsTab = typeof SETTINGS_TABS[number]["key"];
+
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<SettingsTab>("connectors");
   const [connectors, setConnectors] = useState<Connector[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<ConnectorService | null>(null);
@@ -186,16 +196,16 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 space-y-6">
-      {/* Sub-nav */}
-      <div className="flex items-center gap-1 flex-wrap">
+    <div className="min-h-screen bg-background">
+      {/* Top MC Sub-nav */}
+      <div className="h-12 border-b border-border bg-card/50 flex items-center px-5 gap-1">
         {MC_SUB_NAV.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
               item.href === "/mission-control/settings"
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary/15 text-primary border border-primary/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-accent"
             }`}
           >
@@ -204,15 +214,45 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Settings & Connectors</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Connect your social accounts so agents can post on your behalf. Credentials are encrypted.
-        </p>
-      </div>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your connections, agent playbooks, history, and system configuration.
+          </p>
+        </div>
 
-      {loading ? (
+        {/* Settings sub-tabs */}
+        <div className="flex items-center gap-1 border-b border-border pb-0 -mb-2">
+          {SETTINGS_TABS.map((tab) => (
+            tab.key === "connectors" ? (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab("connectors")}
+                data-settings-tab={tab.label}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+                  activeTab === "connectors"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ) : (
+              <Link
+                key={tab.key}
+                href={"href" in tab ? tab.href : "#"}
+                data-settings-tab={tab.label}
+                className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition"
+              >
+                {tab.label}
+              </Link>
+            )
+          ))}
+        </div>
+
+      {activeTab === "connectors" && (loading ? (
         <div className="text-muted-foreground text-sm">Loading...</div>
       ) : (
         <div className="grid gap-4">
@@ -343,7 +383,8 @@ export default function SettingsPage() {
             );
           })}
         </div>
-      )}
+      ))}
+      </div>
     </div>
   );
 }

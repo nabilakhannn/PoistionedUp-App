@@ -94,8 +94,8 @@ class TestMCSubNavConstant:
         # Count entries by counting 'href:' occurrences after MC_SUB_NAV
         mc_section = content[content.index("MC_SUB_NAV"):]
         href_count = mc_section.count("href:")
-        # Slice 79: 8 tabs. Slice 85 added Playbooks, Ledger, Settings → 11 tabs.
-        assert href_count >= 8, f"Expected at least 8 MC_SUB_NAV entries, found {href_count}"
+        # Slice 88: 5-tab UX overhaul — Home, Content, My Team, Results, Settings
+        assert href_count >= 5, f"Expected at least 5 MC_SUB_NAV entries, found {href_count}"
 
 
 # ── Notification Bell Component ─────────────────────────────────
