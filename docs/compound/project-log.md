@@ -4331,3 +4331,143 @@ Added publishing cron (Vercel, hourly) so approved content posts automatically.
 | `docs/compound/patterns/slice-89-sdk-orchestrator.md` | NEW — pattern doc |
 
 See full details: `docs/compound/patterns/slice-89-sdk-orchestrator.md`
+
+---
+
+## Slice 90: Marketing & Sales Command Center — Navigation + Agent Office + Kanban + Intelligence
+**Date:** 2026-03-03
+**Tests:** 25/25 new | 1333/1333 total (pre-existing test_resources.py Supabase failures excluded)
+**TS errors:** 0
+
+### What changed
+Complete UX overhaul. Replaced the 20-item sidebar with 5 purposeful "rooms" (Command Center /
+Marketing / Sales / Intelligence / Settings). Home page now shows a visual Agent Office (CSS-animated
+8-agent grid with status glow + speech bubbles) + Status Bar (pipeline on/off + budget widget).
+Marketing has a Notion-style editable Kanban with custom pipeline stages. Intelligence has a working
+Experience Journal (agents ground content in user's real calls/transcripts/case studies). Fixed
+cross-brand memory contamination bug in get_trend_memory(). Added monthly AI budget gate. Research
+briefs now persist to DB so Sales agents can read what Marketing researched.
+
+### Files changed
+| File | Change |
+|------|--------|
+| `infra/supabase/migrations/033_slice90.sql` | NEW — research_briefs + knowledge_documents + content_stages + experience_journal + agent_memory embedding + pipeline_settings budget |
+| `apps/api/app/routers/stages.py` | NEW — Kanban content pipeline stage CRUD |
+| `apps/api/app/routers/knowledge_docs.py` | NEW — Two-tier knowledge base CRUD |
+| `apps/api/app/routers/journal.py` | NEW — Experience journal CRUD |
+| `apps/api/app/services/jumbo_pipeline.py` | Bug fix (brand isolation) + 5 new context helpers |
+| `apps/api/app/routers/pipeline.py` | Budget gate + research brief persistence |
+| `apps/api/app/main.py` | Register 3 new routers |
+| `apps/api/vercel.json` | Re-added /cron/publish hourly cron (was lost) |
+| `apps/web/src/components/agent-office.tsx` | NEW — CSS animated 8-agent office |
+| `apps/web/src/components/content-kanban.tsx` | NEW — Notion-style Kanban |
+| `apps/web/src/app/nav-bar.tsx` | Rewrite: 20 items → 5 rooms |
+| `apps/web/src/app/page.tsx` | Root redirect /brands → /mission-control |
+| `apps/web/src/app/mission-control/page.tsx` | AgentOffice + StatusBar, removed 7-day strip |
+| `apps/web/src/app/marketing/page.tsx` | NEW — 5-tab Marketing hub |
+| `apps/web/src/app/sales/page.tsx` | NEW — 4-tab Sales hub |
+| `apps/web/src/app/intelligence/page.tsx` | NEW — 4-tab Intelligence hub (Journal working) |
+| `apps/web/src/app/mission-control/settings/page.tsx` | 4 tabs: Connectors/Pipeline/KB/Team |
+| `apps/api/tests/test_slice90.py` | NEW — 25 tests |
+
+See full details: `docs/compound/patterns/slice-90-marketing-sales-command-center.md`
+
+---
+
+## Slice 91a — Nano Banana 2 Image Generation
+
+**Date:** 2026-03-03
+**Tests:** 20/20 new | 1353/1353 total
+**TS errors:** 0
+
+**What:** Two-step production-line image generation. Claude Haiku engineers a locked, structured prompt (camera specs, lighting names, film stocks, negative constraints) before calling Nano Banana 2 (Gemini 3.1 Flash Image via Higgsfield). Raises usable generation rate from ~68% → ~92%.
+
+**Key patterns:**
+- `structure_prompt_only()` — Claude Haiku → 9-variable JSON prompt breakdown (zero image cost)
+- `generate_image()` — full pipeline: engineer → Higgsfield primary → Gemini fallback → save to DB
+- `generate_image` agent tool — available to visual-designer, copywriter, ad creative agents
+- Marketing → Images tab (6th) with full ImageStudio UI including transparent prompt breakdown
+
+| File | Change |
+|------|--------|
+| `apps/api/app/services/image_gen.py` | NEW — two-step pipeline service |
+| `apps/api/app/routers/image_gen.py` | NEW — /generate /structure /history endpoints |
+| `apps/api/app/config.py` | Add higgsfield_api_key + image_gen_model |
+| `apps/api/app/services/tool_use_agents.py` | Add generate_image tool + _exec_generate_image |
+| `apps/api/app/main.py` | Register image_gen router |
+| `infra/supabase/migrations/034_image_gen.sql` | NEW — generated_images table + RLS |
+| `apps/web/src/lib/api/image-gen.ts` | NEW — TypeScript client |
+| `apps/web/src/components/image-studio.tsx` | NEW — full UI studio component |
+| `apps/web/src/app/marketing/page.tsx` | Add Images as 6th tab |
+| `apps/api/tests/test_slice91a_image_gen.py` | NEW — 20 tests |
+
+See full details: `docs/compound/patterns/slice-91a-image-generation.md`
+
+---
+
+## Slice 91b — Zero-Setup Onboarding
+
+**Date:** 2026-03-03
+**Tests:** 15/15 new | 1368/1368 total
+**TS errors:** 0
+
+**What:** LinkedIn URL → 30 seconds → brand profile auto-filled from public content. Fixes the Slice 88 problem where most users skipped "paste 3 posts" and arrived at Mission Control with empty `profile_json`, causing agents to produce generic output. Now: enter name + any public URL → Perplexity finds your content → Claude extracts voice/ICA/positioning/offer → profile fills automatically.
+
+**Key patterns:**
+- `POST /brands/{brand_id}/auto-profile` — one-shot endpoint: Perplexity search → Tavily fallback → Claude Sonnet 4.6 synthesis → deep-merge (never overwrites existing data)
+- `_SAFE_NAME_RE` — strips injection chars from `full_name` before using in search query
+- `validate_url()` — SSRF protection on `public_url` (URL is never fetched directly — only passed as Perplexity search context)
+- Onboarding Step 2 — two-tab UI: 🤖 AI Auto-Fill (rec.) / ✍️ Paste Posts Manually
+- Settings Team tab — "Rebuild Profile from Web" card for profile refresh anytime
+
+| File | Change |
+|------|--------|
+| `apps/api/app/routers/brands.py` | Add POST /brands/{brand_id}/auto-profile |
+| `apps/web/src/lib/api/brand.ts` | Add autoProfile() to personalBrandsApi |
+| `apps/web/src/app/onboarding/page.tsx` | Step 2: AI Auto-Fill + manual tabs |
+| `apps/web/src/app/mission-control/settings/page.tsx` | Rebuild Profile card in Team tab |
+| `apps/api/tests/test_slice91b_zero_setup.py` | NEW — 15 tests |
+
+See full details: `docs/compound/patterns/slice-91b-zero-setup-onboarding.md`
+
+---
+
+## Slice 92c — Marketing Calendar + Competitor Embed
+
+**Date:** 2026-03-03
+**Tests:** 10/10 new | 1378/1378 total
+**TS errors:** 0
+
+**What:** Completed the Marketing room (all 6 tabs now functional). Calendar tab: month-view grid with platform emoji badges per day, click-to-expand day panel, ← → month navigation. Competitors tab: inline intel embed with active count, avg threat bar, top-3 threat list, latest alert card. Both wired to existing production endpoints — no backend changes needed.
+
+**Also saved (agent updates):**
+- ICP Research Mandate (10-layer deep research protocol) → trend-analyzer SOUL.md
+- Google Trends real-time keyword scoring instruction → trend-analyzer SOUL.md
+- ICP briefing standing order → jumbo SOUL.md
+
+| File | Change |
+|------|--------|
+| `apps/web/src/components/marketing-calendar.tsx` | NEW — month-view calendar component |
+| `apps/web/src/components/competitor-intel-embed.tsx` | NEW — competitor intel embed |
+| `apps/web/src/app/marketing/page.tsx` | Replace 2 placeholder tabs with live components |
+| `agents/trend-analyzer/SOUL.md` | ICP Research Mandate + Google Trends keyword scoring |
+| `agents/jumbo/SOUL.md` | ICP briefing standing order |
+| `apps/api/tests/test_slice92c_marketing_calendar.py` | NEW — 10 tests |
+
+See full details: `docs/compound/patterns/slice-92c-marketing-calendar.md`
+
+## Slice 92d — UX Fixes: Notion Sidebar + Kanban Error Visibility
+
+**Date:** 2026-03-03
+**Tests:** 8/8 new | 1386/1386 total
+**TS errors:** 0
+
+**What:** Fixed two concrete UX failures: (1) Marketing page's 6-tab horizontal bar was cutting off the Competitors tab on narrow viewports — replaced with a Notion-style left sidebar (`<aside>` + `<main>`) where all 6 sections are always visible. (2) ContentKanban silently swallowed all API errors (`catch { // ignore }`) — replaced with visible error banners (`loadError` + `actionError` states) with a Retry button.
+
+| File | Change |
+|------|--------|
+| `apps/web/src/app/marketing/page.tsx` | Horizontal tab bar → Notion left sidebar layout |
+| `apps/web/src/components/content-kanban.tsx` | Silent errors → visible banners + Retry button |
+| `apps/api/tests/test_slice92d_ux_fixes.py` | NEW — 8 tests |
+
+See full details: `docs/compound/patterns/slice-92d-ux-fixes.md`
