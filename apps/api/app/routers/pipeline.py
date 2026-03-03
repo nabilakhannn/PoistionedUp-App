@@ -37,6 +37,7 @@ from app.services.jumbo_pipeline import (
     build_qa_prompt,
     build_research_prompt,
     build_writing_prompt,
+    check_monthly_budget,
     get_analytics_context,
     get_competitor_context,
     get_rejection_history,
@@ -44,6 +45,7 @@ from app.services.jumbo_pipeline import (
     notify_approval_needed,
     parse_qa_score,
     save_deliverable,
+    save_research_brief,
 )
 from app.services.tool_use_agents import run_tool_use_agent
 
@@ -163,6 +165,11 @@ async def pipeline_research(
     """
     _validate_ids(req.brand_id, req.user_id)
 
+    # Budget gate — check monthly spend before starting expensive LLM run
+    budget_error = check_monthly_budget(req.user_id)
+    if budget_error:
+        raise HTTPException(429, budget_error)
+
     analytics_ctx = get_analytics_context(req.brand_id)
     competitor_ctx = get_competitor_context(req.brand_id)
     trend_memory = get_trend_memory(req.brand_id)
@@ -191,6 +198,13 @@ async def pipeline_research(
             "Research phase failed brand=%s: %s", req.brand_id, result.error
         )
         raise HTTPException(500, f"Research phase failed: {result.error}")
+
+    # Persist research brief to DB so Sales agents can read it
+    save_research_brief(
+        user_id=req.user_id,
+        brand_id=req.brand_id,
+        content=result.content,
+    )
 
     return ResearchResponse(research_brief=result.content, tokens=result.tokens_used)
 

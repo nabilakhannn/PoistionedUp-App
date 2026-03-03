@@ -113,17 +113,18 @@ class TestHomeInbox:
             "Home page missing 'Needs your approval' section"
         )
 
-    def test_home_shows_7_day_strip(self):
+    def test_home_shows_agent_office(self):
         text = self._page()
-        # Should generate 7 days
-        assert "weekDays" in text or "7" in text, "7-day strip not found"
-        assert "This week" in text, "'This week' heading missing"
+        # Slice 90: 7-day strip replaced by visual Agent Office component
+        assert "AgentOffice" in text, (
+            "Home page must import and render <AgentOffice /> (Slice 90 replaced 7-day strip)"
+        )
 
     def test_home_shows_agent_status(self):
         text = self._page()
-        assert "Your agents" in text, "'Your agents' section missing"
-        assert "missionControlApi.listAgents" in text or "listAgents" in text, (
-            "listAgents call missing"
+        # Slice 90: agents now shown via AgentOffice component (imported from components/)
+        assert "agent-office" in text or "AgentOffice" in text, (
+            "AgentOffice import missing from Home page"
         )
 
     def test_home_shows_reject_tags(self):
@@ -175,7 +176,8 @@ class TestSettingsExpansion:
 
     def test_settings_has_four_sub_tabs(self):
         text = self._settings()
-        for tab in ["Connectors", "Playbooks", "History", "System"]:
+        # Slice 90: tabs updated to Connectors / Pipeline / Knowledge Base / Team & System
+        for tab in ["Connectors", "Pipeline", "Knowledge Base", "Team"]:
             assert tab in text, f"Settings sub-tab '{tab}' not found"
 
     def test_settings_connectors_tab_is_default(self):

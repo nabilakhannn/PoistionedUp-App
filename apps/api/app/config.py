@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     # Telegram (Slice 87 — voice note transcription)
     telegram_bot_token: str = ""  # Same token as in openclaw.json TELEGRAM_BOT_TOKEN
 
+    # Image generation (Slice 91a — Nano Banana 2 via Higgsfield)
+    higgsfield_api_key: str = ""       # Higgsfield AI API key for Nano Banana 2
+    image_gen_model: str = "gemini-3.1-flash-image-generation-preview"  # Gemini image model (fallback)
+
     # OpenClaw Gateway (PositionedUp calling into agent runtime)
     openclaw_gateway_url: str = ""  # e.g. http://localhost:18789 or https://agents.positionedup.com
     openclaw_gateway_token: str = ""  # Must match OPENCLAW_GATEWAY_TOKEN on VPS

@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { missionControlApi, Agent, Deliverable } from "@/lib/api/mission-control";
+import { missionControlApi, Deliverable } from "@/lib/api/mission-control";
 import { notificationsApi, AgentNotification } from "@/lib/api/notifications";
-import { scheduleApi, ScheduledItem } from "@/lib/api/schedule";
 import { agentBridgeApi } from "@/lib/api/agent-bridge";
+import { pipelineSettingsApi, PipelineSettings } from "@/lib/api/pipeline-settings";
+import { usageApi, UsageSummary } from "@/lib/api/usage";
 import { MC_SUB_NAV } from "./constants";
 import { QuickCapture } from "./components/quick-capture";
+import { AgentOffice } from "@/components/agent-office";
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -17,24 +19,6 @@ function todayLabel(): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function weekDays(): Date[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    return d;
-  });
-}
-
-function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
 }
 
 function timeAgo(dateStr: string): string {
@@ -47,47 +31,115 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function timeUntil(dateStr: string): string {
+  const diff = new Date(dateStr).getTime() - Date.now();
+  if (diff <= 0) return "now";
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ${mins % 60}m`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
 const REJECT_TAGS = ["Wrong voice", "Bad hook", "Needs research", "Off-topic"] as const;
 type RejectTag = typeof REJECT_TAGS[number];
 
-const AGENT_ICONS: Record<string, string> = {
-  jumbo: "🧠",
-  "trend-analyzer": "🔍",
-  copywriter: "✍️",
-  "qa-reviewer": "✅",
-  "competitor-analyst": "🕵️",
-  distributor: "📤",
-  "visual-designer": "🎨",
-  "analytics": "📊",
-};
+// ── Status Bar ──────────────────────────────────────────────
+
+function StatusBar({
+  pipelineSettings,
+  usage,
+  onRunNow,
+  running,
+}: {
+  pipelineSettings: PipelineSettings | null;
+  usage: UsageSummary | null;
+  onRunNow: () => void;
+  running: boolean;
+}) {
+  const monthlyBudget = 20;
+  const monthlySpend = usage?.period_costs?.monthly ?? 0;
+  const budgetPct = monthlyBudget > 0 ? Math.min(100, (monthlySpend / monthlyBudget) * 100) : 0;
+
+  return (
+    <div className="rounded-xl border border-border bg-card/50 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Pipeline status */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                pipelineSettings?.enabled ? "bg-green-400 animate-pulse" : "bg-zinc-400"
+              }`}
+            />
+            <span className="text-xs font-medium text-foreground">
+              Pipeline: {pipelineSettings?.enabled ? "ON" : "OFF"}
+            </span>
+          </div>
+          {pipelineSettings?.enabled && pipelineSettings.next_run_at && (
+            <span className="text-xs text-muted-foreground">
+              · Next run in {timeUntil(pipelineSettings.next_run_at)}
+            </span>
+          )}
+          <button
+            onClick={onRunNow}
+            disabled={running || pipelineSettings?.run_now === true}
+            className="text-xs px-2.5 py-1 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 disabled:opacity-50 transition"
+          >
+            {running || pipelineSettings?.run_now ? "Starting..." : "▶ Run Now"}
+          </button>
+        </div>
+
+        {/* Budget widget */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            ${monthlySpend.toFixed(2)} of ${monthlyBudget.toFixed(2)}/mo
+          </span>
+          <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                budgetPct >= 80 ? "bg-red-400" : budgetPct >= 50 ? "bg-amber-400" : "bg-green-400"
+              }`}
+              style={{ width: `${budgetPct}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">{Math.round(budgetPct)}%</span>
+          <Link
+            href="/mission-control/settings"
+            className="text-xs text-muted-foreground/60 hover:text-foreground transition"
+          >
+            Edit
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Component ──────────────────────────────────────────────
 
 export default function MissionControlHome() {
-  const [agents, setAgents] = useState<Agent[]>([]);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [notifications, setNotifications] = useState<AgentNotification[]>([]);
-  const [scheduled, setScheduled] = useState<ScheduledItem[]>([]);
-  const [briefing, setBriefing] = useState<AgentNotification | null>(null);
+  const [pipelineSettings, setPipelineSettings] = useState<PipelineSettings | null>(null);
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [runningNow, setRunningNow] = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
-      const [agentsRes, deliverablesRes, notifsRes, boardRes, briefingRes] = await Promise.all([
-        missionControlApi.listAgents().catch(() => [] as Agent[]),
+      const [deliverablesRes, notifsRes, pipelineRes, usageRes] = await Promise.all([
         missionControlApi.listDeliverables().catch(() => [] as Deliverable[]),
         notificationsApi.list({ status: "unread", limit: 10 }).catch(() => [] as AgentNotification[]),
-        scheduleApi.getBoard().catch(() => ({ draft: [], scheduled: [], published: [], archived: [] })),
-        notificationsApi.latestBriefing().catch(() => null),
+        pipelineSettingsApi.get().catch(() => null),
+        usageApi.getSummary().catch(() => null),
       ]);
-      setAgents(agentsRes);
       setDeliverables(deliverablesRes.filter((d) => d.status === "review"));
       setNotifications(notifsRes.filter((n) => n.priority === "high" || n.priority === "urgent"));
-      // Merge scheduled + draft for the 7-day strip
-      setScheduled([...boardRes.scheduled, ...boardRes.draft, ...boardRes.published]);
-      setBriefing(briefingRes);
+      setPipelineSettings(pipelineRes);
+      setUsage(usageRes);
     } finally {
       setLoading(false);
     }
@@ -115,7 +167,6 @@ export default function MissionControlHome() {
     setActionLoading(id);
     try {
       await missionControlApi.updateDeliverable(id, "rejected", tag);
-      // Post structured feedback to agent memory
       await agentBridgeApi.submitReport({
         agent_id: "jumbo",
         report_type: "voice_feedback",
@@ -138,8 +189,19 @@ export default function MissionControlHome() {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
+  const handleRunNow = async () => {
+    setRunningNow(true);
+    try {
+      await pipelineSettingsApi.runNow();
+      await loadAll();
+    } catch {
+      // silent
+    } finally {
+      setRunningNow(false);
+    }
+  };
+
   const approvalCount = deliverables.length + notifications.length;
-  const days = weekDays();
 
   return (
     <div className="min-h-screen bg-background">
@@ -160,24 +222,25 @@ export default function MissionControlHome() {
         ))}
       </div>
 
-      <div className="max-w-3xl mx-auto px-5 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-5 py-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Good morning!</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">{todayLabel()}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/mission-control/content"
-              className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition"
-            >
-              + New post
-            </Link>
-          </div>
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Good morning!</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">{todayLabel()}</p>
         </div>
 
-        {/* ── NEEDS YOUR APPROVAL ───────────────────────── */}
+        {/* ── STATUS BAR ─────────────────────────────── */}
+        <StatusBar
+          pipelineSettings={pipelineSettings}
+          usage={usage}
+          onRunNow={handleRunNow}
+          running={runningNow}
+        />
+
+        {/* ── AGENT OFFICE ───────────────────────────── */}
+        <AgentOffice />
+
+        {/* ── NEEDS YOUR APPROVAL ────────────────────── */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -199,19 +262,19 @@ export default function MissionControlHome() {
             </div>
           ) : (
             <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-              {/* Deliverables */}
               {deliverables.map((d) => (
                 <div key={d.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-sm">✍️</span>
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {d.title}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">
-                          {timeAgo(d.created_at)}
-                        </span>
+                        <span className="text-sm font-medium text-foreground truncate">{d.title}</span>
+                        {d.qa_score !== undefined && d.qa_score > 0 && (
+                          <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">
+                            Score: {d.qa_score}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(d.created_at)}</span>
                       </div>
                       {d.content && (
                         <p className="text-xs text-muted-foreground truncate ml-6">{d.content}</p>
@@ -259,21 +322,14 @@ export default function MissionControlHome() {
                 </div>
               ))}
 
-              {/* High-priority notifications */}
               {notifications.map((n) => (
                 <div key={n.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-sm">
-                          {n.priority === "urgent" ? "🚨" : "🔔"}
-                        </span>
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {n.title}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">
-                          {timeAgo(n.created_at)}
-                        </span>
+                        <span className="text-sm">{n.priority === "urgent" ? "🚨" : "🔔"}</span>
+                        <span className="text-sm font-medium text-foreground truncate">{n.title}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(n.created_at)}</span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate ml-6">{n.body}</p>
                     </div>
@@ -290,153 +346,30 @@ export default function MissionControlHome() {
           )}
         </section>
 
-        {/* ── 7-DAY CONTENT STRIP ───────────────────────── */}
+        {/* ── ROOM SHORTCUTS ─────────────────────────── */}
         <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              This week
-            </h2>
-            <Link
-              href="/mission-control/content"
-              className="text-xs text-muted-foreground hover:text-foreground transition"
-            >
-              Full calendar →
-            </Link>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="grid grid-cols-7 gap-1">
-              {days.map((day, i) => {
-                const dayItems = scheduled.filter((item) => {
-                  const itemDate = item.scheduled_at
-                    ? new Date(item.scheduled_at)
-                    : item.published_at
-                    ? new Date(item.published_at)
-                    : null;
-                  return itemDate && isSameDay(itemDate, day);
-                });
-                const isToday = i === 0;
-                const published = dayItems.filter((it) => it.status === "published");
-                const hasDraft = dayItems.some((it) => it.status === "draft");
-                const hasScheduled = dayItems.some((it) => it.status === "scheduled");
-
-                return (
-                  <div key={i} className="text-center space-y-1">
-                    <div className="text-[10px] text-muted-foreground">
-                      {day.toLocaleDateString("en-US", { weekday: "short" })}
-                    </div>
-                    <div
-                      className={`text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center mx-auto ${
-                        isToday
-                          ? "bg-amber-500 text-black"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {day.getDate()}
-                    </div>
-                    <div className="text-sm leading-none">
-                      {published.length > 0 ? "✅" : hasScheduled ? "📅" : hasDraft ? "📝" : "·"}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ── AGENT STATUS ──────────────────────────────── */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Your agents
-            </h2>
-            <Link
-              href="/mission-control/orchestrator"
-              className="text-xs text-muted-foreground hover:text-foreground transition"
-            >
-              Full team →
-            </Link>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-            {loading ? (
-              <div className="px-4 py-3 text-xs text-muted-foreground">Loading agents...</div>
-            ) : agents.length === 0 ? (
-              <div className="px-4 py-3 text-xs text-muted-foreground">No agents found.</div>
-            ) : (
-              agents.slice(0, 4).map((agent) => {
-                const icon = AGENT_ICONS[agent.id] || AGENT_ICONS[agent.name?.toLowerCase()] || "🤖";
-                const isWorking = agent.status === "working";
-                return (
-                  <div key={agent.id} className="px-4 py-2.5 flex items-center gap-3">
-                    <span className="text-base">{icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-foreground capitalize">
-                        {agent.name}
-                      </span>
-                      {agent.status_reason && isWorking && (
-                        <span className="text-xs text-muted-foreground ml-2 truncate">
-                          — {agent.status_reason}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          isWorking
-                            ? "bg-green-400 animate-pulse"
-                            : agent.status === "error"
-                            ? "bg-red-400"
-                            : "bg-zinc-400"
-                        }`}
-                      />
-                      <span
-                        className={`text-xs ${
-                          isWorking
-                            ? "text-green-400"
-                            : agent.status === "error"
-                            ? "text-red-400"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {agent.status === "working" ? "Working" : agent.status === "error" ? "Error" : "Idle"}
-                      </span>
-                      {agent.last_heartbeat_at && (
-                        <span className="text-[10px] text-muted-foreground/60">
-                          · {timeAgo(agent.last_heartbeat_at)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </section>
-
-        {/* ── LATEST FROM JUMBO ─────────────────────────── */}
-        {briefing && (
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Latest from Jumbo
-              </h2>
-              <span className="text-[10px] text-muted-foreground">{timeAgo(briefing.created_at)}</span>
-            </div>
-            <div className="rounded-xl border border-border bg-card px-4 py-4">
-              <p className="text-sm font-medium text-foreground mb-1">{briefing.title}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                {briefing.body}
-              </p>
-              <button
-                onClick={() => notificationsApi.markRead(briefing.id).catch(() => {})}
-                className="mt-3 text-xs text-muted-foreground hover:text-foreground transition"
+          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+            Rooms
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { href: "/marketing", emoji: "📣", label: "Marketing", desc: "Content pipeline, calendar, ads" },
+              { href: "/sales", emoji: "💼", label: "Sales", desc: "Newsletter, leads, outreach" },
+              { href: "/intelligence", emoji: "🧠", label: "Intelligence", desc: "Research, brand, journal" },
+              { href: "/mission-control/settings", emoji: "⚙️", label: "Settings", desc: "Connectors, knowledge, team" },
+            ].map((room) => (
+              <Link
+                key={room.href}
+                href={room.href}
+                className="rounded-xl border border-border bg-card/30 p-4 hover:border-primary/30 hover:bg-card/60 transition group"
               >
-                Mark as read
-              </button>
-            </div>
-          </section>
-        )}
+                <div className="text-xl mb-1">{room.emoji}</div>
+                <div className="text-sm font-semibold text-foreground group-hover:text-primary transition">{room.label}</div>
+                <div className="text-xs text-muted-foreground">{room.desc}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
 
       <QuickCapture />

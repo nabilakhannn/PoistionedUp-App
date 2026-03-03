@@ -123,10 +123,13 @@ def get_competitor_context(brand_id: str) -> str:
 
 
 def get_trend_memory(brand_id: str) -> str:
-    """Return the most recent trend analyzer research report.
+    """Return the most recent trend analyzer research report for THIS brand.
 
     Fetches the latest deliverable from the trend-analyzer agent
     to avoid repeating recently researched topics.
+
+    BUG FIX (Slice 90): Added brand_id filter — previously all brands shared
+    the same trend memory which caused cross-brand contamination.
     """
     if not _is_valid_uuid(brand_id):
         return "[trend_memory unavailable — invalid brand_id]"
@@ -135,11 +138,15 @@ def get_trend_memory(brand_id: str) -> str:
         from app.deps import get_admin_client
         sb = get_admin_client()
 
+        user_id = _get_user_for_brand(brand_id, sb)
+
         # trend-analyzer uses created_by_agent_id = "trend-analyzer"
+        # Filter by user_id (brand owner) to isolate per-brand memory
         result = (
             sb.table("agent_deliverables")
             .select("content, created_at")
             .eq("created_by_agent_id", "trend-analyzer")
+            .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(1)
             .execute()
@@ -208,6 +215,251 @@ def _get_user_for_brand(brand_id: str, sb) -> str:
     except Exception:
         pass
     return ""
+
+
+def get_marketing_insights(brand_id: str) -> str:
+    """Return the latest research brief for Sales agents.
+
+    Sales newsletter and outreach agents read what Marketing researched
+    so they can write content based on current trends without repeating
+    the research phase.
+    """
+    if not _is_valid_uuid(brand_id):
+        return "[marketing_insights unavailable — invalid brand_id]"
+
+    try:
+        from app.deps import get_admin_client
+        sb = get_admin_client()
+
+        result = (
+            sb.table("research_briefs")
+            .select("content, run_at")
+            .eq("brand_id", brand_id)
+            .order("run_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+        if not result.data:
+            return (
+                "## Marketing Insights\n"
+                "No recent research brief available. Write based on brand voice and ICA.\n"
+            )
+
+        content = str(result.data[0].get("content", ""))[:2000]
+        date = str(result.data[0].get("run_at", ""))[:10]
+        return f"## Latest Marketing Research ({date})\n{content}\n"
+
+    except Exception as exc:
+        logger.warning("get_marketing_insights failed brand=%s: %s", brand_id, exc)
+        return "[marketing_insights temporarily unavailable]"
+
+
+def get_knowledge_docs(user_id: str, brand_id: str, agent_id: Optional[str] = None) -> str:
+    """Return knowledge documents (SOPs + user docs) for an agent.
+
+    Two-tier: system SOPs (all users) + user docs (per brand).
+    Filtered by agent_scope if agent_id provided.
+    """
+    if not _is_valid_uuid(user_id) or not _is_valid_uuid(brand_id):
+        return ""
+
+    try:
+        from app.deps import get_admin_client
+        sb = get_admin_client()
+
+        # System docs
+        system_docs = (
+            sb.table("knowledge_documents")
+            .select("title, content, doc_type, platform, scope, agent_scope")
+            .eq("scope", "system")
+            .execute()
+            .data or []
+        )
+
+        # User docs for this brand
+        user_docs = (
+            sb.table("knowledge_documents")
+            .select("title, content, doc_type, platform, scope, agent_scope")
+            .eq("scope", "user")
+            .eq("user_id", user_id)
+            .eq("brand_id", brand_id)
+            .execute()
+            .data or []
+        )
+
+        all_docs = system_docs + user_docs
+
+        # Filter by agent scope
+        if agent_id:
+            filtered = []
+            for doc in all_docs:
+                agent_scope = doc.get("agent_scope") or []
+                if not agent_scope or agent_id in agent_scope:
+                    filtered.append(doc)
+            all_docs = filtered
+
+        if not all_docs:
+            return ""
+
+        lines = ["## Knowledge Base — Writing Guidelines\n"]
+        for doc in all_docs:
+            scope_label = "[SYSTEM]" if doc.get("scope") == "system" else "[YOUR DOC]"
+            platform_label = doc.get("platform", "all").upper()
+            lines.append(f"### {scope_label} [{platform_label}] {doc['title']}")
+            lines.append(str(doc.get("content", ""))[:500])
+            lines.append("")
+
+        return "\n".join(lines)
+
+    except Exception as exc:
+        logger.warning("get_knowledge_docs failed user=%s brand=%s: %s", user_id, brand_id, exc)
+        return ""
+
+
+def get_relevant_experiences(user_id: str, brand_id: str, topic: str = "") -> str:
+    """Return relevant journal entries for grounding content in real experience.
+
+    Fetches the most recent entries from experience_journal.
+    When a topic is provided, prioritizes matching tags.
+    """
+    if not _is_valid_uuid(user_id) or not _is_valid_uuid(brand_id):
+        return ""
+
+    try:
+        from app.deps import get_admin_client
+        sb = get_admin_client()
+
+        result = (
+            sb.table("experience_journal")
+            .select("title, source_type, raw_content, tags, created_at")
+            .eq("user_id", user_id)
+            .eq("brand_id", brand_id)
+            .order("created_at", desc=True)
+            .limit(3)
+            .execute()
+        )
+
+        if not result.data:
+            return ""
+
+        lines = ["## Your Real Experiences — Use These in Your Writing\n"]
+        lines.append(
+            "Ground your content in these real experiences. "
+            "Reference them naturally (e.g., 'I was on a call last week...'):\n"
+        )
+
+        for entry in result.data:
+            title = entry.get("title") or entry.get("source_type", "Experience")
+            preview = str(entry.get("raw_content", ""))[:300].strip()
+            tags = entry.get("tags") or []
+            date = str(entry.get("created_at", ""))[:10]
+            lines.append(f"**{title}** ({date})")
+            if tags:
+                lines.append(f"Tags: {', '.join(tags)}")
+            lines.append(f"{preview}...")
+            lines.append("")
+
+        return "\n".join(lines)
+
+    except Exception as exc:
+        logger.warning("get_relevant_experiences failed user=%s brand=%s: %s", user_id, brand_id, exc)
+        return ""
+
+
+def save_research_brief(user_id: str, brand_id: str, content: str) -> bool:
+    """Save Phase 1 research output to research_briefs table.
+
+    This makes Marketing research available to Sales agents (newsletter, outreach)
+    without requiring them to re-run the expensive research phase.
+    Silent failure — never blocks the pipeline.
+    """
+    if not _is_valid_uuid(user_id) or not _is_valid_uuid(brand_id):
+        return False
+
+    try:
+        from app.deps import get_admin_client
+        sb = get_admin_client()
+
+        sb.table("research_briefs").insert({
+            "user_id": user_id,
+            "brand_id": brand_id,
+            "content": content[:50_000],
+            "topic_count": content.count("### Topic") or 3,
+        }).execute()
+
+        logger.info("research_brief saved user=%s brand=%s", user_id, brand_id)
+        return True
+
+    except Exception as exc:
+        logger.warning("save_research_brief failed user=%s brand=%s: %s", user_id, brand_id, exc)
+        return False
+
+
+def check_monthly_budget(user_id: str) -> Optional[str]:
+    """Check if user has exceeded their monthly AI budget.
+
+    Returns an error message string if over budget, None if within budget.
+    Checks pipeline_settings.monthly_budget_usd vs actual monthly spend
+    from sdk_agent_runs + tool_use agent costs.
+    """
+    if not _is_valid_uuid(user_id):
+        return None
+
+    try:
+        from app.deps import get_admin_client
+        from datetime import datetime, timezone
+        sb = get_admin_client()
+
+        # Get budget setting
+        settings_row = (
+            sb.table("pipeline_settings")
+            .select("monthly_budget_usd, budget_alert_at")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+
+        if not settings_row.data:
+            return None  # No settings = no cap
+
+        monthly_budget = float(settings_row.data[0].get("monthly_budget_usd") or 20.0)
+        if monthly_budget <= 0:
+            return None  # Zero or negative = no cap
+
+        # Get this month's spend from sdk_agent_runs (using total_cost field if available)
+        # Fall back to token count * estimated cost
+        now = datetime.now(timezone.utc)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        runs_result = (
+            sb.table("sdk_agent_runs")
+            .select("total_tokens, created_at")
+            .eq("user_id", user_id)
+            .gte("created_at", month_start.isoformat())
+            .execute()
+        )
+
+        total_tokens = sum(
+            row.get("total_tokens") or 0
+            for row in (runs_result.data or [])
+        )
+
+        # Estimate cost: ~$0.003 per 1K tokens (average across models)
+        estimated_cost = (total_tokens / 1000) * 0.003
+
+        if estimated_cost >= monthly_budget:
+            return (
+                f"Monthly AI budget of ${monthly_budget:.2f} reached "
+                f"(estimated spend: ${estimated_cost:.2f}). "
+                "Update your budget in Settings → Pipeline to continue."
+            )
+
+        return None
+
+    except Exception as exc:
+        logger.warning("check_monthly_budget failed user=%s: %s", user_id, exc)
+        return None  # Silent fail — don't block pipeline on budget check errors
 
 
 # ── Prompt builders ────────────────────────────────────────────────────────

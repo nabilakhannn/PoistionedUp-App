@@ -30,5 +30,11 @@
         "Access-Control-Allow-Credentials": "true"
       }
     }
+  ],
+  "crons": [
+    {
+      "path": "/cron/publish",
+      "schedule": "0 * * * *"
+    }
   ]
 }

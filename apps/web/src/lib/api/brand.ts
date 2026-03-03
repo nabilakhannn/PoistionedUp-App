@@ -394,6 +394,16 @@ export const personalBrandsApi = {
       `/brands/${brandId}/research/${sessionId}/skip`,
       { method: "POST" }
     ),
+
+  /** Zero-Setup Onboarding (Slice 91b) — find public content, fill profile in 30s. */
+  autoProfile: (
+    brandId: string,
+    data: { full_name: string; public_url?: string; extra_context?: string },
+  ) =>
+    apiFetch<{ ok: boolean; sections_filled: string[]; summary: string; data_found: boolean }>(
+      `/brands/${brandId}/auto-profile`,
+      { method: "POST", body: JSON.stringify(data) },
+    ),
 };
 
 // ── Research Types ──────────────────────────────────────────

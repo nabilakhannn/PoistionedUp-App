@@ -69,6 +69,7 @@ export interface Deliverable {
   created_by_agent_id: string | null;
   status: "draft" | "review" | "approved" | "rejected";
   feedback: string | null;
+  qa_score?: number;
   created_at: string;
   updated_at: string;
 }

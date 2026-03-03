@@ -5,10 +5,14 @@ Each user can have multiple personal brands. Content generation, chats,
 workflows, and memory are all scoped to a selected brand.
 """
 
+import json
 import logging
-from typing import Any, Dict
+import re
+from typing import Any, Dict, List, Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 
 from app.auth import CurrentUser, get_current_user
 from app.deps import get_admin_client
@@ -606,4 +610,261 @@ async def apply_research_to_brand(
     return {
         "message": f"Pre-filled {len(prefilled)} fields from research",
         "prefilled_fields": prefilled,
+    }
+
+
+# ── Zero-Setup Auto-Profile (Slice 91b) ──────────────────────────────────────
+
+_SAFE_NAME_RE = re.compile(r"[^a-zA-Z0-9 '\-\.\,]")
+
+_AUTO_PROFILE_SYSTEM = """You are a brand strategist extracting a personal brand profile from web research.
+
+Given snippets about a person, extract a structured brand profile.
+Return ONLY valid JSON — no other text:
+
+{
+  "foundation": {
+    "content_pillars": ["topic1", "topic2", "topic3"],
+    "beliefs": ["They believe...", "They stand for..."]
+  },
+  "ica": {
+    "demographics": {"occupation": "...", "pain": "..."},
+    "big_need": "...",
+    "big_want": "..."
+  },
+  "offer": {
+    "what": "...",
+    "target_audience": "...",
+    "differentiator": "..."
+  },
+  "positioning": {
+    "unique_angle": "...",
+    "voice_tone": "...",
+    "key_topics": ["...", "..."]
+  },
+  "summary": "One sentence: what they do and who they serve."
+}
+
+Rules:
+- Extract only what's clearly supported by the research — don't invent details
+- content_pillars: 3-5 topics they clearly cover (not generic: real specific topics from their content)
+- beliefs: what principles/opinions they visibly stand for
+- If information is missing, use "" for strings and [] for lists — don't guess
+- summary: "<Name> helps <audience> to <outcome> through <method>"
+"""
+
+
+class AutoProfileRequest(BaseModel):
+    full_name: str = Field(..., min_length=2, max_length=100)
+    public_url: str = ""        # LinkedIn, website, X/Twitter — any public URL
+    extra_context: str = ""     # "I'm a SaaS founder who teaches..."
+
+
+def _search_perplexity(query: str, api_key: str) -> str:
+    """Call Perplexity for web research. Returns text snippets."""
+    try:
+        resp = httpx.post(
+            "https://api.perplexity.ai/chat/completions",
+            json={
+                "model": "sonar-pro",
+                "messages": [{"role": "user", "content": query}],
+                "max_tokens": 1500,
+            },
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            timeout=20.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as exc:
+        logger.warning("Perplexity search failed: %s", exc)
+        return ""
+
+
+def _search_tavily(query: str, api_key: str) -> str:
+    """Tavily fallback for web research."""
+    try:
+        resp = httpx.post(
+            "https://api.tavily.com/search",
+            json={"api_key": api_key, "query": query, "max_results": 6},
+            timeout=15.0,
+        )
+        resp.raise_for_status()
+        results = resp.json().get("results", [])
+        return "\n".join(
+            f"- {r.get('title', '')}: {r.get('content', '')[:400]}"
+            for r in results
+        )
+    except Exception as exc:
+        logger.warning("Tavily search failed: %s", exc)
+        return ""
+
+
+def _synthesize_profile(research_text: str, full_name: str, extra_context: str) -> Optional[Dict]:
+    """Use Claude Sonnet 4.6 to extract a brand profile from web research."""
+    from app.config import settings
+    if not settings.anthropic_api_key:
+        return None
+
+    user_msg = f"Person: {full_name}\n\nResearch findings:\n{research_text[:6000]}"
+    if extra_context:
+        user_msg += f"\n\nAdditional context they provided: {extra_context[:500]}"
+    user_msg += "\n\nExtract the brand profile JSON."
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            system=_AUTO_PROFILE_SYSTEM,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        raw = response.content[0].text.strip()
+        if "```json" in raw:
+            raw = raw.split("```json", 1)[1].split("```", 1)[0].strip()
+        elif "```" in raw:
+            raw = raw.split("```", 1)[1].split("```", 1)[0].strip()
+        return json.loads(raw)
+    except Exception as exc:
+        logger.warning("Profile synthesis failed: %s", exc)
+        return None
+
+
+def _save_profile_sections(admin, brand_id: str, user_id: str, profile: Dict) -> List[str]:
+    """Deep-merge extracted profile into brand profile_json. Only fills empty fields."""
+    row = _get_brand_profile_json(admin, brand_id, user_id)
+    existing = row if isinstance(row, dict) else {}
+    sections_filled = []
+
+    def _is_empty(val) -> bool:
+        if val is None: return True
+        if isinstance(val, (str,)) and not val.strip(): return True
+        if isinstance(val, (list, dict)) and not val: return True
+        return False
+
+    for section, new_data in profile.items():
+        if section == "summary":
+            continue
+        if not isinstance(new_data, dict):
+            continue
+        current = existing.get(section, {})
+        if not isinstance(current, dict):
+            current = {}
+        merged = dict(current)
+        updated = False
+        for key, value in new_data.items():
+            if _is_empty(current.get(key)) and not _is_empty(value):
+                merged[key] = value
+                updated = True
+        if updated:
+            try:
+                _update_brand_profile_section(admin, brand_id, user_id, section, merged)
+                sections_filled.append(section)
+            except Exception as exc:
+                logger.warning("Failed to save section %s: %s", section, exc)
+
+    return sections_filled
+
+
+@router.post("/{brand_id}/auto-profile")
+async def auto_profile_brand(
+    brand_id: str,
+    body: AutoProfileRequest,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Zero-Setup Onboarding — Slice 91b.
+
+    Takes a name + optional public URL → Perplexity finds their public content
+    → Claude extracts brand profile → saves to profile_json (only fills empty fields).
+
+    Works in < 30 seconds. Gracefully degrades if no search keys are configured.
+    Returns: { ok, sections_filled, summary, data_found }
+    """
+    from app.config import settings
+
+    admin = get_admin_client()
+    _verify_brand_ownership(admin, brand_id, user.id)
+
+    # Sanitize name (strip injection chars, keep letters/spaces/hyphens/etc.)
+    safe_name = _SAFE_NAME_RE.sub("", body.full_name).strip()[:100]
+    if not safe_name:
+        raise HTTPException(400, "full_name contains invalid characters")
+
+    # Validate public_url (SSRF protection — validate but never fetch directly)
+    safe_url = ""
+    if body.public_url.strip():
+        try:
+            from app.utils.url_validation import validate_url
+            safe_url = validate_url(body.public_url.strip())
+        except Exception:
+            safe_url = ""  # Invalid URL — ignore silently
+
+    # Build search query
+    url_hint = f" site:{safe_url.split('/')[2]}" if safe_url else ""
+    query = (
+        f'"{safe_name}" content creator OR expert posts LinkedIn{url_hint} '
+        f"what they teach audience topics"
+    )
+    if body.extra_context:
+        query += f" context: {body.extra_context[:200]}"
+
+    # Step 1: Research via Perplexity → Tavily fallback
+    research_text = ""
+    data_found = False
+
+    if settings.perplexity_api_key:
+        research_text = _search_perplexity(query, settings.perplexity_api_key)
+    if not research_text and settings.tavily_api_key:
+        research_text = _search_tavily(query, settings.tavily_api_key)
+
+    if research_text:
+        data_found = True
+
+    # Add extra_context to research text even if search failed
+    if body.extra_context and not research_text:
+        research_text = f"Self-described: {body.extra_context}"
+        data_found = False  # No external data found
+
+    # Step 2: Synthesize profile with Claude
+    profile = None
+    summary = ""
+    if research_text:
+        profile = _synthesize_profile(research_text, safe_name, body.extra_context)
+        if profile:
+            summary = profile.pop("summary", "")
+
+    # Fallback: save extra_context as a belief if nothing else worked
+    sections_filled: List[str] = []
+    if not profile and body.extra_context:
+        try:
+            row = _get_brand_profile_json(admin, brand_id, user.id)
+            existing = row if isinstance(row, dict) else {}
+            current_beliefs = existing.get("foundation", {}).get("beliefs", [])
+            if not current_beliefs:
+                _update_brand_profile_section(admin, brand_id, user.id, "foundation", {
+                    "beliefs": [body.extra_context.strip()[:500]],
+                })
+                sections_filled = ["foundation"]
+        except Exception as exc:
+            logger.warning("Fallback save failed: %s", exc)
+    elif profile:
+        sections_filled = _save_profile_sections(admin, brand_id, user.id, profile)
+
+    track_event(user.id, "auto_profile_run", {
+        "brand_id": brand_id,
+        "data_found": data_found,
+        "sections_filled": len(sections_filled),
+    })
+
+    logger.info(
+        "Auto-profile: user=%s brand=%s data_found=%s sections=%s",
+        user.id, brand_id, data_found, sections_filled,
+    )
+
+    return {
+        "ok": True,
+        "sections_filled": sections_filled,
+        "summary": summary,
+        "data_found": data_found,
     }

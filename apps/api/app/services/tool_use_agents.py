@@ -169,6 +169,38 @@ TOOL_DEFINITIONS: List[Dict[str, Any]] = [
             "required": ["content"],
         },
     },
+    {
+        "name": "generate_image",
+        "description": (
+            "Generate a photorealistic image from plain English. "
+            "Claude Haiku first structures the prompt with camera specs (lens, aperture), "
+            "lighting (named setup, direction), composition, color grading (film stock reference), "
+            "and negative constraints — raising the usable generation rate from ~68% to ~92%. "
+            "Then calls Nano Banana 2 via Higgsfield (or Gemini as fallback). "
+            "Returns an image URL and the structured prompt used. "
+            "Use for: post visuals, ad creatives, brand imagery, LinkedIn headers."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "Plain English description of the image to generate.",
+                },
+                "style": {
+                    "type": "string",
+                    "enum": ["photorealistic", "cinematic", "branded", "editorial", "lifestyle"],
+                    "description": "Visual style. Default: photorealistic.",
+                },
+                "format": {
+                    "type": "string",
+                    "enum": ["square", "landscape", "portrait", "story"],
+                    "description": "Aspect ratio: square (1:1 LinkedIn/Instagram), landscape (16:9 YouTube), portrait (4:5 feed), story (9:16 Stories).",
+                },
+            },
+            "required": ["description"],
+        },
+    },
 ]
 
 
@@ -365,6 +397,26 @@ def _exec_score_content_quality(content: str) -> str:
     return json.dumps(scores)
 
 
+def _exec_generate_image(description: str, style: str = "photorealistic", img_format: str = "square") -> str:
+    """Generate an image via Nano Banana 2 (Higgsfield/Gemini). Returns JSON {url, prompt}."""
+    try:
+        from app.services.image_gen import generate_image as _gen
+        result = _gen(
+            description=description,
+            style=style,
+            img_format=img_format,
+        )
+        return json.dumps({
+            "url": result.get("url"),
+            "model_used": result.get("model_used"),
+            "prompt": result.get("structured_prompt", "")[:300],
+            "error": result.get("error"),
+        })
+    except Exception as exc:
+        logger.warning("generate_image tool failed: %s", exc)
+        return json.dumps({"url": None, "error": str(exc)})
+
+
 # ── Tool dispatcher ───────────────────────────────────────────────────────
 
 
@@ -386,6 +438,12 @@ def _dispatch_tool(tool_name: str, tool_input: Dict[str, Any]) -> str:
         )
     if tool_name == "score_content_quality":
         return _exec_score_content_quality(tool_input.get("content", ""))
+    if tool_name == "generate_image":
+        return _exec_generate_image(
+            description=tool_input.get("description", ""),
+            style=tool_input.get("style", "photorealistic"),
+            img_format=tool_input.get("format", "square"),
+        )
     return f"[Unknown tool: {tool_name!r}]"
 
 
