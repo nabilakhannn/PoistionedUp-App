@@ -10,6 +10,7 @@ Usage by OpenClaw agents:
 """
 
 import logging
+import re as _re
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -63,7 +64,13 @@ async def get_agent_caller(
         raise HTTPException(401, "Invalid agent API key")
 
     if not x_user_id:
-        # Try to find the single user (for single-tenant setups)
+        # OWASP A01 — single-tenant fallback: only safe in single-user deployments.
+        # In multi-user production, agents MUST always pass X-User-Id.
+        # Log at WARNING so ops can detect misconfigured agents calling without a user context.
+        logger.warning(
+            "Agent caller missing X-User-Id header — using single-tenant fallback. "
+            "If this is a multi-user deployment, configure agents to always pass X-User-Id."
+        )
         sb = get_admin_client()
         users = sb.table("profiles").select("user_id").limit(1).execute()
         if users.data:
@@ -552,8 +559,11 @@ async def search_inspo(body: InspoSearchRequest, caller: AgentCaller = Depends(g
     if body.starred_only:
         q = q.eq("is_starred", True)
     if body.query:
-        # Sanitize query: escape PostgREST special characters to prevent filter injection
-        safe_query = body.query.replace("%", "").replace("(", "").replace(")", "").replace(",", "").strip()
+        # OWASP A03 — PostgREST filter injection mitigation.
+        # Strict whitelist: only word chars (letters, digits), spaces and hyphens are
+        # allowed. This removes PostgREST special chars (comma, dot, %, parens)
+        # that could escape the `.or_()` filter string and inject extra conditions.
+        safe_query = _re.sub(r"[^\w\s\-]", "", body.query, flags=_re.UNICODE).strip()[:200]
         if safe_query:
             q = q.or_(f"title.ilike.%{safe_query}%,content.ilike.%{safe_query}%,intent_note.ilike.%{safe_query}%")
 
@@ -785,6 +795,56 @@ async def agent_submit_competitor_alert(
     notif_id = resp.data[0]["id"] if resp.data else None
 
     return {"ok": True, "notification_id": notif_id, "alert_type": alert_type}
+
+
+@router.post("/voice/transcribe")
+async def transcribe_voice_note(
+    body: dict,
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """Download and transcribe a Telegram voice note. Called by Jumbo agent.
+
+    Jumbo sends the file_id from a Telegram voice message.
+    The server downloads from Telegram using the server-side bot token,
+    then transcribes with Whisper.
+
+    Request body: { "file_id": "AwACAgI...", "duration_seconds": 30 }
+    Response:     { "transcript": "...", "language": "en", "char_count": 123, "duration_seconds": 30, "error": "" }
+
+    The bot_token is NEVER accepted from the request — it comes from server env only.
+    """
+    from app.services.voice_notes import process_telegram_voice
+
+    file_id = body.get("file_id", "").strip()
+    if not file_id:
+        raise HTTPException(status_code=422, detail="file_id is required")
+
+    duration_seconds = body.get("duration_seconds")
+
+    bot_token = settings.telegram_bot_token
+    if not bot_token:
+        raise HTTPException(
+            status_code=503,
+            detail="TELEGRAM_BOT_TOKEN not configured on server",
+        )
+
+    result = await process_telegram_voice(
+        file_id=file_id,
+        bot_token=bot_token,
+        duration_seconds=duration_seconds,
+    )
+
+    if result.get("error"):
+        # Return 200 with error field — Jumbo handles the error gracefully
+        return result
+
+    logger.info(
+        "Voice note transcribed: user=%s chars=%d lang=%s",
+        caller.user_id,
+        result["char_count"],
+        result["language"],
+    )
+    return result
 
 
 @router.get("/competitive-landscape")

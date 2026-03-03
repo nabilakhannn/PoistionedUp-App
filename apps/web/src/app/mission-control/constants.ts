@@ -57,4 +57,7 @@ export const MC_SUB_NAV = [
   { href: "/mission-control/goals", label: "Goals" },
   { href: "/mission-control/competitors", label: "Competitors" },
   { href: "/mission-control/qa", label: "QA" },
+  { href: "/mission-control/playbooks", label: "Playbooks" },
+  { href: "/mission-control/ledger", label: "Ledger" },
+  { href: "/mission-control/settings", label: "Settings" },
 ];

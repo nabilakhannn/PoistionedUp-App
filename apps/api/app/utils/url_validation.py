@@ -71,7 +71,12 @@ def validate_url_for_fetch(url: str) -> str:
                 if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                     raise ValueError(f"URL hostname '{hostname}' resolves to private IP: {ip}")
         except socket.gaierror:
-            # DNS resolution failed — allow the request to fail naturally downstream
-            logger.debug("DNS resolution failed for %s — allowing", hostname)
+            # DNS resolution failed — block; cannot verify this hostname is safe.
+            # Allowing unresolvable hosts would create a TOCTOU window where DNS
+            # could later resolve to a private IP (DNS rebinding attack).
+            raise ValueError(
+                f"URL hostname '{hostname}' could not be resolved — "
+                "blocked for safety. Ensure the URL is publicly accessible."
+            )
 
     return url.strip()

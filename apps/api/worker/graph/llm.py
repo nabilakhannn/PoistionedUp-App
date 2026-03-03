@@ -36,6 +36,15 @@ RETRY_MAX_DELAY = 8.0  # cap — must fit within Vercel's 120s serverless timeou
 
 
 # ── Cost estimation (USD per 1K tokens) ──────────────────────
+# Fallback: when OpenAI is rate-limited or degraded, retry with these Anthropic models
+_OPENAI_TO_ANTHROPIC_FALLBACK: dict[str, str] = {
+    "gpt-4o": "claude-sonnet-4-6",
+    "gpt-4o-mini": "claude-haiku-4-5-20251001",
+    "gpt-4-turbo": "claude-sonnet-4-6",
+    "gpt-4": "claude-sonnet-4-6",
+    "gpt-3.5-turbo": "claude-haiku-4-5-20251001",
+}
+
 MODEL_PRICING = {
     # OpenAI
     "gpt-4o": {"input": 0.0025, "output": 0.01},
@@ -51,6 +60,10 @@ MODEL_PRICING = {
     "claude-3-5-haiku-20241022": {"input": 0.0008, "output": 0.004},
     "claude-3-5-sonnet-20241022": {"input": 0.003, "output": 0.015},
     "claude-3-opus-20240229": {"input": 0.015, "output": 0.075},
+    # Claude 4 models (fallback targets)
+    "claude-sonnet-4-6": {"input": 0.003, "output": 0.015},
+    "claude-haiku-4-5-20251001": {"input": 0.0008, "output": 0.004},
+    "claude-opus-4-6": {"input": 0.015, "output": 0.075},
 }
 
 
@@ -167,13 +180,14 @@ _tracking_context = threading.local()
 
 
 def set_tracking_context(
-    workflow_id: str, user_id: str, step_id: str, model_tier: str = ""
+    workflow_id: str, user_id: str, step_id: str, model_tier: str = "", request_id: str = ""
 ) -> None:
-    """Set the context for cost tracking. Called by each pipeline node."""
+    """Set the context for cost tracking and correlation. Called by each pipeline node."""
     _tracking_context.workflow_id = workflow_id
     _tracking_context.user_id = user_id
     _tracking_context.step_id = step_id
     _tracking_context.model_tier = model_tier
+    _tracking_context.request_id = request_id  # Propagate HTTP request_id for tracing
 
 
 def clear_tracking_context() -> None:
@@ -182,6 +196,7 @@ def clear_tracking_context() -> None:
     _tracking_context.user_id = None
     _tracking_context.step_id = None
     _tracking_context.model_tier = None
+    _tracking_context.request_id = None
 
 
 def _check_workflow_budget() -> None:
@@ -545,7 +560,21 @@ class OpenAIClient:
                 )
                 time.sleep(delay)
 
-        # Should never reach here, but just in case
+        # ── Anthropic fallback after all OpenAI retries exhausted ────────────
+        # If the user has an Anthropic key configured, try the equivalent Claude
+        # model. This keeps the platform up during OpenAI outages or rate limits.
+        if self._anthropic_key and last_exc is not None and _is_retryable_error(last_exc):
+            fallback_model = _OPENAI_TO_ANTHROPIC_FALLBACK.get(model)
+            if fallback_model:
+                logger.warning(
+                    "OpenAI %s exhausted after %d retries — falling back to Anthropic %s "
+                    "(step=%s, wf=%s): %s",
+                    model, MAX_RETRIES + 1, fallback_model, step_id, wf_id, last_exc,
+                )
+                return self._chat_anthropic(
+                    messages, fallback_model, temperature, max_tokens, response_format
+                )
+
         raise last_exc  # type: ignore[misc]
 
     def _chat_anthropic(

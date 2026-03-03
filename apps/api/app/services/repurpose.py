@@ -7,6 +7,7 @@ for multiple target platforms using LLM-powered adaptation.
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -126,25 +127,30 @@ def repurpose_content(
     voice = json.dumps(profile.get("brand_voice", {}))
 
     llm = get_llm_client()
-    results = []
 
-    for target in target_platforms:
+    # ── Parallel repurposing (one thread per target platform) ─────────────
+    # Each platform is independent — no data dependencies between them.
+    def _repurpose_platform(target: str) -> Dict[str, Any]:
         constraint = prompts.PLATFORM_CONSTRAINTS.get(target)
         if not constraint:
             logger.warning("No constraints defined for platform: %s", target)
-            continue
-
+            return {
+                "platform": target,
+                "content_type": "post",
+                "title": f"Unsupported platform: {target}",
+                "body": "",
+                "metadata": {"error": f"No platform constraints for {target}"},
+            }
         try:
             user_prompt = prompts.USER.format(
                 source_platform=source_platform,
-                source_content=source_text[:10000],  # Cap source text for prompt
+                source_content=source_text[:10000],
                 target_platform=target,
                 platform_rules=constraint["rules"],
                 voice=voice,
                 brand_context=brand_context,
                 content_type=constraint["content_type"],
             )
-
             resp = llm.chat(
                 messages=[
                     {"role": "system", "content": prompts.SYSTEM},
@@ -154,25 +160,37 @@ def repurpose_content(
                 temperature=0.7,
                 response_format={"type": "json_object"},
             )
-
             parsed = parse_json_response(resp["content"])
-            results.append({
+            return {
                 "platform": parsed.get("platform", target),
                 "content_type": parsed.get("content_type", constraint["content_type"]),
                 "title": parsed.get("title", f"Repurposed for {target}"),
                 "body": parsed.get("body", ""),
                 "metadata": parsed.get("metadata", {}),
-            })
-
+            }
         except Exception as e:
             logger.error("Failed to repurpose for %s: %s", target, e)
-            results.append({
+            return {
                 "platform": target,
-                "content_type": constraint["content_type"],
+                "content_type": constraint.get("content_type", "post"),
                 "title": f"Repurpose failed for {target}",
                 "body": "",
                 "metadata": {"error": str(e)},
-            })
+            }
+
+    max_workers = min(len(target_platforms), 5)
+    results: List[Dict[str, Any]] = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_repurpose_platform, t): t for t in target_platforms}
+        # Collect results preserving original platform order
+        platform_results: Dict[str, Dict[str, Any]] = {}
+        for future in as_completed(futures):
+            result = future.result()
+            platform_results[result["platform"]] = result
+    # Re-order to match input order
+    for target in target_platforms:
+        if target in platform_results:
+            results.append(platform_results[target])
 
     logger.info(
         "Repurposed content from %s → %d platforms (%d successful)",

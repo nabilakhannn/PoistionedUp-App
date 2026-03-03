@@ -12,6 +12,26 @@ import {
 } from "@/lib/api/composer";
 import { qaApi, QAReviewResult, VERDICT_STYLES, SCORE_DIMENSIONS } from "@/lib/api/qa";
 import { ScoreBadge } from "@/app/mission-control/qa/components/score-badge";
+import { publishingApi } from "@/lib/api/publishing";
+import { connectorsApi, ConnectorService } from "@/lib/api/connectors";
+
+// ── Ad Creative Draft type (subset of scheduled_item) ─────
+interface AdDraft {
+  id: string;
+  title: string;
+  platform: string;
+  body_preview: string | null;
+  content_json: {
+    headline?: string;
+    primary_text?: string;
+    cta?: string;
+    platform?: string;
+    hook_type?: string;
+    hook_angle?: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
 
 // ── Constants ─────────────────────────────────────────
 
@@ -342,6 +362,15 @@ export default function ComposerPage() {
   const [qaResult, setQaResult] = useState<QAReviewResult | null>(null);
   const [qaLoading, setQaLoading] = useState(false);
 
+  // Publishing state
+  const [publishing, setPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [connectedServices, setConnectedServices] = useState<ConnectorService[]>([]);
+
+  // Ad creative drafts
+  const [adDrafts, setAdDrafts] = useState<AdDraft[]>([]);
+  const [showAdDrafts, setShowAdDrafts] = useState(false);
+
   // Computed values
   const config = PLATFORM_CONFIG[platform];
   const charCount = countLinkedInChars(body);
@@ -364,6 +393,31 @@ export default function ComposerPage() {
   useEffect(() => {
     if (qaResult) setQaResult(null);
   }, [body]);
+
+  // Load connected services so we can show Publish Now
+  useEffect(() => {
+    connectorsApi.list().then((connectors) => {
+      setConnectedServices(
+        connectors
+          .filter((c) => c.last_test_status === "ok" || c.is_active)
+          .map((c) => c.service)
+      );
+    }).catch(() => {});
+  }, []);
+
+  // Load staged ad creative drafts when brand changes
+  useEffect(() => {
+    if (!brandId) { setAdDrafts([]); return; }
+    composerApi.loadDrafts(brandId).then((data) => {
+      const ads = (data.draft || []).filter(
+        (d): d is AdDraft =>
+          (d as any).content_json?.headline !== undefined ||
+          (d as any).content_json?.hook_type !== undefined
+      );
+      setAdDrafts(ads);
+      if (ads.length > 0) setShowAdDrafts(true);
+    }).catch(() => setAdDrafts([]));
+  }, [brandId]);
 
   // Formatting helpers
   const applyFormat = useCallback(
@@ -487,6 +541,19 @@ export default function ComposerPage() {
     }
   };
 
+  const handleLoadAdDraft = (draft: AdDraft) => {
+    const { headline, primary_text, cta } = draft.content_json;
+    const parts = [headline, primary_text, cta ? `👉 ${cta}` : ""].filter(Boolean);
+    setBody(parts.join("\n\n"));
+    setDraftId(draft.id);
+    if (draft.platform && (draft.platform === "linkedin" || draft.platform === "twitter")) {
+      setPlatform(draft.platform as Platform);
+    }
+    setShowAdDrafts(false);
+    setSuccessMsg("Ad creative loaded — edit and schedule when ready.");
+    setTimeout(() => setSuccessMsg(""), 4000);
+  };
+
   const handleClear = () => {
     if (body.trim() && !confirm("Clear the editor? Unsaved changes will be lost.")) return;
     setBody("");
@@ -527,6 +594,35 @@ export default function ComposerPage() {
       setQaLoading(false);
     }
   };
+
+  const handlePublishNow = async () => {
+    if (!body.trim() || !draftId) return;
+    if (!qaResult) {
+      if (!confirm("You haven't run a QA check yet. Publish now anyway?")) return;
+    }
+    setPublishing(true);
+    setPublishedUrl(null);
+    setError("");
+    try {
+      const result = await publishingApi.publishItem(draftId);
+      if (result.success && result.published_url) {
+        setPublishedUrl(result.published_url);
+        setSuccessMsg(`Posted live! View: ${result.published_url}`);
+        trackEvent("composer_published", { platform, url: result.published_url });
+        setTimeout(() => setSuccessMsg(""), 8000);
+      } else {
+        setError(result.error || "Publish failed — check connector settings");
+      }
+    } catch (err: any) {
+      setError(err.message || "Publish failed");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const hasConnectorForPlatform = connectedServices.includes(
+    platform === "linkedin" ? "webhook" : platform as ConnectorService
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -578,6 +674,70 @@ export default function ComposerPage() {
             <button onClick={() => setError("")} className="ml-3 text-destructive hover:text-destructive/70">
               Dismiss
             </button>
+          </div>
+        )}
+
+        {/* Staged Ad Creative Drafts */}
+        {adDrafts.length > 0 && (
+          <div className="mb-5 border border-primary/30 rounded-xl overflow-hidden">
+            <button
+              onClick={() => setShowAdDrafts(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-primary/5 hover:bg-primary/10 transition-colors"
+            >
+              <div className="flex items-center gap-2 text-sm font-medium text-card-foreground">
+                <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                  {adDrafts.length}
+                </span>
+                <span>Staged Ad Creatives — click to load into editor</span>
+              </div>
+              <svg
+                className={`w-4 h-4 text-muted-foreground transition-transform ${showAdDrafts ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+
+            {showAdDrafts && (
+              <div className="divide-y divide-border max-h-72 overflow-y-auto">
+                {adDrafts.map((draft) => (
+                  <button
+                    key={draft.id}
+                    onClick={() => handleLoadAdDraft(draft)}
+                    className="w-full text-left px-4 py-3 hover:bg-accent transition-colors group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-card-foreground truncate">
+                          {draft.content_json.headline || draft.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                          {draft.content_json.primary_text || draft.body_preview}
+                        </p>
+                        {draft.content_json.hook_angle && (
+                          <p className="text-xs text-muted-foreground/70 mt-0.5">
+                            Targets: {draft.content_json.hook_angle}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+                          draft.platform === "linkedin" ? "bg-sky-100 text-sky-700" :
+                          draft.platform === "facebook" ? "bg-blue-100 text-blue-700" :
+                          draft.platform === "instagram" ? "bg-pink-100 text-pink-700" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {draft.platform}
+                        </span>
+                        <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                          Load →
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -715,6 +875,36 @@ export default function ComposerPage() {
               >
                 Schedule For...
               </button>
+              {draftId && hasConnectorForPlatform && (
+                <button
+                  onClick={handlePublishNow}
+                  disabled={publishing || !body.trim() || overLimit}
+                  className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg disabled:opacity-50 transition"
+                  title="Post this content live now using your connected account"
+                >
+                  {publishing ? (
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                    </svg>
+                  )}
+                  Publish Now
+                </button>
+              )}
+              {publishedUrl && (
+                <a
+                  href={publishedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-green-400 hover:underline flex items-center gap-1"
+                >
+                  View live post
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                  </svg>
+                </a>
+              )}
             </div>
           </div>
 

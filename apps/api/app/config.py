@@ -26,18 +26,24 @@ class Settings(BaseSettings):
         "https://positionedup.com",
         "https://www.positionedup.com",
         "https://positionedup.vercel.app",
-        "https://poistioned-up-app.vercel.app",
-        "https://poistioned-up-app-git-main-nabilas-projects-db41bc0c.vercel.app",
+        "https://positioned-up-app.vercel.app",
+        "https://positioned-up-app-git-main-nabilas-projects-db41bc0c.vercel.app",
         "https://web-tau-dun-23.vercel.app",
         "https://web-nabilas-projects-db41bc0c.vercel.app",
     ]
 
     # LLM
     openai_api_key: str = ""
-    anthropic_api_key: str = ""  # Optional: enables Claude models for Standard/Premium tiers
+    anthropic_api_key: str = ""  # Claude Sonnet 4.6 for all writing tasks (copywriter, ad creative)
+    perplexity_api_key: str = ""  # Perplexity sonar-pro for real-time web search (research agents)
+    gemini_api_key: str = ""  # Gemini 2.0 Flash for large-context research synthesis
 
     # Real-time research
-    tavily_api_key: str = ""  # Optional: better search quality. Free tier: 1000 searches/month
+    tavily_api_key: str = ""  # Fallback search when Perplexity key not set. Free tier: 1000 searches/month
+
+    # Connector credentials encryption (Slice 85)
+    # Generate with: python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    connector_encryption_key: str = ""  # Required if any user connectors are saved
 
     # LangGraph
     langgraph_db_uri: str = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
@@ -50,6 +56,9 @@ class Settings(BaseSettings):
 
     # Agent Bridge (OpenClaw agents calling into PositionedUp)
     agent_api_key: str = ""  # Set a strong random key for agent-to-API auth
+
+    # Telegram (Slice 87 — voice note transcription)
+    telegram_bot_token: str = ""  # Same token as in openclaw.json TELEGRAM_BOT_TOKEN
 
     # OpenClaw Gateway (PositionedUp calling into agent runtime)
     openclaw_gateway_url: str = ""  # e.g. http://localhost:18789 or https://agents.positionedup.com

@@ -27,6 +27,7 @@ export interface AdGenerateResponse {
   deliverable_id: string;
   total_count: number;
   variations_by_hook: Record<string, AdVariation[]>;
+  hook_errors?: Record<string, string>; // hook_type → error message, empty when all succeeded
   brand_name: string;
   niche: string;
 }
@@ -34,6 +35,11 @@ export interface AdGenerateResponse {
 export interface AdStageResponse {
   staged_count: number;
   scheduled_item_ids: string[];
+}
+
+export interface AdApprovalRequest {
+  approved_ids: string[];
+  dismissed_ids: string[];
 }
 
 // ── Constants ─────────────────────────────────────────────
@@ -70,6 +76,15 @@ export const adCreativeApi = {
       {
         method: "POST",
         body: JSON.stringify({ variation_ids: variationIds }),
+      }
+    ),
+
+  patchApprovals: (brandId: string, deliverableId: string, body: AdApprovalRequest) =>
+    apiFetch<{ ok: boolean; approved_count: number; dismissed_count: number }>(
+      `/brands/${brandId}/ad-creative/${deliverableId}/approvals`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
       }
     ),
 };

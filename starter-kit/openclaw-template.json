@@ -1,0 +1,250 @@
+{
+  "_comment": "AI Second Brain Starter Kit — OpenClaw Configuration Template",
+  "_instructions": [
+    "1. Copy this file to openclaw.json in your project root",
+    "2. Replace all [CUSTOMIZE] placeholders",
+    "3. Set env vars (TELEGRAM_BOT_TOKEN, OPENCLAW_GATEWAY_TOKEN, OPENAI_API_KEY)",
+    "4. Run: openclaw gateway --config openclaw.json"
+  ],
+
+  "gateway": {
+    "mode": "local",
+    "bind": "loopback",
+    "port": 18789,
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}",
+      "allowInsecureAuth": true
+    }
+  },
+
+  "defaultModel": {
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "_comment": "Replace provider with 'anthropic' or 'google' if preferred"
+  },
+
+  "tools": {
+    "profile": "messaging",
+    "deny": ["gateway", "cron", "sessions_spawn", "sessions_send"],
+    "alsoAllow": ["lobster"],
+    "fs": {
+      "workspaceOnly": true,
+      "_comment": "Agents can only read/write within their own workspace directory"
+    },
+    "exec": {
+      "security": "deny",
+      "ask": "always",
+      "_comment": "Shell execution is denied by default — ask human to approve any exceptions"
+    },
+    "subagents": {
+      "tools": {
+        "deny": ["gateway", "cron", "exec", "process", "browser"]
+      }
+    }
+  },
+
+  "mcp": {
+    "_comment": "Add MCP servers here for additional capabilities",
+    "servers": {
+      "_example_notebooklm": {
+        "_comment": "Uncomment to add Google NotebookLM for citation-backed research",
+        "_disabled": true,
+        "command": "npx",
+        "args": ["-y", "notebooklm-mcp@latest"],
+        "env": { "NOTEBOOKLM_PROFILE": "standard" }
+      }
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "non-main",
+        "scope": "agent",
+        "workspaceAccess": "rw"
+      },
+      "heartbeat": {
+        "every": "15m",
+        "_comment": "Pulse interval — increase to '30m' to reduce costs",
+        "target": "last",
+        "activeHours": {
+          "start": "07:00",
+          "end": "23:00",
+          "_comment": "Set to your active hours to avoid middle-of-night API calls"
+        }
+      },
+      "subagents": {
+        "maxSpawnDepth": 2,
+        "maxChildrenPerAgent": 3,
+        "maxConcurrent": 4,
+        "runTimeoutSeconds": 900,
+        "model": {
+          "provider": "openai",
+          "model": "gpt-4o-mini",
+          "_comment": "Sub-agents use cheap model by default to control costs"
+        },
+        "allowAgents": ["researcher", "writer", "qa-reviewer", "publisher", "analytics", "*"]
+      }
+    },
+
+    "list": [
+      {
+        "id": "orchestrator",
+        "name": "Orchestrator",
+        "_comment": "Your squad lead — the only agent that talks to you directly",
+        "default": true,
+        "workspace": "./agents/orchestrator",
+        "model": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "_comment": "Orchestrator uses full model — it handles complex reasoning and routing"
+        },
+        "tools": {
+          "allow": [
+            "read", "write", "edit",
+            "web_fetch",
+            "sessions_list", "sessions_history", "sessions_send", "sessions_spawn", "session_status",
+            "subagents", "message", "agents_list"
+          ],
+          "deny": ["exec", "process", "browser", "canvas", "nodes", "gateway", "cron", "image"]
+        },
+        "channels": ["telegram"]
+      },
+      {
+        "id": "researcher",
+        "name": "Researcher",
+        "_comment": "Handles web research, trend analysis, competitor monitoring",
+        "workspace": "./agents/researcher",
+        "model": {
+          "provider": "openai",
+          "model": "gpt-4o-mini"
+        },
+        "tools": {
+          "allow": ["read", "write", "edit", "web_search", "web_fetch"],
+          "deny": ["exec", "process", "browser", "sessions_spawn", "cron", "gateway"]
+        }
+      },
+      {
+        "id": "writer",
+        "name": "Writer",
+        "_comment": "Drafts content for your platforms — LinkedIn, Twitter, YouTube, etc.",
+        "workspace": "./agents/writer",
+        "model": {
+          "provider": "anthropic",
+          "model": "claude-sonnet-4-6",
+          "_comment": "Claude Sonnet for higher-quality content writing. Or use openai/gpt-4o."
+        },
+        "tools": {
+          "allow": ["read", "write", "edit"],
+          "deny": ["exec", "process", "browser", "web_search", "web_fetch", "sessions_spawn", "cron", "gateway"]
+        }
+      },
+      {
+        "id": "qa-reviewer",
+        "name": "QA Reviewer",
+        "_comment": "Scores content before it reaches you — enforces your quality bar",
+        "workspace": "./agents/qa-reviewer",
+        "model": {
+          "provider": "openai",
+          "model": "gpt-4o-mini"
+        },
+        "tools": {
+          "allow": ["read", "write", "edit"],
+          "deny": ["exec", "process", "browser", "web_search", "sessions_spawn", "cron", "gateway"]
+        }
+      },
+      {
+        "id": "publisher",
+        "name": "Publisher",
+        "_comment": "Posts approved content at scheduled times — NEVER without approval",
+        "workspace": "./agents/publisher",
+        "model": {
+          "provider": "openai",
+          "model": "gpt-4o-mini"
+        },
+        "tools": {
+          "allow": ["read", "write", "edit", "web_fetch"],
+          "deny": ["exec", "process", "browser", "web_search", "sessions_spawn", "cron", "gateway"]
+        }
+      }
+    ]
+  },
+
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "dmPolicy": "allowlist",
+      "allowFrom": ["${TELEGRAM_OWNER_CHAT_ID}"],
+      "_comment": "Only YOUR chat ID can DM the bot. Get your ID from @userinfobot on Telegram.",
+      "groups": {
+        "*": {
+          "requireMention": true
+        }
+      }
+    }
+  },
+
+  "cron": [
+    {
+      "name": "Daily Morning Briefing",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "tz": "America/New_York",
+        "_comment": "Change to your timezone and preferred briefing time"
+      },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "DAILY BRIEFING TRIGGER: Compile the morning briefing. Get brand context, check the content schedule for the next 3 days, review task progress, and check goal status. Send a concise summary. If anything needs attention, flag it."
+      },
+      "agentId": "orchestrator"
+    },
+    {
+      "name": "Weekly Research",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * 6",
+        "tz": "America/New_York",
+        "_comment": "Saturday 10 AM — weekly trend research"
+      },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "WEEKLY RESEARCH TRIGGER: Create a research task for the Researcher. Focus on what's trending this week that aligns with our content pillars. Look for new angles, audience pain points, and high-potential topics for next week's content."
+      },
+      "agentId": "orchestrator"
+    },
+    {
+      "name": "Weekly Analytics Report",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 20 * * 0",
+        "tz": "America/New_York",
+        "_comment": "Sunday 8 PM — weekly performance report"
+      },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "WEEKLY ANALYTICS TRIGGER: Create a performance report task. Pull metrics from the last 7 days. Identify top performers, underperformers, and patterns. Update goal progress. Send the summary."
+      },
+      "agentId": "orchestrator"
+    }
+  ],
+
+  "env": {
+    "required": [
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_OWNER_CHAT_ID",
+      "OPENAI_API_KEY",
+      "OPENCLAW_GATEWAY_TOKEN"
+    ],
+    "optional": [
+      "BRAIN_API_URL",
+      "BRAIN_AGENT_KEY",
+      "ANTHROPIC_API_KEY"
+    ]
+  }
+}

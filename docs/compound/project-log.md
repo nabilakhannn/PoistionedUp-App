@@ -3972,3 +3972,270 @@ See full details: `docs/compound/patterns/slice-80-composer-qa-gate.md`
 - Only 5 of 8 agents get access (visual-designer, distributor, analytics excluded)
 
 See full details: `docs/compound/patterns/slice-81-notebooklm-activation.md`
+
+---
+
+## Slice 82 — API Reliability
+**Date:** 2026-02-28
+**Tests:** 1166 total | 0 TS errors
+
+### What was built
+- Fixed all OpenAI connection failures: root cause was `OPENAI_API_KEY` with trailing `\n` from `echo` pipe
+- Added 60s timeout + 5s connect timeout to OpenAI client; disabled SDK retries (max_retries=0)
+- Removed duplicate retry logic in brand_research; disabled run_all mode
+- Tuned retry constants: 2 retries, 8s max backoff
+- Friendly error messages for users (no raw exceptions exposed)
+- `/health/llm` diagnostic endpoint: tests OpenAI connectivity, sanitizes errors (never exposes keys)
+
+### Files: 7 modified
+- `worker/graph/llm.py` — timeout, retry, friendly error messages
+- `app/services/brand_research.py` — removed duplicate retry, disabled run_all
+- `app/routers/health.py` — new `/health/llm` endpoint
+- `app/main.py` — registered health router
+- `tests/test_slice82.py` — 7 new tests
+
+### Security: API keys never exposed in error output; /health/llm redacts keys from error chains
+
+See full details: `docs/compound/patterns/slice-82-api-reliability.md`
+
+---
+
+## Slice 83 — Bulk Ad Creative Engine
+**Date:** 2026-03-01
+**Tests:** 1174 total | 0 TS errors
+
+### What was built
+- `ad_creative.py` service: 5 hook types × 8 variations = 40 ads per run from brand research data
+- Hook types: pain / outcome / objection / social_proof / curiosity
+- Saves to `agent_deliverables` (status=review); stage endpoint creates draft `scheduled_items`
+- `/ad-creative` page: two-panel UI — left brand selector, right hook review with thumbs up/down
+- localStorage cache for generated results (session persist)
+
+### Files: 8 created/modified
+- `app/services/ad_creative.py` — new service (bulk generation + stage logic)
+- `app/routers/ad_creative.py` — new router (generate + stage endpoints)
+- `app/main.py` — registered ad_creative router
+- `apps/web/src/app/ad-creative/page.tsx` — new UI page
+- `apps/web/src/lib/api/ad-creative.ts` — new API client
+- `infra/supabase/migrations/028_ad_creative.sql` — agent_deliverables table additions
+- `tests/test_ad_creative.py` — 8 new tests
+
+See full details: `docs/compound/patterns/slice-83-bulk-ad-creative.md`
+
+---
+
+## Slice 87 — Starter Kit Export + Voice Note Input
+**Date:** 2026-03-02
+**Tests:** 1282 total (+21) | 21/21 slice tests pass | 0 TS errors
+
+### What we built
+Two capabilities in one slice: (1) exported PositionedUp's production agent system as a distributable
+starter kit (11 template files + 1 JSON config), and (2) added voice note input via Telegram —
+record a voice note to @Jumbohere_bot, Jumbo transcribes with Whisper and routes the intent to the
+content pipeline, knowledge library, or a direct answer.
+
+### Files changed
+| File | Change |
+|------|--------|
+| `starter-kit/README.md` | NEW — 5-step setup guide |
+| `starter-kit/user.md` | NEW — portable user profile template (closes last gap) |
+| `starter-kit/SOUL.md` | NEW — system constitution template |
+| `starter-kit/HEARTBEAT.md` | NEW — heartbeat execution protocol template |
+| `starter-kit/openclaw-template.json` | NEW — 5-agent runtime config template |
+| `starter-kit/architecture.md` | NEW — ASCII diagram + explanations |
+| `starter-kit/agents/*/SOUL.md` | NEW — 5 specialist agent templates (orchestrator/researcher/writer/qa-reviewer/publisher) |
+| `apps/api/app/services/voice_notes.py` | NEW — Telegram audio download + Whisper transcription |
+| `apps/api/app/routers/agent_bridge.py` | MODIFIED — added `POST /agent-api/voice/transcribe` |
+| `apps/api/app/config.py` | MODIFIED — added `telegram_bot_token` to Settings |
+| `agents/jumbo/SOUL.md` | MODIFIED — added user.md startup + voice note handling sections |
+| `apps/api/tests/test_slice87.py` | NEW — 21 tests |
+
+### Behavior change
+- **Voice notes:** Send a voice note to @Jumbohere_bot on Telegram. Jumbo transcribes it via Whisper
+  (existing API key), parses your intent, and either starts a content pipeline, saves to knowledge,
+  or answers from context. Reply confirms what it heard and what it's doing.
+- **user.md:** Jumbo now reads `user.md` on first Telegram contact — name, goals, brand voice,
+  platforms. Fill it in once; never re-introduce yourself to your agents.
+- **Starter kit:** 11 template files are ready to share. Production SOUL.md files generalized with
+  `[CUSTOMIZE]` markers. All structural patterns (trust boundaries, cost guardrails, heartbeat rules,
+  6-dim QA scoring) preserved.
+
+### Tests
+- `test_slice87.py`: 21/21 passed
+- Full suite: 1282 tests, 1254 pass, 28 fail (same 28 pre-existing Supabase-dependent tests)
+- TypeScript: 0 errors
+
+### Manual verification
+1. Check `starter-kit/` folder has 12+ files including `user.md` with all 5 sections filled
+2. `GET /agent-api/voice/transcribe` without auth → 422/503 (auth enforced)
+3. `agents/jumbo/SOUL.md` contains `## VOICE NOTE HANDLING` and `## STARTUP BEHAVIOR` sections
+
+### Risks + mitigations
+- `TELEGRAM_BOT_TOKEN` must be set in Vercel backend env (same value as on VPS) for voice notes to work — graceful 503 if missing
+- Starter kit templates contain `[CUSTOMIZE]` placeholders — ship instructions alongside them
+- Voice note → direct publish is blocked in Jumbo SOUL.md (must go through pipeline approval)
+
+---
+
+## Slice 86 — Auto-Publish Engine: Close the Last Gap
+**Date:** 2026-03-02
+**Tests:** 1261 total (+30) | 30/30 slice tests pass | 0 TS errors
+
+### What was built
+Closed the last-mile gap: content that was created, approved, and scheduled now actually gets posted live.
+
+**Publishing Service (`publishing.py`):**
+- `publish_item()` — loads item, finds connector, decrypts creds, routes to platform, updates DB
+- `run_due_posts()` — batch-publishes overdue scheduled items (LIMIT 50 safety cap)
+- Platform publishers: `_post_twitter()` (tweepy), `_post_webhook()` (HMAC-signed), `_post_instagram()` (two-step Graph API)
+- SSRF re-validated at publish time; all exceptions caught + returned safely (no credential leakage)
+
+**Twitter/X OAuth 1.0a upgrade:**
+- Bearer tokens are READ-ONLY on Twitter v2 API — updated connector to 4 OAuth fields
+- `api_key`, `api_secret`, `access_token`, `access_token_secret` (from developer.twitter.com)
+- `tweepy>=4.14.0` added to requirements
+
+**LinkedIn via Webhook (correct approach):**
+- li_at unofficial API violates ToS and expires every ~30 days
+- Connector renamed "LinkedIn (via Webhook)" — user pastes Make.com/Zapier webhook URL
+- Platform routing: `linkedin` → `_post_webhook()` using webhook connector
+
+**"Publish Now" button in Composer:**
+- Appears when draft is saved AND platform has active connector
+- Shows live post URL on success with "View live post" link
+
+**DB Migration 031:** `publish_error`, `publish_attempted_at` columns + partial index on due items
+
+### Files changed: 5 new, 7 modified
+**New:** `031_publishing.sql`, `publishing.py` service, `publishing.py` router, `publishing.ts` client, `test_slice86.py`
+**Modified:** `main.py`, `connectors.py` (Twitter shape), `settings/page.tsx`, `composer/page.tsx`, `requirements.txt`, `requirements-full.txt`, `test_slice85.py` (updated Twitter test)
+
+### New env vars: none (uses existing CONNECTOR_ENCRYPTION_KEY)
+### OWASP coverage: A01, A07, A10
+
+See full details: `docs/compound/patterns/slice-86-auto-publish-engine.md`
+
+---
+
+## Slice 85 — True Agent Autonomy: Tool Use, Playbooks, Ledger, Connectors
+**Date:** 2026-03-02
+**Tests:** 1231 total (+32) | 32/32 slice tests pass | 0 TS errors
+
+### What was built
+Transformed agents from one-shot LLM callers into truly autonomous, multi-step reasoning agents
+with four interlocking systems:
+
+**1. Anthropic Tool-Use Loop Engine (`tool_use_agents.py`)**
+- `run_tool_use_agent()` — Anthropic Messages API with `tools=[]`, MAX_TOOL_TURNS=6 safety cap
+- LLM routing: Claude Sonnet 4.6 for writing, Perplexity `sonar-pro` for web search, Gemini 2.0 Flash for research synthesis, GPT-4o-mini for QA
+- Perplexity API (primary): REST call to `api.perplexity.ai` → citations included; Tavily fallback
+- Gemini 2.0 Flash: REST call to Google AI API for multi-source synthesis
+- Secret redaction regex: strips Bearer tokens, sk-* keys, AQE* LinkedIn cookies, EAA* Instagram tokens from ALL ledger entries
+- Ledger + run writes wrapped in try/except — never block the main task
+
+**2. Agent Playbooks**
+- 8 default SOPs (one per agent) seeded via `POST /playbooks/seed`
+- Two-step edit: propose → apply (version increments on apply)
+- Mission Control UI: expand cards, read playbook markdown, propose edits, apply with badge
+- Agents read their own playbook via `read_playbook` tool before each task
+
+**3. Append-Only Ledger**
+- `agent_ledger` table: no UPDATE/DELETE RLS policy — immutable audit trail
+- `sdk_agent_runs` table: status, token counts, tool call counts, duration
+- Mission Control UI: summary bar, filter tabs, expandable run rows, per-entry action icons
+
+**4. Encrypted Connectors**
+- Fernet AES-128-CBC encryption for LinkedIn, Twitter/X, Instagram, Webhook credentials
+- `CONNECTOR_ENCRYPTION_KEY` validated at startup — app refuses to start without it
+- Webhook SSRF protection via `validate_url_for_fetch()` (blocks private IPs + DNS failures)
+- Mission Control Settings: 4 connector cards, password fields, Test button, Remove with confirm
+
+### Files changed: 15 new, 6 modified
+**New:**
+- `infra/supabase/migrations/030_claude_agent_sdk.sql` — 4 tables + RLS
+- `apps/api/app/services/tool_use_agents.py` — Anthropic tool-use loop engine
+- `apps/api/app/services/playbooks.py` — playbook CRUD + 8 default SOPs
+- `apps/api/app/services/connectors.py` — Fernet encrypt/decrypt + service test functions
+- `apps/api/app/routers/playbooks.py` — 5 endpoints
+- `apps/api/app/routers/ledger.py` — 4 read-only endpoints
+- `apps/api/app/routers/connectors.py` — 4 CRUD endpoints
+- `apps/web/src/app/mission-control/playbooks/page.tsx`
+- `apps/web/src/app/mission-control/ledger/page.tsx`
+- `apps/web/src/app/mission-control/settings/page.tsx`
+- `apps/web/src/lib/api/playbooks.ts`, `ledger.ts`, `connectors.ts`
+- `apps/api/tests/test_slice85.py` — 32 new tests
+
+**Modified:**
+- `sdk_agents.py` — added `use_tool_use` flag (backwards compatible, default False)
+- `main.py` — registered 3 new routers
+- `config.py` — added perplexity_api_key, gemini_api_key, connector_encryption_key
+- `constants.ts` — added Playbooks, Ledger, Settings to MC_SUB_NAV
+- `requirements.txt` + `requirements-full.txt` — added cryptography>=43.0.0
+
+### New env vars required
+- `PERPLEXITY_API_KEY` — Perplexity AI (sonar-pro)
+- `GEMINI_API_KEY` — Google Gemini (gemini-2.0-flash)
+- `CONNECTOR_ENCRYPTION_KEY` — Fernet key (generate: `python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`)
+
+### OWASP coverage: A01, A02, A03, A05, A07, A09, A10
+
+See full details: `docs/compound/patterns/slice-85-true-agent-autonomy.md`
+
+---
+
+## Slice 84 — Infrastructure Hardening Sprint
+**Date:** 2026-03-02
+**Tests:** 1199 total (+25) | 0 TS errors
+
+### What was built
+Closed 11 architectural gaps across security, performance, reliability, UX, and observability.
+
+**Security (OWASP):**
+- PostgREST injection fix: strict whitelist regex in agent_bridge inspo/search (A03)
+- CORS typo fix: "poistioned" → "positioned" in config.py (A05)
+- SSRF TOCTOU fix: DNS failure now blocks (not allows) in url_validation.py (A10)
+- Agent bridge: warning log for missing X-User-Id header (A01)
+
+**Reliability:**
+- Model fallback: OpenAI failure → auto-retry with Claude (gpt-4o → claude-sonnet-4-6, gpt-4o-mini → claude-haiku-4-5-20251001)
+- Quota enforcement: DailyTokenCapExceeded now surfaces as HTTP 429 (not 500)
+- Optimistic concurrency lock in brand_research.run_stage (prevents double-execution)
+- Correlation ID propagation via request_id in tracking context
+
+**Performance:**
+- ThreadPoolExecutor parallel execution in ad_creative.py (5 hook types in parallel, ~5x speedup)
+- ThreadPoolExecutor parallel execution in repurpose.py (parallel per platform)
+- Per-hook error surfacing: partial failures reported, not silently dropped
+
+**UX + Persistence:**
+- PATCH /approvals endpoint persists approval state to agent_deliverables DB
+- Frontend: localStorage TTL (24h with generated_at wrapper)
+- Frontend: debounced approval persistence (500ms) on every thumbs up/down toggle
+- Hook errors warning banner in ad-creative UI
+
+**SDK Agent Layer:**
+- sdk_agents.py: programmatic Python wrappers (run_copywriter_task, run_qa_task, run_research_synthesis_task)
+- Module-level LLM imports for testability; AgentResult dataclass
+
+### Files changed: 13 modified, 4 created
+**Modified:**
+- `app/config.py` — CORS typo fix
+- `app/utils/url_validation.py` — SSRF fix
+- `app/routers/agent_bridge.py` — injection fix + warning log
+- `app/main.py` — quota exception handlers (HTTP 429)
+- `worker/graph/llm.py` — model fallback, Claude pricing, correlation IDs
+- `app/services/ad_creative.py` — parallel execution, error surfacing, quota propagation
+- `app/services/repurpose.py` — parallel execution
+- `app/services/brand_research.py` — optimistic concurrency lock
+- `app/routers/ad_creative.py` — hook_errors field + PATCH /approvals endpoint
+- `apps/web/src/lib/api/ad-creative.ts` — hook_errors type + patchApprovals()
+- `apps/web/src/app/ad-creative/page.tsx` — TTL cache + approval persistence + error display
+
+**Created:**
+- `infra/supabase/migrations/029_slice84_hardening.sql` — approved_variation_ids columns + index
+- `app/services/sdk_agents.py` — SDK agent layer
+- `tests/test_slice84.py` — 25 new tests (security, reliability, performance, persistence, SDK)
+
+### OWASP coverage: A01, A03, A05, A07, A09, A10
+
+See full details: `docs/compound/patterns/slice-84-infrastructure-hardening.md`

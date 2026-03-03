@@ -49,6 +49,7 @@ class AdGenerateResponse(BaseModel):
     deliverable_id: str
     total_count: int
     variations_by_hook: dict
+    hook_errors: dict = {}
     brand_name: str
     niche: str
 
@@ -158,3 +159,54 @@ async def stage_ads(
         )
 
     return AdStageResponse(**result)
+
+
+# ── Approval Persistence ─────────────────────────────────────
+
+
+class AdApprovalRequest(BaseModel):
+    approved_ids: List[str] = Field(default_factory=list, description="Variation IDs the user has approved")
+    dismissed_ids: List[str] = Field(default_factory=list, description="Variation IDs the user has dismissed")
+
+
+@router.patch("/{brand_id}/ad-creative/{deliverable_id}/approvals")
+async def update_approvals(
+    brand_id: str,
+    deliverable_id: str,
+    body: AdApprovalRequest,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Persist approval/dismissal state for ad variations.
+
+    Called on every toggle so approval selections survive page reloads,
+    browser crashes, and cross-device access. Overwrites the full set each time
+    (client sends the complete current state, not a diff).
+    """
+    from app.deps import get_admin_client
+    from datetime import datetime, timezone
+
+    sb = get_admin_client()
+
+    # Verify deliverable ownership before update
+    check = (
+        sb.table("agent_deliverables")
+        .select("id")
+        .eq("id", deliverable_id)
+        .eq("user_id", user.id)
+        .limit(1)
+        .execute()
+    )
+    if not check.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deliverable not found")
+
+    sb.table("agent_deliverables").update({
+        "approved_variation_ids": body.approved_ids,
+        "dismissed_variation_ids": body.dismissed_ids,
+        "approvals_updated_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", deliverable_id).eq("user_id", user.id).execute()
+
+    return {
+        "ok": True,
+        "approved_count": len(body.approved_ids),
+        "dismissed_count": len(body.dismissed_ids),
+    }

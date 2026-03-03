@@ -15,7 +15,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
 from app.middleware import RateLimitMiddleware
-from app.routers import ad_creative, advisor, agent_bridge, brand, brands, collections, competitors, content_chat, experiments, gateway, goals, inspo, memory, mission_control, notifications, oauth, orchestrator, performance, picker, qa, repurpose, research, resources, schedule, strategist, training, usage, workflows
+from app.routers import ad_creative, advisor, agent_bridge, brand, brands, collections, competitors, connectors, content_chat, experiments, gateway, goals, inspo, ledger, memory, mission_control, notifications, oauth, orchestrator, performance, picker, playbooks, publishing, qa, repurpose, research, resources, schedule, strategist, training, usage, workflows
 
 
 # ── Structured JSON logging ──────────────────────────────
@@ -193,6 +193,10 @@ app.include_router(repurpose.router)
 app.include_router(competitors.router)
 app.include_router(qa.router)
 app.include_router(ad_creative.router)
+app.include_router(playbooks.router)
+app.include_router(ledger.router)
+app.include_router(connectors.router)
+app.include_router(publishing.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -288,9 +292,55 @@ async def llm_health_check():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Catch all unhandled exceptions and return structured error response."""
+    """Catch all unhandled exceptions and return structured error response.
+
+    Quota exceptions from the LLM layer are surfaced as HTTP 429 with a
+    user-friendly message. All other exceptions return HTTP 500.
+    """
     request_id = getattr(request.state, "request_id", "unknown")
-    
+
+    # ── Quota / budget exceptions → 429 Too Many Requests ────────────────
+    # Import lazily to avoid circular imports at startup.
+    try:
+        from worker.graph.llm import DailyTokenCapExceeded, WorkflowBudgetExceeded
+        if isinstance(exc, DailyTokenCapExceeded):
+            logger.warning(
+                "Daily token cap exceeded for request %s %s",
+                request.method, request.url.path,
+                extra={"request_id": request_id},
+            )
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "type": "error",
+                    "error": {
+                        "type": "quota_exceeded",
+                        "message": str(exc),
+                    },
+                    "request_id": request_id,
+                },
+            )
+        if isinstance(exc, WorkflowBudgetExceeded):
+            logger.warning(
+                "Workflow budget exceeded for request %s %s",
+                request.method, request.url.path,
+                extra={"request_id": request_id},
+            )
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "type": "error",
+                    "error": {
+                        "type": "workflow_budget_exceeded",
+                        "message": "This workflow has exceeded its token budget. Start a new workflow.",
+                    },
+                    "request_id": request_id,
+                },
+            )
+    except ImportError:
+        pass
+
+    # ── Generic unhandled exception → 500 ────────────────────────────────
     logger.error(
         "Unhandled exception in %s %s: %s",
         request.method,
@@ -299,7 +349,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         exc_info=exc,
         extra={"request_id": request_id},
     )
-    
+
     return JSONResponse(
         status_code=500,
         content={

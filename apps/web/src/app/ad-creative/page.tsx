@@ -1,11 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useBrand } from "@/lib/brand-context";
 import { personalBrandsApi } from "@/lib/api/brand";
 import { adCreativeApi, HOOK_TYPES, AD_PLATFORMS } from "@/lib/api/ad-creative";
 import type { AdVariation, AdGenerateResponse } from "@/lib/api/ad-creative";
 import type { BrandResearchSession } from "@/lib/api/brand";
+
+// ── Cache helpers (24-hour TTL) ───────────────────────────────────────────
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+interface CachedResult {
+  data: AdGenerateResponse;
+  generated_at: number; // epoch ms
+}
+
+function saveToCache(brandId: string, data: AdGenerateResponse) {
+  try {
+    const wrapper: CachedResult = { data, generated_at: Date.now() };
+    localStorage.setItem(`ad_results_${brandId}`, JSON.stringify(wrapper));
+  } catch { /* ignore quota exceeded */ }
+}
+
+function loadFromCache(brandId: string): AdGenerateResponse | null {
+  try {
+    const raw = localStorage.getItem(`ad_results_${brandId}`);
+    if (!raw) return null;
+    const wrapper = JSON.parse(raw) as CachedResult;
+    // Expire after 24 hours
+    if (Date.now() - wrapper.generated_at > CACHE_TTL_MS) {
+      localStorage.removeItem(`ad_results_${brandId}`);
+      return null;
+    }
+    return wrapper.data;
+  } catch {
+    return null;
+  }
+}
 
 // ── Icons ─────────────────────────────────────────────────
 
@@ -220,12 +251,32 @@ export default function AdCreativePage() {
   const [staging, setStaging] = useState(false);
   const [stageSuccess, setStageSuccess] = useState("");
 
-  // Load research sessions when brand changes
+  // Debounce ref for approval persistence
+  const approvalDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load research sessions + restore cached results when brand changes
   useEffect(() => {
     if (!brandId) {
       setSessions([]);
       setSelectedSession("");
+      setResult(null);
+      setApprovedIds(new Set());
+      setDismissedIds(new Set());
+      setStageSuccess("");
       return;
+    }
+
+    // Restore cached results for this brand (with 24-hour TTL)
+    const cached = loadFromCache(brandId);
+    if (cached) {
+      setResult(cached);
+      // Restore persisted approvals from the deliverable's approved_variation_ids
+      // (loaded separately if available; reset to empty for now — backend is source of truth)
+      setApprovedIds(new Set());
+      setDismissedIds(new Set());
+      setStageSuccess("");
+    } else {
+      setResult(null);
     }
 
     setLoadingSessions(true);
@@ -252,6 +303,21 @@ export default function AdCreativePage() {
     );
   };
 
+  // Debounced approval persistence — fire 500ms after the last toggle
+  const persistApprovals = useCallback(
+    (nextApproved: Set<string>, nextDismissed: Set<string>) => {
+      if (!brandId || !result?.deliverable_id) return;
+      if (approvalDebounceRef.current) clearTimeout(approvalDebounceRef.current);
+      approvalDebounceRef.current = setTimeout(() => {
+        adCreativeApi.patchApprovals(brandId, result.deliverable_id, {
+          approved_ids: Array.from(nextApproved),
+          dismissed_ids: Array.from(nextDismissed),
+        }).catch(() => { /* silent — UI state is source of truth during session */ });
+      }, 500);
+    },
+    [brandId, result]
+  );
+
   const handleApprove = (id: string) => {
     setApprovedIds(prev => {
       const next = new Set(prev);
@@ -259,9 +325,12 @@ export default function AdCreativePage() {
         next.delete(id);
       } else {
         next.add(id);
-        // Un-dismiss if previously dismissed
         setDismissedIds(d => { const nd = new Set(d); nd.delete(id); return nd; });
       }
+      // Persist after state update via microtask
+      setTimeout(() => {
+        setDismissedIds(d => { persistApprovals(next, d); return d; });
+      }, 0);
       return next;
     });
   };
@@ -273,9 +342,11 @@ export default function AdCreativePage() {
         next.delete(id);
       } else {
         next.add(id);
-        // Un-approve if previously approved
         setApprovedIds(a => { const na = new Set(a); na.delete(id); return na; });
       }
+      setTimeout(() => {
+        setApprovedIds(a => { persistApprovals(a, next); return a; });
+      }, 0);
       return next;
     });
   };
@@ -298,6 +369,8 @@ export default function AdCreativePage() {
         count_per_hook: countPerHook,
       });
       setResult(data);
+      // Persist with 24-hour TTL so results survive navigation
+      saveToCache(brandId, data);
     } catch (err: any) {
       setError(err.message || "Generation failed. Please try again.");
     } finally {
@@ -463,7 +536,7 @@ export default function AdCreativePage() {
           </button>
           {generating && (
             <p className="text-xs text-muted-foreground text-center mt-2">
-              ~20–40s · {selectedHookTypes.length} LLM calls
+              ~8–15s · {selectedHookTypes.length} parallel LLM calls
             </p>
           )}
         </div>
@@ -527,6 +600,18 @@ export default function AdCreativePage() {
           {/* Results */}
           {result && !generating && (
             <div className="space-y-5">
+              {/* Partial failure warning — shown when some hooks failed */}
+              {result.hook_errors && Object.keys(result.hook_errors).length > 0 && (
+                <div className="p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+                  <span className="font-medium">Partial results:</span>{" "}
+                  {Object.entries(result.hook_errors as Record<string, string>).map(([ht, err]) => (
+                    <span key={ht} className="mr-3">
+                      <span className="capitalize">{ht.replace("_", " ")}</span> failed ({err.slice(0, 60)})
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {/* Summary header */}
               <div className="flex items-center justify-between">
                 <div>
@@ -534,7 +619,7 @@ export default function AdCreativePage() {
                     {totalVariations} Variations Generated
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {result.brand_name} · {result.niche} · Approve variations to stage them
+                    {result.brand_name} · {result.niche} · Thumbs up to approve, then stage to Composer
                   </p>
                 </div>
                 <button
@@ -544,6 +629,28 @@ export default function AdCreativePage() {
                   Regenerate
                 </button>
               </div>
+
+              {/* Stage CTA — shown prominently once approvals exist */}
+              {approvedCount > 0 && !stageSuccess && (
+                <div className="flex items-center justify-between p-4 rounded-xl border border-primary/40 bg-primary/5">
+                  <div className="flex items-center gap-2 text-sm text-card-foreground">
+                    <span className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {approvedCount}
+                    </span>
+                    <span>
+                      {approvedCount === 1 ? "1 variation approved" : `${approvedCount} variations approved`}
+                      {" "}— ready to send to Composer
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleStage}
+                    disabled={staging}
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex-shrink-0 ml-4"
+                  >
+                    {staging ? "Staging..." : "Stage → Composer"}
+                  </button>
+                </div>
+              )}
 
               {/* Hook sections */}
               {HOOK_TYPES.filter(h => result.variations_by_hook[h.value]?.length > 0).map(hook => (

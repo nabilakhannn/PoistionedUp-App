@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 from app.deps import get_admin_client
@@ -202,6 +203,10 @@ def _call_llm_for_hook(
             v["hook_type"] = hook_type
         return variations
     except Exception as e:
+        # Quota / budget exceptions must propagate — never swallow them silently.
+        from worker.graph.llm import DailyTokenCapExceeded, WorkflowBudgetExceeded
+        if isinstance(e, (DailyTokenCapExceeded, WorkflowBudgetExceeded)):
+            raise
         logger.warning("LLM call failed for hook_type=%s: %s", hook_type, e)
         return []
 
@@ -277,18 +282,39 @@ def generate_bulk_ads(
     brand_name = context["name"] or brand.get("name", "Brand")
     niche = context["niche"] or "professionals"
 
-    # Generate variations per hook type
+    # ── Parallel generation (one thread per hook type) ────────────────────
+    # Each hook type is independent — no data dependencies between them.
+    # ThreadPoolExecutor is safe for I/O-bound LLM calls without async refactor.
     variations_by_hook: Dict[str, List[Dict[str, Any]]] = {}
-    all_variations: List[Dict[str, Any]] = []
+    hook_errors: Dict[str, str] = {}
 
-    for hook_type in hook_types:
+    def _generate_hook(hook_type: str):
         logger.info("Generating %s variations for hook_type=%s", count_per_hook, hook_type)
-        variations = _call_llm_for_hook(hook_type, context, platforms, count_per_hook)
-        # Re-index IDs to be unique and consistent
-        for i, v in enumerate(variations, start=1):
-            v["id"] = f"{hook_type}_{i}"
-        variations_by_hook[hook_type] = variations
-        all_variations.extend(variations)
+        return hook_type, _call_llm_for_hook(hook_type, context, platforms, count_per_hook)
+
+    max_workers = min(len(hook_types), 5)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_generate_hook, ht): ht for ht in hook_types}
+        for future in as_completed(futures):
+            hook_type = futures[future]
+            try:
+                _, variations = future.result()
+                for i, v in enumerate(variations, start=1):
+                    v["id"] = f"{hook_type}_{i}"
+                variations_by_hook[hook_type] = variations
+            except Exception as exc:
+                # Quota exceptions re-raised immediately; other failures → partial result
+                from worker.graph.llm import DailyTokenCapExceeded, WorkflowBudgetExceeded
+                if isinstance(exc, (DailyTokenCapExceeded, WorkflowBudgetExceeded)):
+                    raise
+                logger.warning("Hook %s failed: %s", hook_type, exc)
+                hook_errors[hook_type] = str(exc)
+                variations_by_hook[hook_type] = []
+
+    # Preserve original hook order in the flattened list
+    all_variations: List[Dict[str, Any]] = []
+    for ht in hook_types:
+        all_variations.extend(variations_by_hook.get(ht, []))
 
     total_count = len(all_variations)
 
@@ -297,6 +323,7 @@ def generate_bulk_ads(
     deliverable_content = {
         "variations_by_hook": variations_by_hook,
         "all_variations": all_variations,
+        "hook_errors": hook_errors,  # Empty dict when all hooks succeeded
         "context": {
             "brand_name": brand_name,
             "niche": niche,
@@ -327,6 +354,7 @@ def generate_bulk_ads(
         "deliverable_id": deliverable_id,
         "total_count": total_count,
         "variations_by_hook": variations_by_hook,
+        "hook_errors": hook_errors,
         "brand_name": brand_name,
         "niche": niche,
     }

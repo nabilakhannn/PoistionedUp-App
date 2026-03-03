@@ -468,6 +468,17 @@ def run_stage(session_id: str, user_id: str) -> Dict[str, Any]:
     if session["status"] == "completed":
         raise ValueError("Research session already completed")
 
+    # ── Optimistic concurrency lock ───────────────────────────────────────
+    # If another request is already running this session, skip execution instead
+    # of double-running a stage. This prevents race conditions when the client
+    # polls aggressively or retries mid-flight.
+    if session["status"] == "running":
+        logger.info(
+            "Research session %s is already running stage '%s' — skipping concurrent execution",
+            session_id, session.get("current_stage", "unknown"),
+        )
+        return session
+
     if session["status"] == "failed":
         # Allow retry — reset to running so the failed stage can re-run
         _update_session(session_id, user_id, {
