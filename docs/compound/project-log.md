@@ -4471,3 +4471,28 @@ See full details: `docs/compound/patterns/slice-92c-marketing-calendar.md`
 | `apps/api/tests/test_slice92d_ux_fixes.py` | NEW — 8 tests |
 
 See full details: `docs/compound/patterns/slice-92d-ux-fixes.md`
+
+## Slice 93 — Landing Page Generator (AI Studio Mode)
+
+**Date:** 2026-03-03
+**Tests:** 12/12 new | 1398/1398 total
+**TS errors:** 0
+
+**What:** AI landing page generator in the Marketing room. Two-phase pipeline: (1) Claude Haiku blueprints the page structure (sections, headline directions, CTAs, tone, color hint) — near-free. (2) Claude Sonnet 4.6 writes full self-contained HTML + Tailwind CDN + brand colors injected. Optional inspiration URL: Perplexity analyzes and clones the structure in the user's branding/ICP (SSRF-validated). "Find Best Free Tools" returns a live Perplexity comparison table. Sandboxed iframe preview + one-click .html download via Blob.
+
+**Agent updates:** Content X-Ray SOP (research synthesis protocol) saved to trend-analyzer SOUL.md. Lead gen at scale context saved to Jumbo SOUL.md.
+
+| File | Change |
+|------|--------|
+| `apps/api/app/services/landing_page.py` | NEW — two-phase generation service |
+| `apps/api/app/routers/landing_page.py` | NEW — 4 endpoints |
+| `apps/api/app/main.py` | Register landing_page router |
+| `infra/supabase/migrations/035_landing_page.sql` | NEW — table + RLS |
+| `apps/web/src/lib/api/landing-page.ts` | NEW — TS API client |
+| `apps/web/src/components/landing-page-studio.tsx` | NEW — main UI |
+| `apps/web/src/app/marketing/page.tsx` | Landing Pages added as 7th sidebar section |
+| `agents/trend-analyzer/SOUL.md` | Content X-Ray SOP |
+| `agents/jumbo/SOUL.md` | Lead gen strategic context |
+| `apps/api/tests/test_slice93_landing_page.py` | NEW — 12 tests |
+
+See full details: `docs/compound/patterns/slice-93-landing-page-generator.md`
