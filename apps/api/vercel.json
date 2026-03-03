@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/cron/publish",
+      "schedule": "0 * * * *"
+    }
+  ],
   "builds": [
     {
       "src": "api/index.py",

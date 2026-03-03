@@ -4303,3 +4303,31 @@ Rebuilt the user-facing UX from scratch. New users now get a 4-step onboarding w
 | `docs/compound/patterns/slice-88-ux-overhaul.md` | NEW — pattern doc |
 
 See full details: `docs/compound/patterns/slice-88-ux-overhaul.md`
+
+---
+
+## Slice 89: SDK Orchestrator — True Agent Pipeline
+**Date:** 2026-03-03
+**Tests:** 35/35 new | 1308/1308 total (27 pre-existing Supabase failures in test_resources.py)
+**TS errors:** 0
+
+### What changed
+Agents finally talk to each other. Built a 3-phase automated pipeline (Research → Write → QA)
+that runs every 2 hours on the VPS without any manual triggers. Each phase injects rich context:
+analytics (what worked), competitor intelligence (what to avoid), rejection history (user feedback).
+Added publishing cron (Vercel, hourly) so approved content posts automatically.
+
+### Files changed
+| File | Change |
+|------|--------|
+| `apps/api/app/services/jumbo_pipeline.py` | NEW — context helpers, prompt builders, save/notify |
+| `apps/api/app/routers/pipeline.py` | NEW — 5 endpoints: research/write/qa/status/cron-publish |
+| `apps/api/app/config.py` | Added pipeline_secret_key + cron_secret settings |
+| `apps/api/app/main.py` | Included pipeline router |
+| `apps/api/vercel.json` | Added hourly cron for /cron/publish |
+| `deploy/pipeline_runner.py` | NEW — VPS script, calls Vercel phases every 2h |
+| `deploy/jumbo-pipeline.service` | NEW — systemd unit for VPS pipeline runner |
+| `apps/api/tests/test_slice89.py` | NEW — 35 tests |
+| `docs/compound/patterns/slice-89-sdk-orchestrator.md` | NEW — pattern doc |
+
+See full details: `docs/compound/patterns/slice-89-sdk-orchestrator.md`

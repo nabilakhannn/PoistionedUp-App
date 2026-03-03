@@ -1,0 +1,31 @@
+[Unit]
+Description=Jumbo Pipeline Orchestrator — PositionedUp SDK Agent
+Documentation=https://github.com/positionedup/positionedup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+
+# Load env vars from the same .env file OpenClaw uses
+EnvironmentFile=/root/.openclaw/.env
+
+# Run the pipeline runner script
+# Assumes the workspace is cloned at /home/openclaw/.openclaw/workspace/
+ExecStart=/usr/bin/python3 /home/openclaw/.openclaw/workspace/deploy/pipeline_runner.py
+
+# Restart on failure with backoff
+Restart=on-failure
+RestartSec=30s
+
+# Log to journald (accessible via: journalctl -u jumbo-pipeline -f)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jumbo-pipeline
+
+# Safety limits
+TimeoutStopSec=10s
+
+[Install]
+WantedBy=multi-user.target

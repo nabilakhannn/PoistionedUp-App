@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     # Agent Bridge (OpenClaw agents calling into PositionedUp)
     agent_api_key: str = ""  # Set a strong random key for agent-to-API auth
 
+    # Pipeline (Slice 89 — SDK orchestrator)
+    pipeline_secret_key: str = ""  # Shared secret between VPS pipeline runner and Vercel API
+    cron_secret: str = ""  # Vercel CRON_SECRET — auto-injected by Vercel for cron auth
+
     # Telegram (Slice 87 — voice note transcription)
     telegram_bot_token: str = ""  # Same token as in openclaw.json TELEGRAM_BOT_TOKEN
 
