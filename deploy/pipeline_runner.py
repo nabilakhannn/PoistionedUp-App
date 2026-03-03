@@ -177,14 +177,14 @@ def run_pipeline_for_brand(user_id: str, brand_id: str, brand_name: str = "") ->
 
 
 def get_active_brands() -> list:
-    """Fetch all active brands + user IDs from the Vercel API.
+    """Fetch all active brands + user IDs from the pipeline brands endpoint.
 
     Returns list of {"user_id": str, "brand_id": str, "name": str}.
     Falls back to empty list on error.
     """
     try:
         resp = httpx.get(
-            f"{VERCEL_URL}/brands",
+            f"{VERCEL_URL}/orchestrator/pipeline/brands",
             headers=HEADERS,
             timeout=15.0,
         )
@@ -192,10 +192,10 @@ def get_active_brands() -> list:
         data = resp.json()
 
         brands = []
-        for b in (data if isinstance(data, list) else data.get("brands", [])):
-            if b.get("id") and b.get("user_id"):
+        for b in data.get("brands", []):
+            if b.get("brand_id") and b.get("user_id"):
                 brands.append({
-                    "brand_id": b["id"],
+                    "brand_id": b["brand_id"],
                     "user_id": b["user_id"],
                     "name": b.get("name", ""),
                 })

@@ -342,6 +342,36 @@ async def pipeline_status(_key: None = Depends(_require_pipeline_key)):
         return {"runs": [], "error": "Could not load status"}
 
 
+# ── Active brands (for VPS pipeline runner) ───────────────────────────────
+
+
+@router.get("/orchestrator/pipeline/brands")
+async def pipeline_brands(_key: None = Depends(_require_pipeline_key)):
+    """Return all active brands with user_id for the VPS pipeline runner.
+
+    Authenticated with X-Pipeline-Key (server-to-server only).
+    Returns list of {brand_id, user_id, name} for every active personal brand.
+    """
+    try:
+        sb = get_admin_client()
+        result = (
+            sb.table("personal_brands")
+            .select("id, name, user_id")
+            .eq("is_active", True)
+            .order("created_at", desc=False)
+            .execute()
+        )
+        brands = [
+            {"brand_id": row["id"], "user_id": row["user_id"], "name": row.get("name", "")}
+            for row in (result.data or [])
+            if row.get("id") and row.get("user_id")
+        ]
+        return {"brands": brands}
+    except Exception as exc:
+        logger.warning("pipeline_brands query failed: %s", exc)
+        return {"brands": [], "error": "Could not load brands"}
+
+
 # ── Publishing cron ───────────────────────────────────────────────────────
 
 
