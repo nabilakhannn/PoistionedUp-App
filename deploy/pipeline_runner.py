@@ -206,6 +206,26 @@ def get_active_brands() -> list:
         return []
 
 
+def run_publish() -> None:
+    """Call /cron/publish to post any approved scheduled content."""
+    try:
+        resp = httpx.post(
+            f"{VERCEL_URL}/cron/publish",
+            headers=HEADERS,
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        logger.info(
+            "Publish run — published=%d errors=%d users=%d",
+            data.get("published", 0),
+            data.get("errors", 0),
+            data.get("users_processed", 0),
+        )
+    except Exception as exc:
+        logger.error("run_publish failed: %s", exc)
+
+
 def run_all_brands() -> None:
     """Run the pipeline for every active brand. Called by APScheduler."""
     started_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -214,28 +234,30 @@ def run_all_brands() -> None:
     brands = get_active_brands()
     if not brands:
         logger.warning("No active brands found — nothing to process")
-        return
+    else:
+        logger.info("Processing %d brand(s)", len(brands))
+        successes = 0
+        failures = 0
 
-    logger.info("Processing %d brand(s)", len(brands))
-    successes = 0
-    failures = 0
+        for b in brands:
+            ok = run_pipeline_for_brand(
+                user_id=b["user_id"],
+                brand_id=b["brand_id"],
+                brand_name=b.get("name", ""),
+            )
+            if ok:
+                successes += 1
+            else:
+                failures += 1
 
-    for b in brands:
-        ok = run_pipeline_for_brand(
-            user_id=b["user_id"],
-            brand_id=b["brand_id"],
-            brand_name=b.get("name", ""),
+        logger.info(
+            "=== Pipeline run complete — %d success, %d failed ===",
+            successes,
+            failures,
         )
-        if ok:
-            successes += 1
-        else:
-            failures += 1
 
-    logger.info(
-        "=== Pipeline run complete — %d success, %d failed ===",
-        successes,
-        failures,
-    )
+    # Always publish after pipeline (posts any approved scheduled content)
+    run_publish()
 
 
 # ── Main loop ─────────────────────────────────────────────────────────────

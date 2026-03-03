@@ -74,22 +74,32 @@ def _require_pipeline_key(
 
 def _require_cron_auth(
     authorization: Optional[str] = Header(None),
+    x_pipeline_key: Optional[str] = Header(None, alias="X-Pipeline-Key"),
 ) -> None:
-    """Validate Vercel cron Authorization: Bearer <CRON_SECRET>.
+    """Accept either Vercel CRON_SECRET or the pipeline key.
 
-    In local dev (no VERCEL env var), auth is skipped so tests can call the endpoint.
+    - Vercel cron sends: Authorization: Bearer <CRON_SECRET>
+    - VPS runner sends:  X-Pipeline-Key: <PIPELINE_SECRET_KEY>
+    In local dev (no secrets configured), auth is skipped.
     """
-    if not settings.cron_secret:
-        if os.environ.get("VERCEL") == "1":
-            raise HTTPException(503, "CRON_SECRET not configured on Vercel")
-        return  # Allow in local dev / test
+    # Accept pipeline key (VPS runner calling after each run)
+    if x_pipeline_key and settings.pipeline_secret_key:
+        if hmac.compare_digest(x_pipeline_key, settings.pipeline_secret_key):
+            return
 
-    if not authorization:
-        raise HTTPException(401, "Missing Authorization header for cron")
-
-    expected = f"Bearer {settings.cron_secret}"
-    if not hmac.compare_digest(authorization, expected):
+    # Accept Vercel cron secret
+    if settings.cron_secret:
+        if not authorization:
+            raise HTTPException(401, "Missing auth for cron endpoint")
+        expected = f"Bearer {settings.cron_secret}"
+        if hmac.compare_digest(authorization, expected):
+            return
         raise HTTPException(401, "Invalid cron secret")
+
+    # Local dev — allow without auth
+    if os.environ.get("VERCEL") == "1":
+        raise HTTPException(503, "No cron auth configured on Vercel")
+    return
 
 
 def _validate_ids(brand_id: str, user_id: str) -> None:
