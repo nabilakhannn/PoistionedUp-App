@@ -58,32 +58,45 @@ function StatusBar({
   pipelineSettings,
   usage,
   onRunNow,
+  onToggle,
   running,
+  toggling,
+  runError,
 }: {
   pipelineSettings: PipelineSettings | null;
   usage: UsageSummary | null;
   onRunNow: () => void;
+  onToggle: () => void;
   running: boolean;
+  toggling: boolean;
+  runError: string | null;
 }) {
   const monthlyBudget = 20;
   const monthlySpend = usage?.period_costs?.monthly ?? 0;
   const budgetPct = monthlyBudget > 0 ? Math.min(100, (monthlySpend / monthlyBudget) * 100) : 0;
+  const enabled = pipelineSettings?.enabled ?? false;
 
   return (
-    <div className="rounded-xl border border-border bg-card/50 px-4 py-3">
+    <div className="rounded-xl border border-border bg-card/50 px-4 py-3 space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1.5">
+          {/* Clickable toggle */}
+          <button
+            onClick={onToggle}
+            disabled={toggling || pipelineSettings === null}
+            className="flex items-center gap-1.5 group"
+            title={enabled ? "Click to turn pipeline OFF" : "Click to turn pipeline ON"}
+          >
             <span
-              className={`w-2 h-2 rounded-full ${
-                pipelineSettings?.enabled ? "bg-green-400 animate-pulse" : "bg-zinc-400"
-              }`}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                enabled ? "bg-green-400 animate-pulse" : "bg-zinc-400"
+              } group-hover:opacity-70`}
             />
-            <span className="text-xs font-medium text-foreground">
-              Pipeline: {pipelineSettings?.enabled ? "ON" : "OFF"}
+            <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+              Pipeline: {toggling ? "..." : enabled ? "ON" : "OFF"}
             </span>
-          </div>
-          {pipelineSettings?.enabled && pipelineSettings.next_run_at && (
+          </button>
+          {enabled && pipelineSettings?.next_run_at && (
             <span className="text-xs text-muted-foreground">
               · Next run in {timeUntil(pipelineSettings.next_run_at)}
             </span>
@@ -118,6 +131,11 @@ function StatusBar({
           </Link>
         </div>
       </div>
+
+      {/* Error feedback */}
+      {runError && (
+        <p className="text-xs text-red-400 border-t border-border/50 pt-2">{runError}</p>
+      )}
     </div>
   );
 }
@@ -173,6 +191,8 @@ export default function MissionControlHome() {
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [runningNow, setRunningNow] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
@@ -247,13 +267,29 @@ export default function MissionControlHome() {
 
   const handleRunNow = async () => {
     setRunningNow(true);
+    setRunError(null);
     try {
       await pipelineSettingsApi.runNow();
       await loadAll();
     } catch {
-      // silent
+      setRunError("Could not trigger pipeline — check your connection and try again.");
+      setTimeout(() => setRunError(null), 6000);
     } finally {
       setRunningNow(false);
+    }
+  };
+
+  const handleToggle = async () => {
+    if (!pipelineSettings) return;
+    setToggling(true);
+    try {
+      await pipelineSettingsApi.update({ enabled: !pipelineSettings.enabled });
+      await loadAll();
+    } catch {
+      setRunError("Could not update pipeline — check your connection and try again.");
+      setTimeout(() => setRunError(null), 6000);
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -300,7 +336,10 @@ export default function MissionControlHome() {
           pipelineSettings={pipelineSettings}
           usage={usage}
           onRunNow={handleRunNow}
+          onToggle={handleToggle}
           running={runningNow}
+          toggling={toggling}
+          runError={runError}
         />
 
         {/* ── CONTENT PIPELINE FUNNEL ────────────────── */}
