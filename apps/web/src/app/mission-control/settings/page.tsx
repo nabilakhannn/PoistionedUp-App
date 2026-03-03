@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { connectorsApi, Connector, ConnectorService } from "@/lib/api/connectors";
+import { pipelineSettingsApi, PipelineSettings } from "@/lib/api/pipeline-settings";
 import { MC_SUB_NAV } from "../constants";
 
 interface ConnectorConfig {
@@ -108,6 +109,7 @@ const STATUS_BADGE: Record<string, { label: string; color: string; dot: string }
 
 const SETTINGS_TABS = [
   { key: "connectors", label: "Connectors" },
+  { key: "pipeline", label: "Pipeline" },
   { key: "playbooks", label: "Playbooks", href: "/mission-control/playbooks" },
   { key: "history", label: "History", href: "/mission-control/ledger" },
   { key: "system", label: "System", href: "/mission-control/gateway" },
@@ -115,10 +117,25 @@ const SETTINGS_TABS = [
 
 type SettingsTab = typeof SETTINGS_TABS[number]["key"];
 
+const INTERVAL_OPTIONS = [
+  { value: 6, label: "Every 6 hours" },
+  { value: 12, label: "Every 12 hours" },
+  { value: 24, label: "Once a day (recommended)" },
+  { value: 48, label: "Every 2 days" },
+  { value: 168, label: "Once a week" },
+];
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("connectors");
   const [connectors, setConnectors] = useState<Connector[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Pipeline settings state
+  const [pipelineSettings, setPipelineSettings] = useState<PipelineSettings | null>(null);
+  const [pipelineLoading, setPipelineLoading] = useState(false);
+  const [pipelineSaving, setPipelineSaving] = useState(false);
+  const [runningNow, setRunningNow] = useState(false);
+  const [pipelineMsg, setPipelineMsg] = useState("");
   const [connecting, setConnecting] = useState<ConnectorService | null>(null);
   const [formValues, setFormValues] = useState<Record<string, Record<string, string>>>({});
   const [testing, setTesting] = useState<ConnectorService | null>(null);
@@ -141,6 +158,51 @@ export default function SettingsPage() {
   useEffect(() => {
     loadConnectors();
   }, [loadConnectors]);
+
+  const loadPipelineSettings = useCallback(async () => {
+    setPipelineLoading(true);
+    try {
+      const data = await pipelineSettingsApi.get();
+      setPipelineSettings(data);
+    } catch {
+      console.error("Failed to load pipeline settings");
+    } finally {
+      setPipelineLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "pipeline") loadPipelineSettings();
+  }, [activeTab, loadPipelineSettings]);
+
+  const handlePipelineUpdate = async (updates: { enabled?: boolean; interval_hours?: number }) => {
+    setPipelineSaving(true);
+    setPipelineMsg("");
+    try {
+      const data = await pipelineSettingsApi.update(updates);
+      setPipelineSettings(data);
+      setPipelineMsg("Saved.");
+      setTimeout(() => setPipelineMsg(""), 2000);
+    } catch {
+      setPipelineMsg("Failed to save.");
+    } finally {
+      setPipelineSaving(false);
+    }
+  };
+
+  const handleRunNow = async () => {
+    setRunningNow(true);
+    setPipelineMsg("");
+    try {
+      await pipelineSettingsApi.runNow();
+      setPipelineMsg("Run requested — Jumbo will start within 60 seconds.");
+      await loadPipelineSettings();
+    } catch {
+      setPipelineMsg("Failed to trigger run.");
+    } finally {
+      setRunningNow(false);
+    }
+  };
 
   const getConnector = (service: ConnectorService) =>
     connectors.find((c) => c.service === service);
@@ -226,13 +288,13 @@ export default function SettingsPage() {
         {/* Settings sub-tabs */}
         <div className="flex items-center gap-1 border-b border-border pb-0 -mb-2">
           {SETTINGS_TABS.map((tab) => (
-            tab.key === "connectors" ? (
+            tab.key === "connectors" || tab.key === "pipeline" ? (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab("connectors")}
+                onClick={() => setActiveTab(tab.key as SettingsTab)}
                 data-settings-tab={tab.label}
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
-                  activeTab === "connectors"
+                  activeTab === tab.key
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
@@ -251,6 +313,102 @@ export default function SettingsPage() {
             )
           ))}
         </div>
+
+      {activeTab === "pipeline" && (
+        <div className="space-y-4 max-w-xl">
+          <div className="rounded-lg border border-border bg-card p-5 space-y-5">
+            <div>
+              <h2 className="font-semibold text-sm">Automated Pipeline</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Jumbo researches, writes, and QA-reviews a post on your schedule.
+                Posts land in your Home Inbox for approval before anything goes live.
+              </p>
+            </div>
+
+            {pipelineLoading ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : pipelineSettings ? (
+              <>
+                {/* Enable toggle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium">Pipeline active</div>
+                    <div className="text-xs text-muted-foreground">Turn off to pause all automatic runs</div>
+                  </div>
+                  <button
+                    onClick={() => handlePipelineUpdate({ enabled: !pipelineSettings.enabled })}
+                    disabled={pipelineSaving}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${
+                      pipelineSettings.enabled ? "bg-primary" : "bg-muted"
+                    }`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                      pipelineSettings.enabled ? "left-6" : "left-1"
+                    }`} />
+                  </button>
+                </div>
+
+                {/* Frequency */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">How often should Jumbo run?</label>
+                  <select
+                    value={pipelineSettings.interval_hours}
+                    onChange={(e) => handlePipelineUpdate({ interval_hours: Number(e.target.value) })}
+                    disabled={pipelineSaving || !pipelineSettings.enabled}
+                    className="w-full bg-muted/30 border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  >
+                    {INTERVAL_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Last / next run */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-muted/30 border border-border px-3 py-2.5">
+                    <div className="text-xs text-muted-foreground">Last run</div>
+                    <div className="text-sm font-medium mt-0.5">
+                      {pipelineSettings.last_run_at
+                        ? new Date(pipelineSettings.last_run_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                        : "Never"}
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-muted/30 border border-border px-3 py-2.5">
+                    <div className="text-xs text-muted-foreground">Next run</div>
+                    <div className="text-sm font-medium mt-0.5">
+                      {pipelineSettings.next_run_at && pipelineSettings.enabled
+                        ? new Date(pipelineSettings.next_run_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                        : "Paused"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Run now */}
+                <div className="border-t border-border pt-4">
+                  <button
+                    onClick={handleRunNow}
+                    disabled={runningNow || pipelineSettings.run_now}
+                    className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-90 transition"
+                  >
+                    {runningNow ? "Requesting..." : pipelineSettings.run_now ? "Run queued — starting soon..." : "Run Now"}
+                  </button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Jumbo will research, write, and QA a post immediately. Result appears in your Home Inbox.
+                  </p>
+                </div>
+
+                {pipelineMsg && (
+                  <div className={`text-xs text-center ${pipelineMsg.includes("Failed") ? "text-red-400" : "text-green-400"}`}>
+                    {pipelineMsg}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-sm text-red-400">Could not load pipeline settings.</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {activeTab === "connectors" && (loading ? (
         <div className="text-muted-foreground text-sm">Loading...</div>
