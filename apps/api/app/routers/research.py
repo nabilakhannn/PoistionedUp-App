@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.auth import CurrentUser, get_current_user
+from app.deps import get_admin_client
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -428,3 +435,42 @@ async def research_feed(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Feed search error: {str(e)[:200]}",
         )
+
+
+# ── Research Briefs ───────────────────────────────────────────
+
+
+@router.get("/briefs/latest")
+async def get_latest_research_brief(
+    brand_id: str,
+    user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    """Return the latest pipeline research brief for a brand.
+
+    The brief is written by the Trend Analyzer agent during each pipeline run
+    and stored in `research_briefs`. The Intelligence room reads it here.
+    """
+    if not _UUID_RE.match(brand_id):
+        raise HTTPException(400, "Invalid brand_id")
+
+    sb = get_admin_client()
+    result = (
+        sb.table("research_briefs")
+        .select("id, content, topic_count, created_at")
+        .eq("brand_id", brand_id)
+        .eq("user_id", user.id)          # IDOR: user owns the data
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    row = (result.data or [None])[0]
+    if not row:
+        return {"brief": None}
+    return {
+        "brief": {
+            "id": row["id"],
+            "content": row["content"],
+            "topic_count": row.get("topic_count", 3),
+            "created_at": str(row["created_at"]),
+        }
+    }

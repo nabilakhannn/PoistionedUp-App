@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Mission Control Home — Slice 94
+ * Pipeline Dashboard: funnel view of content stages + research brief card
+ */
+
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { missionControlApi, Deliverable } from "@/lib/api/mission-control";
@@ -7,6 +12,9 @@ import { notificationsApi, AgentNotification } from "@/lib/api/notifications";
 import { agentBridgeApi } from "@/lib/api/agent-bridge";
 import { pipelineSettingsApi, PipelineSettings } from "@/lib/api/pipeline-settings";
 import { usageApi, UsageSummary } from "@/lib/api/usage";
+import { scheduleApi } from "@/lib/api/schedule";
+import { researchBriefsApi, ResearchBrief } from "@/lib/api/research-briefs";
+import { useBrand } from "@/lib/brand-context";
 import { MC_SUB_NAV } from "./constants";
 import { QuickCapture } from "./components/quick-capture";
 import { AgentOffice } from "@/components/agent-office";
@@ -64,7 +72,6 @@ function StatusBar({
   return (
     <div className="rounded-xl border border-border bg-card/50 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Pipeline status */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5">
             <span
@@ -90,7 +97,6 @@ function StatusBar({
           </button>
         </div>
 
-        {/* Budget widget */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
             ${monthlySpend.toFixed(2)} of ${monthlyBudget.toFixed(2)}/mo
@@ -116,13 +122,53 @@ function StatusBar({
   );
 }
 
+// ── Pipeline Funnel ─────────────────────────────────────────
+
+interface StageCardProps {
+  emoji: string;
+  label: string;
+  count: number;
+  note: string;
+  highlight?: boolean;
+  isLast?: boolean;
+}
+
+function StageCard({ emoji, label, count, note, highlight, isLast }: StageCardProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`flex-1 rounded-xl border px-3 py-3 text-center transition ${
+          highlight
+            ? "border-amber-500/40 bg-amber-500/5"
+            : "border-border bg-card/40"
+        }`}
+      >
+        <div className="text-xl mb-1">{emoji}</div>
+        <div className={`text-2xl font-bold tabular-nums ${highlight ? "text-amber-400" : "text-foreground"}`}>
+          {count}
+        </div>
+        <div className="text-[11px] font-medium text-foreground mt-0.5">{label}</div>
+        <div className={`text-[10px] mt-0.5 ${highlight ? "text-amber-400 font-medium" : "text-muted-foreground"}`}>
+          {highlight && count > 0 ? "● " : ""}{note}
+        </div>
+      </div>
+      {!isLast && (
+        <span className="text-muted-foreground/40 text-sm font-light shrink-0">→</span>
+      )}
+    </div>
+  );
+}
+
 // ── Component ──────────────────────────────────────────────
 
 export default function MissionControlHome() {
+  const { currentBrand } = useBrand();
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [notifications, setNotifications] = useState<AgentNotification[]>([]);
   const [pipelineSettings, setPipelineSettings] = useState<PipelineSettings | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [board, setBoard] = useState<{ draft: unknown[]; scheduled: unknown[] } | null>(null);
+  const [brief, setBrief] = useState<ResearchBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -130,20 +176,30 @@ export default function MissionControlHome() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [deliverablesRes, notifsRes, pipelineRes, usageRes] = await Promise.all([
+      const [deliverablesRes, notifsRes, pipelineRes, usageRes, boardRes] = await Promise.all([
         missionControlApi.listDeliverables().catch(() => [] as Deliverable[]),
         notificationsApi.list({ status: "unread", limit: 10 }).catch(() => [] as AgentNotification[]),
         pipelineSettingsApi.get().catch(() => null),
         usageApi.getSummary().catch(() => null),
+        scheduleApi.getBoard().catch(() => null),
       ]);
       setDeliverables(deliverablesRes.filter((d) => d.status === "review"));
       setNotifications(notifsRes.filter((n) => n.priority === "high" || n.priority === "urgent"));
       setPipelineSettings(pipelineRes);
       setUsage(usageRes);
+      setBoard(boardRes);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Load research brief separately when brand changes
+  useEffect(() => {
+    if (!currentBrand?.id) return;
+    researchBriefsApi.getLatest(currentBrand.id)
+      .then((res) => setBrief(res.brief))
+      .catch(() => {});
+  }, [currentBrand?.id]);
 
   useEffect(() => {
     loadAll();
@@ -203,6 +259,16 @@ export default function MissionControlHome() {
 
   const approvalCount = deliverables.length + notifications.length;
 
+  // Pipeline stage counts
+  const isResearching = runningNow || pipelineSettings?.run_now === true;
+  const writingCount = Array.isArray((board as { draft?: unknown[] } | null)?.draft)
+    ? ((board as { draft: unknown[] }).draft.length)
+    : 0;
+  const reviewCount = deliverables.length;
+  const scheduledCount = Array.isArray((board as { scheduled?: unknown[] } | null)?.scheduled)
+    ? ((board as { scheduled: unknown[] }).scheduled.length)
+    : 0;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Sub-nav */}
@@ -237,8 +303,49 @@ export default function MissionControlHome() {
           running={runningNow}
         />
 
-        {/* ── AGENT OFFICE ───────────────────────────── */}
-        <AgentOffice />
+        {/* ── CONTENT PIPELINE FUNNEL ────────────────── */}
+        <section>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+            Content Pipeline
+          </h2>
+          <div className="flex items-center gap-0">
+            <StageCard
+              emoji="🔬"
+              label="Research"
+              count={isResearching ? 1 : 0}
+              note={isResearching ? "Running now" : "Idle"}
+            />
+            <StageCard
+              emoji="✍️"
+              label="Writing"
+              count={writingCount}
+              note={writingCount === 1 ? "draft" : "drafts"}
+            />
+            <StageCard
+              emoji="✅"
+              label="QA"
+              count={0}
+              note="automated"
+            />
+            <StageCard
+              emoji="👁"
+              label="Your Review"
+              count={reviewCount}
+              note={reviewCount > 0 ? "needs you" : "all clear"}
+              highlight={reviewCount > 0}
+            />
+            <StageCard
+              emoji="📅"
+              label="Scheduled"
+              count={scheduledCount}
+              note="queued"
+              isLast
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            Content flows: Research → Writing → QA → Your Review → Scheduled → Published
+          </p>
+        </section>
 
         {/* ── NEEDS YOUR APPROVAL ────────────────────── */}
         <section>
@@ -346,30 +453,33 @@ export default function MissionControlHome() {
           )}
         </section>
 
-        {/* ── ROOM SHORTCUTS ─────────────────────────── */}
-        <section>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-            Rooms
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { href: "/marketing", emoji: "📣", label: "Marketing", desc: "Content pipeline, calendar, ads" },
-              { href: "/sales", emoji: "💼", label: "Sales", desc: "Newsletter, leads, outreach" },
-              { href: "/intelligence", emoji: "🧠", label: "Intelligence", desc: "Research, brand, journal" },
-              { href: "/mission-control/settings", emoji: "⚙️", label: "Settings", desc: "Connectors, knowledge, team" },
-            ].map((room) => (
+        {/* ── LATEST RESEARCH ────────────────────────── */}
+        {brief && (
+          <section>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Latest Research
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  Trend Analyzer · {timeAgo(brief.created_at)}
+                </span>
+              </div>
+              <p className="text-sm text-foreground/90 line-clamp-3 leading-relaxed">
+                {brief.content}
+              </p>
               <Link
-                key={room.href}
-                href={room.href}
-                className="rounded-xl border border-border bg-card/30 p-4 hover:border-primary/30 hover:bg-card/60 transition group"
+                href="/intelligence"
+                className="inline-block mt-2 text-xs text-primary hover:underline"
               >
-                <div className="text-xl mb-1">{room.emoji}</div>
-                <div className="text-sm font-semibold text-foreground group-hover:text-primary transition">{room.label}</div>
-                <div className="text-xs text-muted-foreground">{room.desc}</div>
+                View full brief →
               </Link>
-            ))}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
+
+        {/* ── AGENT OFFICE ───────────────────────────── */}
+        <AgentOffice />
       </div>
 
       <QuickCapture />
