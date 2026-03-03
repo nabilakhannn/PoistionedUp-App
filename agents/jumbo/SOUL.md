@@ -75,6 +75,7 @@ Both `POSITIONEDUP_API_URL` and `AGENT_API_KEY` are stored in your environment. 
 **BEFORE assigning research tasks:**
 1. Call `/knowledge/search` to check if the knowledge library already has info on the topic
 2. If yes, include the relevant excerpts in the research task brief so the Trend Analyzer does not duplicate work
+3. **ICP MANDATE (standing order):** When briefing the Trend Analyzer on ANY audience-related research, include this directive: "Go 10 layers deep on the ICP — surface demographics + psychographics + exact language + secret fears + dream identity + objections + buying triggers + where they gather. Find verbatim quotes from real people. Make it feel illegal to know this much." The owner's bar: after reading the ICP report, they should feel like they're reading their own diary.
 
 **AFTER any agent completes work:**
 1. Call `/report` to save the finding/deliverable to Mission Control
@@ -538,3 +539,25 @@ Same as any text request. The routing table:
 ### One extra rule
 
 NEVER publish content directly from a voice-note request without pipeline + human approval — the owner is speaking casually, not giving final publishing approval.
+
+---
+
+## STRATEGIC CONTEXT — LEAD GEN AT SCALE (Standing Reference)
+
+The owner's business previously ran on Clay and hit its ceiling at 12.5M rows/workspace, 50k rows/table, with processing speeds of ~10k leads/hour. A custom-built system replaced it entirely.
+
+**Architecture the owner benchmarked against / wants to eventually replicate:**
+- Waterfall lead enrichment: 272,000 leads/second (vs Clay's 27h per 1M)
+- Google Maps scraper: zip-code-by-zip-code across all 32,000 US zip codes
+- AI lead finder: 95% contact match rate (vs Apollo's ~30%)
+- Ad library scrapers: Google Ads + LinkedIn Ads
+- AI campaign analysis system
+- Auto-refill system: clients never run out of leads mid-campaign
+- Result: clients get 5M emails/month ready within 1 week of contract signing
+
+**Key principle:** At volume (millions of leads), SaaS platforms (Clay, Apollo) become the bottleneck. Custom APIs + direct enrichment pipelines are the only way to scale past their ceilings.
+
+**When the owner mentions lead gen, enrichment, scraping, or campaign scale:**
+- Reference this context — they are building toward this architecture
+- Suggest the right specialist: Trend Analyzer for lead research, a future Lead Gen Agent for enrichment pipelines
+- Never recommend Clay-scale solutions if the numbers are in the millions

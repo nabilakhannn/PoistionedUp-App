@@ -12,14 +12,16 @@ import { ContentKanban } from "@/components/content-kanban";
 import { ImageStudio } from "@/components/image-studio";
 import { MarketingCalendar } from "@/components/marketing-calendar";
 import { CompetitorIntelEmbed } from "@/components/competitor-intel-embed";
+import { LandingPageStudio } from "@/components/landing-page-studio";
 
-type Section = "content" | "calendar" | "ads" | "images" | "competitors" | "analytics";
+type Section = "content" | "calendar" | "ads" | "images" | "landing" | "competitors" | "analytics";
 
 const SECTIONS: { key: Section; label: string; emoji: string; description: string }[] = [
   { key: "content", label: "Content", emoji: "📋", description: "Content pipeline & Kanban board" },
   { key: "calendar", label: "Calendar", emoji: "📅", description: "Month view — scheduled posts" },
   { key: "ads", label: "Ads", emoji: "🎯", description: "Ad creative engine — 40 variations" },
   { key: "images", label: "Images", emoji: "🖼️", description: "AI image generation studio" },
+  { key: "landing", label: "Landing Pages", emoji: "🚀", description: "AI-generated pages from inspiration URLs" },
   { key: "competitors", label: "Competitors", emoji: "🕵️", description: "Threat scores & intel feed" },
   { key: "analytics", label: "Analytics", emoji: "📊", description: "Voice DNA, QA tiers, performance" },
 ];
@@ -155,6 +157,15 @@ export default function MarketingPage() {
               <ImageStudio brandId={currentBrand.id} />
             ) : (
               <NoBrand icon="🖼️" />
+            )
+          )}
+
+          {/* ── LANDING PAGES ─────────────────────────── */}
+          {activeSection === "landing" && (
+            currentBrand ? (
+              <LandingPageStudio brandId={currentBrand.id} />
+            ) : (
+              <NoBrand icon="🚀" />
             )
           )}
 
