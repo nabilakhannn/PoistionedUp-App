@@ -249,16 +249,21 @@ async def get_brand_context(brand_id: str, caller: AgentCaller = Depends(get_age
         logger.warning("Failed to load experiments: %s", e)
 
     # 7. Content pillars from profile (stored at profile.brand.content_pillars)
-    pillars = []
+    pillars_raw: list = []
     if isinstance(profile, dict):
         brand_data = profile.get("brand", {})
         if isinstance(brand_data, dict):
-            pillars = brand_data.get("content_pillars", []) or brand_data.get("content_themes", []) or []
+            pillars_raw = brand_data.get("content_pillars", []) or brand_data.get("content_themes", []) or []
         # Fallback: check messaging section (legacy)
-        if not pillars:
+        if not pillars_raw:
             messaging = profile.get("messaging", {})
             if isinstance(messaging, dict):
-                pillars = messaging.get("content_pillars", []) or messaging.get("content_themes", []) or []
+                pillars_raw = messaging.get("content_pillars", []) or messaging.get("content_themes", []) or []
+    # Normalize: pillars may be strings or {type, text} objects from LLM responses
+    pillars = [
+        p if isinstance(p, str) else (p.get("text", str(p)) if isinstance(p, dict) else str(p))
+        for p in (pillars_raw if isinstance(pillars_raw, list) else [])
+    ]
 
     # 8. Writing rules
     try:

@@ -39,7 +39,14 @@ export default function MarketingPage() {
     if (activeSection !== "strategy" || !currentBrand?.id) return;
     setPillarsLoading(true);
     agentBridgeApi.getContext(currentBrand.id)
-      .then((ctx) => setPillars(ctx.content_pillars ?? []))
+      .then((ctx) => {
+        const raw = ctx.content_pillars ?? [];
+        // Guard: pillars may be strings or {type, text} objects from LLM responses
+        const safe = raw.map((p: unknown) =>
+          typeof p === "string" ? p : (p as { text?: string })?.text ?? String(p)
+        );
+        setPillars(safe);
+      })
       .catch(() => setPillars([]))
       .finally(() => setPillarsLoading(false));
   }, [activeSection, currentBrand?.id]);
