@@ -143,6 +143,12 @@ export const leadsApi = {
   icpMethodology: () =>
     apiFetch<{ content: string; title: string }>("/leads/icp-methodology"),
 
+  /** Lightweight counts for the Morning Briefing home screen */
+  getLeadsPulse: (brandId: string) =>
+    apiFetch<{ new_leads: number; unreviewed: number; active_sequences: number }>(
+      `/leads/pulse?brand_id=${encodeURIComponent(brandId)}`
+    ),
+
   /** Downloads .xlsx file — Instantly.ai-compatible export */
   exportXlsx: async (brandId: string): Promise<void> => {
     const { createClient } = await import("@/lib/supabase/client");

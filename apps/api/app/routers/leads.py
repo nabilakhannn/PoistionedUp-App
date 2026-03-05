@@ -19,10 +19,10 @@ from __future__ import annotations
 import io
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import Response
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
@@ -116,7 +116,7 @@ def _row_to_dict(row: Dict) -> Dict:
     }
 
 
-VALID_STATUSES = {"cold", "warm", "hot", "customer", "disqualified"}
+VALID_STATUSES = {"new", "enriched", "cold", "warm", "hot", "customer", "disqualified"}
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
@@ -667,3 +667,76 @@ async def get_icp_methodology(
 ) -> Dict:
     """Return the ICP methodology template as plain text for display and agent seeding."""
     return {"content": ICP_METHODOLOGY, "title": "Sales Lead Research System Prompt Template"}
+
+
+# ── Morning Briefing — Leads Pulse ────────────────────────────────────────
+
+
+@router.get("/leads/pulse")
+async def leads_pulse(
+    brand_id: str = Query(...),
+    user: CurrentUser = Depends(get_current_user),
+    sb=Depends(get_admin_client),
+) -> Dict:
+    """Lightweight lead counts for the Morning Briefing home screen.
+
+    Returns:
+        new_leads       — leads created in the last 24h for this brand
+        unreviewed      — enriched leads not yet actioned (status: new or enriched)
+        active_sequences — outreach sequences currently active
+
+    Security: A01 IDOR (brand ownership verified), A03 UUID validated.
+    """
+    if not _UUID_RE.match(brand_id):
+        raise HTTPException(400, "Invalid brand_id — must be a UUID")
+
+    user_id = user.id
+
+    # IDOR: verify brand belongs to this user
+    brand_check = (
+        sb.table("personal_brands")
+        .select("id")
+        .eq("id", brand_id)
+        .eq("user_id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    if not brand_check.data:
+        raise HTTPException(404, "Brand not found")
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+    try:
+        new_r = (
+            sb.table("leads")
+            .select("id", count="exact")
+            .eq("brand_id", brand_id)
+            .eq("user_id", user_id)
+            .gte("created_at", cutoff)
+            .execute()
+        )
+        unrev_r = (
+            sb.table("leads")
+            .select("id", count="exact")
+            .eq("brand_id", brand_id)
+            .eq("user_id", user_id)
+            .in_("status", ["new", "enriched"])
+            .execute()
+        )
+        # Count leads that have outreach sequences generated (sequence JSONB != empty [])
+        seq_r = (
+            sb.table("leads")
+            .select("id", count="exact")
+            .eq("brand_id", brand_id)
+            .eq("user_id", user_id)
+            .neq("sequence", "[]")
+            .execute()
+        )
+        return {
+            "new_leads": new_r.count or 0,
+            "unreviewed": unrev_r.count or 0,
+            "active_sequences": seq_r.count or 0,
+        }
+    except Exception as exc:
+        logger.warning("leads_pulse query failed brand=%s: %s", brand_id, exc)
+        return {"new_leads": 0, "unreviewed": 0, "active_sequences": 0}

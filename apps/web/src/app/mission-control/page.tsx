@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Mission Control Home — Slice 94
- * Pipeline Dashboard: funnel view of content stages + research brief card
+ * Mission Control Home — Slice 103 (Morning Briefing)
+ * Single screen: what happened, what needs you now, what to do today.
  */
 
 import { useEffect, useState, useCallback } from "react";
@@ -10,15 +10,16 @@ import Link from "next/link";
 import { missionControlApi, Deliverable } from "@/lib/api/mission-control";
 import { notificationsApi, AgentNotification } from "@/lib/api/notifications";
 import { agentBridgeApi } from "@/lib/api/agent-bridge";
+import { hooksApi } from "@/lib/api/hooks";
+import { leadsApi } from "@/lib/api/leads";
 import { pipelineSettingsApi, PipelineSettings } from "@/lib/api/pipeline-settings";
 import { usageApi, UsageSummary } from "@/lib/api/usage";
-import { scheduleApi } from "@/lib/api/schedule";
 import { researchBriefsApi, ResearchBrief } from "@/lib/api/research-briefs";
+import { contentPlanningApi } from "@/lib/api/content-planning";
 import { useBrand } from "@/lib/brand-context";
 import { MC_SUB_NAV } from "./constants";
 import { QuickCapture } from "./components/quick-capture";
-import { AgentOffice } from "@/components/agent-office";
-import TranscriptDrop from "@/components/transcript-drop";
+import { ContentPlanChat } from "@/components/content-plan-chat";
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -72,7 +73,7 @@ function StatusBar({
   toggling: boolean;
   runError: string | null;
 }) {
-  const monthlyBudget = 20;
+  const monthlyBudget = pipelineSettings?.monthly_budget_usd ?? 20;
   const monthlySpend = usage?.period_costs?.monthly ?? 0;
   const budgetPct = monthlyBudget > 0 ? Math.min(100, (monthlySpend / monthlyBudget) * 100) : 0;
   const enabled = pipelineSettings?.enabled ?? false;
@@ -81,7 +82,6 @@ function StatusBar({
     <div className="rounded-xl border border-border bg-card/50 px-4 py-3 space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Clickable toggle */}
           <button
             onClick={onToggle}
             disabled={toggling || pipelineSettings === null}
@@ -133,7 +133,6 @@ function StatusBar({
         </div>
       </div>
 
-      {/* Error feedback */}
       {runError && (
         <p className="text-xs text-red-400 border-t border-border/50 pt-2">{runError}</p>
       )}
@@ -141,85 +140,106 @@ function StatusBar({
   );
 }
 
-// ── Pipeline Funnel ─────────────────────────────────────────
+// ── Types ───────────────────────────────────────────────────
 
-interface StageCardProps {
+interface ActivityItem {
+  id: string;
+  agent_id: string;
+  task_type: string;
+  summary: string;
+  status: string;
+  created_at: string;
+  brand_id: string | null;
   emoji: string;
-  label: string;
-  count: number;
-  note: string;
-  highlight?: boolean;
-  isLast?: boolean;
 }
 
-function StageCard({ emoji, label, count, note, highlight, isLast }: StageCardProps) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`flex-1 rounded-xl border px-3 py-3 text-center transition ${
-          highlight
-            ? "border-amber-500/40 bg-amber-500/5"
-            : "border-border bg-card/40"
-        }`}
-      >
-        <div className="text-xl mb-1">{emoji}</div>
-        <div className={`text-2xl font-bold tabular-nums ${highlight ? "text-amber-400" : "text-foreground"}`}>
-          {count}
-        </div>
-        <div className="text-[11px] font-medium text-foreground mt-0.5">{label}</div>
-        <div className={`text-[10px] mt-0.5 ${highlight ? "text-amber-400 font-medium" : "text-muted-foreground"}`}>
-          {highlight && count > 0 ? "● " : ""}{note}
-        </div>
-      </div>
-      {!isLast && (
-        <span className="text-muted-foreground/40 text-sm font-light shrink-0">→</span>
-      )}
-    </div>
-  );
+interface AnalyticsSummary {
+  posts: {
+    total_generated: number;
+    approved: number;
+    rejected: number;
+    approval_rate: number;
+    avg_qa_score: number;
+  };
+  agents: { tasks_completed: number; tasks_failed: number; by_agent: Record<string, number> };
+  rejection_reasons: Record<string, number>;
+}
+
+interface Suggestion {
+  id: string;
+  priority: "urgent" | "high" | "normal";
+  trigger_type: string;
+  title: string;
+  body: string;
+  action_url: string;
+  cta: string;
+}
+
+interface LeadsPulse {
+  new_leads: number;
+  unreviewed: number;
+  active_sequences: number;
 }
 
 // ── Component ──────────────────────────────────────────────
 
 export default function MissionControlHome() {
   const { currentBrand } = useBrand();
+
+  // Core state
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [notifications, setNotifications] = useState<AgentNotification[]>([]);
   const [pipelineSettings, setPipelineSettings] = useState<PipelineSettings | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
-  const [board, setBoard] = useState<{ draft: unknown[]; scheduled: unknown[] } | null>(null);
   const [brief, setBrief] = useState<ResearchBrief | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Morning Briefing state
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [overnight, setOvernight] = useState<ActivityItem[]>([]);
+  const [perf, setPerf] = useState<AnalyticsSummary | null>(null);
+  const [leadsPulse, setLeadsPulse] = useState<LeadsPulse | null>(null);
+  const [priorities, setPriorities] = useState<Suggestion[]>([]);
+
+  // Content planning state
+  const [planningOpen, setPlanningOpen] = useState(false);
+  const [activePlan, setActivePlan] = useState<{ id: string; itemCount: number } | null>(null);
+
+  // Action state
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [runningNow, setRunningNow] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
-  const [showTranscriptDrop, setShowTranscriptDrop] = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
-      const [deliverablesRes, notifsRes, pipelineRes, usageRes, boardRes] = await Promise.all([
+      const [deliverablesRes, notifsRes, pipelineRes, usageRes, overnightRes] = await Promise.all([
         missionControlApi.listDeliverables().catch(() => [] as Deliverable[]),
         notificationsApi.list({ status: "unread", limit: 10 }).catch(() => [] as AgentNotification[]),
         pipelineSettingsApi.get().catch(() => null),
         usageApi.getSummary().catch(() => null),
-        scheduleApi.getBoard().catch(() => null),
+        agentBridgeApi.getActivityFeed(15).catch(() => ({ items: [], total: 0 })),
       ]);
       setDeliverables(deliverablesRes.filter((d) => d.status === "review"));
       setNotifications(notifsRes.filter((n) => n.priority === "high" || n.priority === "urgent"));
       setPipelineSettings(pipelineRes);
       setUsage(usageRes);
-      setBoard(boardRes);
+      setOvernight(overnightRes.items ?? []);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Load research brief separately when brand changes
+  // Brand-specific data: brief, analytics, leads pulse, priorities
   useEffect(() => {
     if (!currentBrand?.id) return;
-    researchBriefsApi.getLatest(currentBrand.id)
-      .then((res) => setBrief(res.brief))
+    const id = currentBrand.id;
+    researchBriefsApi.getLatest(id).then((res) => setBrief(res.brief)).catch(() => {});
+    agentBridgeApi.getAnalyticsSummary(id).then((res) => setPerf(res)).catch(() => {});
+    leadsApi.getLeadsPulse(id).then((res) => setLeadsPulse(res)).catch(() => {});
+    agentBridgeApi.getProactiveSuggestions(id)
+      .then((res) => setPriorities((res.suggestions ?? []).slice(0, 3)))
       .catch(() => {});
   }, [currentBrand?.id]);
 
@@ -229,10 +249,46 @@ export default function MissionControlHome() {
     return () => clearInterval(t);
   }, [loadAll]);
 
-  const handleApprove = async (id: string) => {
+  // Poll active content plan status every 15s until done/failed
+  useEffect(() => {
+    if (!activePlan) return;
+    const poll = setInterval(async () => {
+      try {
+        const s = await contentPlanningApi.status(activePlan.id);
+        if (s.status === "done" || s.status === "failed") {
+          setActivePlan(null);
+          loadAll();
+        }
+      } catch {
+        // silent — keep polling
+      }
+    }, 15_000);
+    return () => clearInterval(poll);
+  }, [activePlan, loadAll]);
+
+  // ── Handlers ─────────────────────────────────────────────
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleApprove = async (id: string, postContent: string) => {
     setActionLoading(id);
     try {
       await missionControlApi.updateDeliverable(id, "approved", "");
+      const openingLine = postContent.split("\n").find((l) => l.trim().length > 10)?.trim();
+      if (openingLine && currentBrand?.id) {
+        hooksApi.create({
+          brand_id: currentBrand.id,
+          hook_text: openingLine.slice(0, 300),
+          hook_type: "custom",
+          source: "pipeline_approved",
+        }).catch(() => {});
+      }
       await loadAll();
     } catch (e) {
       console.error("Approve error:", e);
@@ -241,22 +297,24 @@ export default function MissionControlHome() {
     }
   };
 
-  const handleReject = async (id: string, tag: RejectTag) => {
+  const handleReject = async (id: string, tag: RejectTag, postText: string) => {
     setActionLoading(id);
     try {
       await missionControlApi.updateDeliverable(id, "rejected", tag);
+      const excerpt = postText.slice(0, 300).trim();
       await agentBridgeApi.submitReport({
         agent_id: "jumbo",
         report_type: "voice_feedback",
         title: `Rejection: ${tag}`,
-        content: `Deliverable ${id} rejected with tag: ${tag}`,
+        content: `voice_feedback | tag: ${tag} | excerpt: "${excerpt}"`,
         tags: [tag.toLowerCase().replace(/\s+/g, "_")],
         save_to_memory: true,
-      }).catch(() => {});
+      });
       setRejectTarget(null);
       await loadAll();
     } catch (e) {
       console.error("Reject error:", e);
+      setRunError("Failed to save rejection. Please try again.");
     } finally {
       setActionLoading(null);
     }
@@ -295,17 +353,30 @@ export default function MissionControlHome() {
     }
   };
 
+  // ── Derived ───────────────────────────────────────────────
+
   const approvalCount = deliverables.length + notifications.length;
 
-  // Pipeline stage counts
-  const isResearching = runningNow || pipelineSettings?.run_now === true;
-  const writingCount = Array.isArray((board as { draft?: unknown[] } | null)?.draft)
-    ? ((board as { draft: unknown[] }).draft.length)
-    : 0;
-  const reviewCount = deliverables.length;
-  const scheduledCount = Array.isArray((board as { scheduled?: unknown[] } | null)?.scheduled)
-    ? ((board as { scheduled: unknown[] }).scheduled.length)
-    : 0;
+  // Group overnight activity by agent
+  const overnightByAgent = overnight.reduce<Record<string, ActivityItem[]>>((acc, item) => {
+    const key = item.agent_id ?? "unknown";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {});
+
+  // Top rejection reason
+  const topRejectionReason = perf?.rejection_reasons
+    ? Object.entries(perf.rejection_reasons).sort((a, b) => b[1] - a[1])[0]?.[0]
+    : null;
+
+  const PRIORITY_DOT: Record<string, string> = {
+    urgent: "bg-red-400 animate-pulse",
+    high: "bg-amber-400",
+    normal: "bg-blue-400",
+  };
+
+  // ── Render ────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-background">
@@ -327,13 +398,14 @@ export default function MissionControlHome() {
       </div>
 
       <div className="max-w-4xl mx-auto px-5 py-6 space-y-6">
-        {/* Header */}
+
+        {/* ── HEADER ─────────────────────────────────────── */}
         <div>
           <h1 className="text-xl font-bold text-foreground">Good morning!</h1>
           <p className="text-xs text-muted-foreground mt-0.5">{todayLabel()}</p>
         </div>
 
-        {/* ── STATUS BAR ─────────────────────────────── */}
+        {/* ── STATUS BAR ─────────────────────────────────── */}
         <StatusBar
           pipelineSettings={pipelineSettings}
           usage={usage}
@@ -344,55 +416,59 @@ export default function MissionControlHome() {
           runError={runError}
         />
 
-        {/* ── CONTENT PIPELINE FUNNEL ────────────────── */}
-        <section>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-            Content Pipeline
-          </h2>
-          <div className="flex items-center gap-0">
-            <StageCard
-              emoji="🔬"
-              label="Research"
-              count={isResearching ? 1 : 0}
-              note={isResearching ? "Running now" : "Idle"}
-            />
-            <StageCard
-              emoji="✍️"
-              label="Writing"
-              count={writingCount}
-              note={writingCount === 1 ? "draft" : "drafts"}
-            />
-            <StageCard
-              emoji="✅"
-              label="QA"
-              count={0}
-              note="automated"
-            />
-            <StageCard
-              emoji="👁"
-              label="Your Review"
-              count={reviewCount}
-              note={reviewCount > 0 ? "needs you" : "all clear"}
-              highlight={reviewCount > 0}
-            />
-            <StageCard
-              emoji="📅"
-              label="Scheduled"
-              count={scheduledCount}
-              note="queued"
-              isLast
-            />
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2">
-            Content flows: Research → Writing → QA → Your Review → Scheduled → Published
-          </p>
-        </section>
-
-        {/* ── NEEDS YOUR APPROVAL ────────────────────── */}
+        {/* ── 📋 PLAN CONTENT ────────────────────────────── */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Needs your approval
+              📋 Plan Content
+            </h2>
+            {!planningOpen && !activePlan && currentBrand && (
+              <button
+                onClick={() => setPlanningOpen(true)}
+                className="text-xs text-primary hover:text-primary/80 transition font-medium"
+              >
+                Chat with Jumbo →
+              </button>
+            )}
+          </div>
+
+          {activePlan ? (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-amber-200/90 font-medium">
+                  Jumbo is writing {activePlan.itemCount} post{activePlan.itemCount !== 1 ? "s" : ""} from your plan...
+                </p>
+                <p className="text-xs text-amber-400/60 mt-0.5">
+                  Check Needs Approval in a few minutes
+                </p>
+              </div>
+            </div>
+          ) : planningOpen && currentBrand ? (
+            <ContentPlanChat
+              brandId={currentBrand.id}
+              onApproved={(planId, itemCount) => {
+                setPlanningOpen(false);
+                setActivePlan({ id: planId, itemCount });
+              }}
+              onClose={() => setPlanningOpen(false)}
+            />
+          ) : (
+            !currentBrand && (
+              <div className="rounded-xl border border-border bg-card/30 px-4 py-3 text-center">
+                <p className="text-xs text-muted-foreground">Select a brand to start planning content.</p>
+              </div>
+            )
+          )}
+        </section>
+
+        {/* ── ⚡ NEEDS YOUR APPROVAL ──────────────────────── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              ⚡ Needs Your Approval
             </h2>
             {approvalCount > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">
@@ -404,71 +480,102 @@ export default function MissionControlHome() {
           {loading ? (
             <div className="text-xs text-muted-foreground">Loading...</div>
           ) : approvalCount === 0 ? (
-            <div className="rounded-xl border border-border bg-card/30 px-5 py-8 text-center">
+            <div className="rounded-xl border border-border bg-card/30 px-5 py-6 text-center">
               <div className="text-2xl mb-2">✅</div>
-              <p className="text-sm text-muted-foreground">All caught up! No items need review.</p>
+              <p className="text-sm text-muted-foreground">All caught up — nothing needs review.</p>
             </div>
           ) : (
             <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-              {deliverables.map((d) => (
-                <div key={d.id} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-sm">✍️</span>
+              {deliverables.map((d) => {
+                const isExpanded = expandedIds.has(d.id);
+                const preview = (d.content ?? "").slice(0, 120).trim();
+                return (
+                  <div key={d.id} className="px-4 py-3 space-y-2">
+                    {/* Title row */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-sm shrink-0">✍️</span>
                         <span className="text-sm font-medium text-foreground truncate">{d.title}</span>
                         {d.qa_score !== undefined && d.qa_score > 0 && (
-                          <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">
-                            Score: {d.qa_score}
+                          <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 font-mono">
+                            QA {d.qa_score}
                           </span>
                         )}
                         <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(d.created_at)}</span>
                       </div>
-                      {d.content && (
-                        <p className="text-xs text-muted-foreground truncate ml-6">{d.content}</p>
+
+                      {rejectTarget === d.id ? (
+                        <div className="flex flex-wrap gap-1 shrink-0">
+                          {REJECT_TAGS.map((tag) => (
+                            <button
+                              key={tag}
+                              onClick={() => handleReject(d.id, tag, d.content ?? "")}
+                              disabled={actionLoading === d.id}
+                              className="px-2 py-1 text-[10px] rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setRejectTarget(null)}
+                            className="px-2 py-1 text-[10px] rounded border border-border text-muted-foreground hover:text-foreground transition"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setRejectTarget(d.id)}
+                            disabled={actionLoading === d.id}
+                            className="px-2.5 py-1.5 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-red-500/40 transition"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => handleApprove(d.id, d.content ?? "")}
+                            disabled={actionLoading === d.id}
+                            className="px-2.5 py-1.5 text-xs rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 font-medium transition"
+                          >
+                            {actionLoading === d.id ? "..." : "Approve ✓"}
+                          </button>
+                        </div>
                       )}
                     </div>
 
-                    {rejectTarget === d.id ? (
-                      <div className="flex flex-wrap gap-1 shrink-0">
-                        {REJECT_TAGS.map((tag) => (
-                          <button
-                            key={tag}
-                            onClick={() => handleReject(d.id, tag)}
-                            disabled={actionLoading === d.id}
-                            className="px-2 py-1 text-[10px] rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition"
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => setRejectTarget(null)}
-                          className="px-2 py-1 text-[10px] rounded border border-border text-muted-foreground hover:text-foreground transition"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => setRejectTarget(d.id)}
-                          disabled={actionLoading === d.id}
-                          className="px-2.5 py-1.5 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-red-500/40 transition"
-                        >
-                          Reject
-                        </button>
-                        <button
-                          onClick={() => handleApprove(d.id)}
-                          disabled={actionLoading === d.id}
-                          className="px-2.5 py-1.5 text-xs rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 font-medium transition"
-                        >
-                          {actionLoading === d.id ? "..." : "Approve ✓"}
-                        </button>
+                    {/* Preview + expand */}
+                    {d.content && (
+                      <div className="ml-6">
+                        {isExpanded ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap bg-card/60 border border-border/50 rounded-lg px-3 py-2">
+                              {d.content}
+                            </p>
+                            <button
+                              onClick={() => toggleExpand(d.id)}
+                              className="text-[10px] text-muted-foreground hover:text-foreground transition"
+                            >
+                              ▲ Collapse
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground truncate flex-1">{preview}</p>
+                            {(d.content ?? "").length > 120 && (
+                              <button
+                                onClick={() => toggleExpand(d.id)}
+                                className="text-[10px] text-primary hover:text-primary/80 shrink-0 transition"
+                              >
+                                ▼ Show post
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {notifications.map((n) => (
                 <div key={n.id} className="px-4 py-3">
@@ -494,13 +601,173 @@ export default function MissionControlHome() {
           )}
         </section>
 
-        {/* ── LATEST RESEARCH ────────────────────────── */}
+        {/* ── 📋 TODAY'S 3 PRIORITIES ─────────────────────── */}
+        <section>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+            📋 Today&apos;s Priorities
+          </h2>
+          {priorities.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card/30 px-4 py-4 flex items-center gap-3">
+              <span className="text-lg">✅</span>
+              <p className="text-sm text-muted-foreground">Nothing urgent — agents are running.</p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border bg-card/50 divide-y divide-border/50 overflow-hidden">
+              {priorities.map((s, i) => (
+                <div key={s.id} className="px-4 py-3 flex items-start gap-3">
+                  <span className="text-xs font-bold text-muted-foreground w-4 shrink-0 pt-0.5">{i + 1}.</span>
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_DOT[s.priority]}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground leading-tight">{s.title}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">{s.body}</p>
+                  </div>
+                  <Link
+                    href={s.action_url}
+                    className="shrink-0 text-[10px] px-2 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition font-medium"
+                  >
+                    {s.cta} →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── 🤖 WHAT HAPPENED OVERNIGHT ──────────────────── */}
+        <section>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+            🤖 What Happened Overnight
+          </h2>
+          <div className="rounded-xl border border-border bg-card/50 px-4 py-3">
+            {overnight.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No activity yet today · Pipeline runs every 2h
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {Object.entries(overnightByAgent).map(([agentId, items]) => {
+                  const successCount = items.filter((i) => i.status === "success" || i.status === "completed").length;
+                  const failCount = items.filter((i) => i.status === "failed" || i.status === "error").length;
+                  const latestItem = items[0];
+                  return (
+                    <div key={agentId} className="flex items-start gap-2">
+                      <span className="text-sm shrink-0">{latestItem.emoji ?? "🤖"}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium text-foreground capitalize">{agentId.replace(/-/g, " ")}</span>
+                        <span className="text-xs text-muted-foreground ml-1.5">
+                          {items.length} task{items.length !== 1 ? "s" : ""}
+                          {successCount > 0 && <span className="text-green-400 ml-1">· {successCount} ✓</span>}
+                          {failCount > 0 && <span className="text-red-400 ml-1">· {failCount} ✗</span>}
+                          <span className="ml-1 text-muted-foreground/60">· {timeAgo(latestItem.created_at)}</span>
+                        </span>
+                        {latestItem.summary && (
+                          <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5">{latestItem.summary}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="pt-1 border-t border-border/40">
+                  <Link
+                    href="/intelligence"
+                    className="text-[10px] text-primary hover:underline"
+                  >
+                    View full activity log →
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── 📊 LEADS PULSE + 📈 PERFORMANCE (side by side on wide screens) ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* Leads Pulse */}
+          <section>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+              📊 Leads Pulse
+            </h2>
+            <div className="rounded-xl border border-border bg-card/50 px-4 py-3 space-y-3">
+              {leadsPulse === null ? (
+                <p className="text-xs text-muted-foreground">Loading...</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold tabular-nums text-foreground">{leadsPulse.new_leads}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">new today</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold tabular-nums ${leadsPulse.unreviewed > 0 ? "text-amber-400" : "text-foreground"}`}>
+                      {leadsPulse.unreviewed}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">unreviewed</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold tabular-nums text-foreground">{leadsPulse.active_sequences}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">sequences</div>
+                  </div>
+                </div>
+              )}
+              <Link href="/sales" className="block text-[10px] text-primary hover:underline">
+                Open Sales room →
+              </Link>
+            </div>
+          </section>
+
+          {/* Performance Pulse */}
+          <section>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+              📈 Performance
+            </h2>
+            <div className="rounded-xl border border-border bg-card/50 px-4 py-3 space-y-3">
+              {perf === null ? (
+                <p className="text-xs text-muted-foreground">Loading...</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold tabular-nums text-foreground">
+                      {perf.posts.total_generated > 0
+                        ? Math.round(perf.posts.approval_rate * 100)
+                        : "—"}
+                      {perf.posts.total_generated > 0 ? "%" : ""}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">approval rate</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold tabular-nums ${
+                      perf.posts.avg_qa_score >= 80 ? "text-green-400"
+                      : perf.posts.avg_qa_score >= 60 ? "text-amber-400"
+                      : "text-foreground"
+                    }`}>
+                      {perf.posts.avg_qa_score > 0 ? Math.round(perf.posts.avg_qa_score) : "—"}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">avg QA</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-foreground leading-tight mt-1">
+                      {topRejectionReason
+                        ? topRejectionReason.replace(/_/g, " ")
+                        : "—"}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">top rejection</div>
+                  </div>
+                </div>
+              )}
+              <Link href="/mission-control/analytics" className="block text-[10px] text-primary hover:underline">
+                Full results →
+              </Link>
+            </div>
+          </section>
+        </div>
+
+        {/* ── 🔬 LATEST RESEARCH ──────────────────────────── */}
         {brief && (
           <section>
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Latest Research
+                  🔬 Latest Research
                 </span>
                 <span className="text-[10px] text-muted-foreground">
                   Trend Analyzer · {timeAgo(brief.created_at)}
@@ -519,49 +786,6 @@ export default function MissionControlHome() {
           </section>
         )}
 
-        {/* ── CLIENT CALL ANALYSIS ──────────────────── */}
-        <section>
-          {showTranscriptDrop ? (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  🎙 Analyze Client Call
-                </span>
-                <button
-                  onClick={() => setShowTranscriptDrop(false)}
-                  className="text-muted-foreground hover:text-foreground text-xs transition"
-                >
-                  Close ✕
-                </button>
-              </div>
-              <div className="p-4">
-                <TranscriptDrop
-                  brandId={currentBrand?.id ?? ""}
-                  onSessionCreated={() => setShowTranscriptDrop(false)}
-                />
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowTranscriptDrop(true)}
-              className="w-full rounded-xl border border-dashed border-indigo-500/40 bg-indigo-950/10 hover:bg-indigo-950/20 hover:border-indigo-500/60 px-5 py-4 flex items-center gap-3 transition-colors group"
-            >
-              <span className="text-2xl">🎙</span>
-              <div className="text-left">
-                <p className="text-sm font-semibold text-indigo-300 group-hover:text-indigo-200 transition-colors">
-                  Analyze a Client Call
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Paste or upload a transcript — Account Manager extracts action items
-                </p>
-              </div>
-              <span className="ml-auto text-indigo-500 group-hover:text-indigo-400 text-sm transition-colors">→</span>
-            </button>
-          )}
-        </section>
-
-        {/* ── AGENT OFFICE ───────────────────────────── */}
-        <AgentOffice />
       </div>
 
       <QuickCapture />

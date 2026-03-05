@@ -316,7 +316,12 @@ def _exec_synthesize_research(research_text: str, synthesis_goal: str) -> str:
 
 
 def _exec_fetch_brand_profile(brand_id: str) -> str:
-    """Fetch brand profile from Supabase."""
+    """Fetch brand profile from Supabase.
+
+    Returns the full deep-brand-intelligence dossier for ALL brands —
+    anxiety_list, power_words, metaphors, emotional journals, etc. are NOT
+    gated behind is_client_brand. Every copywriter run deserves this context.
+    """
     try:
         sb = get_admin_client()
         result = (
@@ -331,6 +336,8 @@ def _exec_fetch_brand_profile(brand_id: str) -> str:
         row = result.data[0]
         profile = row.get("profile_json") or {}
         is_client = row.get("is_client_brand", False)
+
+        # ── Core profile (all brands) ──────────────────────────────────────
         summary: dict = {
             "name": row.get("name", ""),
             "description": row.get("description", ""),
@@ -340,19 +347,54 @@ def _exec_fetch_brand_profile(brand_id: str) -> str:
             "offer": profile.get("offer", ""),
             "content_pillars": profile.get("content_pillars", []),
             "voice_adjectives": profile.get("voice_adjectives", []),
+            # ── Deep brand intelligence (Slices 97–99) — all brands ──────
+            "anxiety_list": profile.get("anxiety_list", [])[:10],        # TOP 10 ICA fears
+            "benefit_list": profile.get("benefit_list", [])[:10],        # TOP 10 ICA desires
+            "power_words": profile.get("power_words", []),                # Exact vocabulary
+            "industry_lingo": profile.get("industry_lingo", []),          # Jargon they use
+            "metaphors": profile.get("metaphors", []),                    # Analogies that resonate
+            "market_gap": profile.get("market_gap", ""),                  # Unique positioning gap
+            "customer_segments": profile.get("customer_segments", []),    # Audience segments
+            "relevance_topics": profile.get("relevance_topics", []),      # Hot topics in their niche
+            "transformation_zero": profile.get("transformation_zero", ""),# Where ICA starts
+            "transformation_dream": profile.get("transformation_dream", ""), # Where they want to go
+            "new_opportunity": profile.get("new_opportunity", ""),        # UVP / new frame
+            "tagline": profile.get("tagline", ""),
+            "your_story": profile.get("your_story", ""),                  # Founder story arc
+            "belief_framework": profile.get("belief_framework", []),      # Core beliefs
         }
-        # For client brands inject emotional journals + anxiety/benefit lists
-        # so copywriter, landing page, and ad creative agents can write hyper-targeted copy
+
+        # ── Emotional journals — pull latest 3 summaries ──────────────────
+        try:
+            sb2 = get_admin_client()
+            j_result = (
+                sb2.table("experience_journal")
+                .select("summary, type, created_at")
+                .eq("brand_id", brand_id)
+                .order("created_at", desc=True)
+                .limit(3)
+                .execute()
+            )
+            if j_result.data:
+                summary["emotional_journal_summary"] = [
+                    f"[{r.get('type','note')}] {str(r.get('summary',''))[:200]}"
+                    for r in j_result.data
+                ]
+            else:
+                summary["emotional_journal_summary"] = []
+        except Exception:
+            summary["emotional_journal_summary"] = []
+
+        # ── Client-brand extras (emotional pain/win journals + Hormozi) ───
         if is_client:
             summary["is_client_brand"] = True
             summary["ica_summary"] = profile.get("ica_summary", "")
             summary["emotional_pain_journal"] = profile.get("emotional_pain_journal", "")
             summary["emotional_win_journal"] = profile.get("emotional_win_journal", "")
-            summary["anxiety_list"] = profile.get("anxiety_list", [])
-            summary["benefit_list"] = profile.get("benefit_list", [])
             summary["hormozi"] = profile.get("hormozi", {})
             summary["competitor_gap"] = profile.get("competitor_gap", "")
             summary["first_week_angles"] = profile.get("first_week_angles", [])
+
         return json.dumps(summary, ensure_ascii=False)
     except Exception as exc:
         logger.warning("fetch_brand_profile failed for %s: %s", brand_id, exc)
@@ -394,45 +436,97 @@ _EM_DASHES = ["—", "–"]
 
 
 def _exec_score_content_quality(content: str) -> str:
-    """Fast rule-based quality scoring — no LLM call."""
+    """Hybrid quality scoring: fast rule check + LLM semantic scoring.
+
+    Rule check runs instantly for hard violations (AI tells, em dashes).
+    LLM scoring (gpt-4o-mini, ~$0.001/call) adds semantic dimensions:
+    voice_authenticity, hook_strength, grounding, human_feel, virality, goal_alignment.
+    Overall pass = avg >= 7.0 across all 6 dimensions.
+    """
     text = content.strip()
     word_count = len(text.split())
-    char_count = len(text)
 
-    # Hook present: first sentence ends with "?" or is <= 15 words
-    first_sentence = text.split(".")[0].split("?")[0].split("!")[0]
-    hook_present = len(first_sentence.split()) <= 15 or "?" in text[:100]
-
-    # AI tells check
+    # ── Fast rule checks ─────────────────────────────────────────────────
     lower = text.lower()
     found_ai_tells = [t for t in _AI_TELLS if t in lower]
-
-    # Em dash check
     found_em_dashes = [d for d in _EM_DASHES if d in text]
-
-    # Readability: avg sentence length
+    first_sentence = text.split(".")[0].split("?")[0].split("!")[0]
+    hook_present = len(first_sentence.split()) <= 15 or "?" in text[:100]
     sentences = [s.strip() for s in re.split(r"[.!?]", text) if s.strip()]
     avg_sentence_len = (sum(len(s.split()) for s in sentences) / len(sentences)) if sentences else 0
 
-    scores = {
+    hard_issues = []
+    if found_ai_tells:
+        hard_issues.append(f"AI-tell phrases found: {found_ai_tells}")
+    if found_em_dashes:
+        hard_issues.append("Em dashes found — remove them")
+    if avg_sentence_len > 20:
+        hard_issues.append(f"Sentences too long (avg {avg_sentence_len:.0f} words)")
+
+    # ── LLM semantic scoring ─────────────────────────────────────────────
+    OPENAI_CHAT = "https://api.openai.com/v1/chat/completions"
+    llm_scores: dict = {}
+    llm_issues: list = []
+    try:
+        score_prompt = (
+            "You are a content quality evaluator for LinkedIn personal brand posts.\n\n"
+            "Score this post on each dimension from 0 (terrible) to 10 (excellent):\n"
+            "- voice_authenticity: Does it sound like a real human, not an AI? Specific, personal, genuine?\n"
+            "- hook_strength: Does the opening line stop the scroll? Bold claim, curiosity, or specific number?\n"
+            "- grounding: Is it grounded in a real story, specific experience, or concrete data?\n"
+            "- human_feel: Natural rhythm, conversational, avoids corporate jargon?\n"
+            "- virality: Would people share this? Has a strong point of view or surprising insight?\n"
+            "- goal_alignment: Clear call to action? Drives the reader toward a next step?\n\n"
+            "Then identify ONE specific fix if avg < 7.\n\n"
+            "Respond ONLY with valid JSON:\n"
+            '{"voice_authenticity":N,"hook_strength":N,"grounding":N,"human_feel":N,"virality":N,"goal_alignment":N,"fix":"<one sentence fix or empty string>"}\n\n'
+            f"Post to evaluate:\n\"\"\"\n{text[:2000]}\n\"\"\""
+        )
+        resp = httpx.post(
+            OPENAI_CHAT,
+            json={
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "user", "content": score_prompt}],
+                "temperature": 0.1,
+                "max_tokens": 200,
+            },
+            headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+            timeout=15.0,
+        )
+        resp.raise_for_status()
+        raw = resp.json()["choices"][0]["message"]["content"].strip()
+        # Strip markdown code block if present
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        parsed = json.loads(raw)
+        dim_keys = ["voice_authenticity", "hook_strength", "grounding", "human_feel", "virality", "goal_alignment"]
+        llm_scores = {k: parsed.get(k, 0) for k in dim_keys}
+        avg = sum(llm_scores.values()) / len(llm_scores)
+        llm_scores["average"] = round(avg, 1)
+        fix = parsed.get("fix", "").strip()
+        if fix:
+            llm_issues.append(f"LLM fix: {fix}")
+    except Exception as exc:
+        logger.warning("LLM scoring failed — using rule-based only: %s", exc)
+        # Fall back: use hook_present as proxy for average
+        llm_scores = {"average": 7.0 if hook_present else 5.0, "error": str(exc)[:80]}
+
+    avg_score = llm_scores.get("average", 5.0)
+    all_issues = hard_issues + llm_issues
+
+    result = {
         "word_count": word_count,
         "hook_present": hook_present,
         "avg_sentence_length": round(avg_sentence_len, 1),
         "ai_tells_found": found_ai_tells,
         "em_dashes_found": found_em_dashes,
-        "pass": len(found_ai_tells) == 0 and not found_em_dashes and hook_present,
-        "issues": [],
+        "llm_scores": llm_scores,
+        "pass": len(found_ai_tells) == 0 and not found_em_dashes and avg_score >= 7.0,
+        "issues": all_issues if all_issues else [],
     }
-    if not hook_present:
-        scores["issues"].append("Weak or missing hook in opening")
-    if found_ai_tells:
-        scores["issues"].append(f"AI-tell phrases found: {found_ai_tells}")
-    if found_em_dashes:
-        scores["issues"].append("Em dashes found — remove them")
-    if avg_sentence_len > 20:
-        scores["issues"].append(f"Sentences too long (avg {avg_sentence_len:.0f} words)")
-
-    return json.dumps(scores)
+    return json.dumps(result)
 
 
 def _exec_read_agent_training_docs(agent_id: str, user_id: str) -> str:

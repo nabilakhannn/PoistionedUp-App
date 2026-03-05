@@ -9,6 +9,8 @@ import {
   AgentMessage,
   DashboardStats,
 } from "@/lib/api/mission-control";
+import { agentBridgeApi } from "@/lib/api/agent-bridge";
+import { useBrand } from "@/lib/brand-context";
 import { STATUS_COLORS, ROLE_TYPE_BADGES, MC_SUB_NAV } from "../constants";
 
 /* ── Helpers ───────────────────────────────────────────── */
@@ -46,7 +48,10 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 
 /* ── Page component ────────────────────────────────────── */
 
+type RealAnalytics = Awaited<ReturnType<typeof agentBridgeApi.getAnalyticsSummary>>;
+
 export default function AnalyticsPage() {
+  const { currentBrand } = useBrand();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
@@ -54,6 +59,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("7d");
+  const [realData, setRealData] = useState<RealAnalytics | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -74,6 +80,13 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   }, []);
+
+  // Load real analytics from agent_ledger + agent_deliverables
+  useEffect(() => {
+    agentBridgeApi.getAnalyticsSummary(currentBrand?.id)
+      .then(setRealData)
+      .catch(() => {});
+  }, [currentBrand?.id]);
 
   useEffect(() => {
     loadData();
@@ -200,6 +213,64 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="p-5 space-y-5 max-w-7xl mx-auto">
+        {/* ── Real pipeline analytics (from agent_ledger + agent_deliverables) ── */}
+        {realData && (
+          <section className="bg-card border border-border rounded-xl p-4 space-y-3">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+              Content Pipeline — Real Data
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="bg-muted/20 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-foreground">{realData.posts.total_generated}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">Posts Generated</div>
+              </div>
+              <div className="bg-green-500/10 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-green-400">{realData.posts.approved}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">Approved</div>
+              </div>
+              <div className="bg-red-500/10 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-red-400">{realData.posts.rejected}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">Rejected</div>
+              </div>
+              <div className="bg-blue-500/10 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-blue-400">{realData.posts.approval_rate}%</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">Approval Rate</div>
+              </div>
+              <div className="bg-amber-500/10 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-amber-400">{realData.posts.avg_qa_score}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">Avg QA Score</div>
+              </div>
+            </div>
+            {/* Rejection reasons breakdown */}
+            {Object.keys(realData.rejection_reasons).length > 0 && (
+              <div className="border-t border-border/50 pt-3">
+                <p className="text-[10px] text-muted-foreground font-medium mb-2">Rejection Reasons</p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(realData.rejection_reasons).map(([tag, count]) => (
+                    <span key={tag} className="px-2 py-1 text-[10px] rounded bg-red-500/10 border border-red-500/20 text-red-400">
+                      {tag}: {count}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Agent task breakdown */}
+            <div className="border-t border-border/50 pt-3">
+              <p className="text-[10px] text-muted-foreground font-medium mb-2">
+                Agent Tasks — {realData.agents.tasks_completed} completed · {realData.agents.tasks_failed} failed
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(realData.agents.by_agent).map(([agent, count]) => (
+                  <span key={agent} className="px-2 py-1 text-[10px] rounded bg-muted/30 border border-border text-muted-foreground">
+                    {agent}: {count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ── Summary cards ────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <SummaryCard label="Total Agents" value={stats?.agents_total ?? 0} icon="🤖" />

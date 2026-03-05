@@ -86,6 +86,54 @@ async def get_agent_caller(
     return AgentCaller(user_id=x_user_id)
 
 
+async def get_user_or_agent_caller(
+    request: Request,
+    x_agent_key: Optional[str] = Header(None, description="Agent API key (agents only)"),
+    x_user_id: Optional[str] = Header(None, description="User ID (agents only)"),
+) -> AgentCaller:
+    """Dual-auth: accepts EITHER X-Agent-Key (agents) OR JWT Bearer token (frontend).
+
+    This allows the same endpoints to be called by:
+    - OpenClaw agents (X-Agent-Key + X-User-Id headers)
+    - Frontend (Supabase JWT in Authorization header)
+    """
+    # Try agent key first
+    if x_agent_key:
+        if not settings.agent_api_key:
+            raise HTTPException(503, "Agent API not configured.")
+        import hmac
+        if not hmac.compare_digest(x_agent_key, settings.agent_api_key):
+            raise HTTPException(401, "Invalid agent API key")
+        if x_user_id:
+            sb = get_admin_client()
+            check = sb.table("profiles").select("user_id").eq("user_id", x_user_id).limit(1).execute()
+            if not check.data:
+                raise HTTPException(404, "User not found")
+            return AgentCaller(user_id=x_user_id)
+        # Fallback to first user
+        sb = get_admin_client()
+        users = sb.table("profiles").select("user_id").limit(1).execute()
+        if users.data:
+            return AgentCaller(user_id=users.data[0]["user_id"])
+        raise HTTPException(400, "X-User-Id required")
+
+    # Try JWT Bearer token
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.removeprefix("Bearer ").strip()
+        if token:
+            sb = get_admin_client()
+            try:
+                resp = sb.auth.get_user(token)
+                if resp and resp.user:
+                    return AgentCaller(user_id=resp.user.id)
+            except Exception as exc:
+                logger.warning("JWT validation failed: %s", exc)
+            raise HTTPException(401, "Invalid or expired token")
+
+    raise HTTPException(401, "Authentication required: provide X-Agent-Key or Bearer token")
+
+
 # ── 1. Brand Context (the full brain dump) ────────────────
 
 @router.get("/context/{brand_id}", response_model=BrandContext)
@@ -200,12 +248,17 @@ async def get_brand_context(brand_id: str, caller: AgentCaller = Depends(get_age
     except Exception as e:
         logger.warning("Failed to load experiments: %s", e)
 
-    # 7. Content pillars from profile
+    # 7. Content pillars from profile (stored at profile.brand.content_pillars)
     pillars = []
     if isinstance(profile, dict):
-        messaging = profile.get("messaging", {})
-        if isinstance(messaging, dict):
-            pillars = messaging.get("content_pillars", []) or messaging.get("content_themes", []) or []
+        brand_data = profile.get("brand", {})
+        if isinstance(brand_data, dict):
+            pillars = brand_data.get("content_pillars", []) or brand_data.get("content_themes", []) or []
+        # Fallback: check messaging section (legacy)
+        if not pillars:
+            messaging = profile.get("messaging", {})
+            if isinstance(messaging, dict):
+                pillars = messaging.get("content_pillars", []) or messaging.get("content_themes", []) or []
 
     # 8. Writing rules
     try:
@@ -297,7 +350,7 @@ async def search_knowledge(body: KnowledgeSearchRequest, caller: AgentCaller = D
 # ── 3. Agent Report / Observation ─────────────────────────
 
 @router.post("/report", response_model=AgentReportResponse)
-async def submit_report(body: AgentReport, caller: AgentCaller = Depends(get_agent_caller)):
+async def submit_report(body: AgentReport, caller: AgentCaller = Depends(get_user_or_agent_caller)):
     """Agent submits a finding, observation, or deliverable.
 
     - Saved as an agent_message (visible in Mission Control)
@@ -922,3 +975,175 @@ async def transcript_analyze(
         raise HTTPException(400, str(exc))
     except RuntimeError as exc:
         raise HTTPException(502, str(exc))
+
+
+# ── 19. Activity Feed ──────────────────────────────────────
+
+
+@router.get("/activity-feed")
+async def get_activity_feed(
+    limit: int = Query(20, ge=1, le=100),
+    caller: AgentCaller = Depends(get_user_or_agent_caller),
+):
+    """Return recent agent activity from agent_ledger for the activity feed panel.
+
+    Readable by both frontend (JWT) and agents (X-Agent-Key).
+    Each entry describes what an agent just did in plain English.
+    """
+    sb = get_admin_client()
+    result = (
+        sb.table("agent_ledger")
+        .select("id, agent_id, task_type, summary, status, created_at, brand_id")
+        .eq("user_id", caller.user_id)
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+
+    items = []
+    for row in (result.data or []):
+        agent = row.get("agent_id", "agent")
+        task = row.get("task_type", "task")
+        summary = row.get("summary", "")
+        status = row.get("status", "done")
+        created_at = row.get("created_at", "")
+
+        # Build human-readable description
+        emoji = {
+            "copywriter": "✍️",
+            "trend-analyzer": "🔍",
+            "qa-reviewer": "✅" if status == "done" else "❌",
+            "competitor-analyst": "👁️",
+            "distributor": "📤",
+            "analytics": "📊",
+            "jumbo": "🧠",
+        }.get(agent, "🤖")
+
+        items.append({
+            "id": row.get("id"),
+            "agent_id": agent,
+            "task_type": task,
+            "summary": summary[:200] if summary else f"{agent} completed {task}",
+            "status": status,
+            "created_at": created_at,
+            "brand_id": row.get("brand_id"),
+            "emoji": emoji,
+        })
+
+    return {"items": items, "total": len(items)}
+
+
+# ── 20. Analytics Summary ──────────────────────────────────
+
+
+@router.get("/analytics-summary")
+async def get_analytics_summary(
+    brand_id: Optional[str] = Query(None),
+    caller: AgentCaller = Depends(get_user_or_agent_caller),
+):
+    """Return real analytics from agent_ledger, sdk_agent_runs, agent_deliverables.
+
+    Readable by both frontend (JWT) and agents (X-Agent-Key).
+    """
+    sb = get_admin_client()
+
+    # Validate brand_id if provided
+    if brand_id:
+        _uuid_pattern = _re.compile(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            _re.IGNORECASE,
+        )
+        if not _uuid_pattern.match(brand_id):
+            raise HTTPException(400, "Invalid brand_id format")
+
+    # Posts generated (deliverables)
+    del_q = (
+        sb.table("agent_deliverables")
+        .select("status, qa_score, created_at")
+        .eq("user_id", caller.user_id)
+    )
+    if brand_id:
+        del_q = del_q.eq("brand_id", brand_id)
+    deliverables = (del_q.execute().data or [])
+
+    total_generated = len(deliverables)
+    approved = sum(1 for d in deliverables if d.get("status") == "approved")
+    rejected = sum(1 for d in deliverables if d.get("status") == "rejected")
+    qa_scores = [d.get("qa_score", 0) for d in deliverables if d.get("qa_score") and d.get("qa_score") > 0]
+    avg_qa = round(sum(qa_scores) / len(qa_scores), 1) if qa_scores else 0.0
+
+    # Ledger activity
+    ledger_q = (
+        sb.table("agent_ledger")
+        .select("agent_id, task_type, status, created_at")
+        .eq("user_id", caller.user_id)
+        .order("created_at", desc=True)
+        .limit(200)
+    )
+    ledger = (ledger_q.execute().data or [])
+
+    tasks_completed = sum(1 for l in ledger if l.get("status") == "done")
+    tasks_failed = sum(1 for l in ledger if l.get("status") == "error")
+
+    # Agent breakdown
+    agent_counts: dict = {}
+    for row in ledger:
+        a = row.get("agent_id", "unknown")
+        agent_counts[a] = agent_counts.get(a, 0) + 1
+
+    # Rejection reasons from agent_memory
+    mem_q = (
+        sb.table("agent_memory")
+        .select("content")
+        .eq("user_id", caller.user_id)
+        .ilike("content", "%voice_feedback%")
+        .order("created_at", desc=True)
+        .limit(20)
+    )
+    memories = (mem_q.execute().data or [])
+    rejection_tags: dict = {}
+    for m in memories:
+        content = str(m.get("content", ""))
+        for tag in ["Wrong voice", "Bad hook", "Needs research", "Off-topic"]:
+            if tag.lower() in content.lower():
+                rejection_tags[tag] = rejection_tags.get(tag, 0) + 1
+
+    return {
+        "posts": {
+            "total_generated": total_generated,
+            "approved": approved,
+            "rejected": rejected,
+            "approval_rate": round(approved / total_generated * 100, 1) if total_generated else 0.0,
+            "avg_qa_score": avg_qa,
+        },
+        "agents": {
+            "tasks_completed": tasks_completed,
+            "tasks_failed": tasks_failed,
+            "by_agent": agent_counts,
+        },
+        "rejection_reasons": rejection_tags,
+    }
+
+
+# ── 21. Proactive Suggestions ─────────────────────────────
+
+
+@router.get("/suggestions")
+async def get_proactive_suggestions(
+    brand_id: Optional[str] = Query(None),
+    caller: AgentCaller = Depends(get_user_or_agent_caller),
+):
+    """Return proactive Jumbo suggestions based on 7 trigger conditions.
+
+    Readable by both frontend (JWT) and agents (X-Agent-Key).
+    Checks: posting gaps, journal staleness, hook variety, competitor threats,
+            stale approvals, new leads, low QA avg.
+    Returns max 5 suggestions sorted by priority.
+    """
+    from app.services.proactive_triggers import get_suggestions
+    try:
+        suggestions = get_suggestions(caller.user_id, brand_id)
+        return {"suggestions": suggestions, "total": len(suggestions)}
+    except Exception as exc:
+        logger.warning("get_suggestions failed user=%s: %s", caller.user_id, exc)
+        return {"suggestions": [], "total": 0}

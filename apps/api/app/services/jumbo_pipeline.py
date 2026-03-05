@@ -200,6 +200,114 @@ def get_rejection_history(user_id: str, brand_id: str) -> str:
         return ""
 
 
+def get_brand_context(brand_id: str) -> Optional[dict]:
+    """Fetch deep brand intelligence dossier as a dict for prompt injection.
+
+    Returns the full profile including anxiety_list, power_words, metaphors,
+    emotional journals, etc. Returns None on failure (prompt will still work).
+    """
+    if not _is_valid_uuid(brand_id):
+        return None
+    try:
+        from app.deps import get_admin_client
+        sb = get_admin_client()
+        result = (
+            sb.table("personal_brands")
+            .select("name, description, profile_json")
+            .eq("id", brand_id)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return None
+        row = result.data[0]
+        profile = row.get("profile_json") or {}
+        ctx = {
+            "name": row.get("name", ""),
+            "voice": profile.get("voice", ""),
+            "ica": profile.get("ica", ""),
+            "positioning": profile.get("positioning", ""),
+            "offer": profile.get("offer", ""),
+            "tagline": profile.get("tagline", ""),
+            "transformation_zero": profile.get("transformation_zero", ""),
+            "transformation_dream": profile.get("transformation_dream", ""),
+            "anxiety_list": profile.get("anxiety_list", [])[:10],
+            "benefit_list": profile.get("benefit_list", [])[:10],
+            "power_words": profile.get("power_words", []),
+            "industry_lingo": profile.get("industry_lingo", []),
+            "metaphors": profile.get("metaphors", []),
+            "content_pillars": profile.get("content_pillars", []),
+        }
+        # Pull latest 3 journal entries for grounding
+        try:
+            j = (
+                sb.table("experience_journal")
+                .select("summary, type")
+                .eq("brand_id", brand_id)
+                .order("created_at", desc=True)
+                .limit(3)
+                .execute()
+            )
+            ctx["emotional_journal_summary"] = [
+                f"[{r.get('type','note')}] {str(r.get('summary',''))[:200]}"
+                for r in (j.data or [])
+            ]
+        except Exception:
+            ctx["emotional_journal_summary"] = []
+        return ctx
+    except Exception as exc:
+        logger.warning("get_brand_context failed brand=%s: %s", brand_id, exc)
+        return None
+
+
+def get_hooks_for_brand(brand_id: str) -> str:
+    """Fetch user's hook library and format for prompt injection.
+
+    Returns a formatted string for inclusion in the writing prompt.
+    Returns empty string if no hooks or on error (graceful degradation).
+    """
+    if not _is_valid_uuid(brand_id):
+        return ""
+    try:
+        from app.deps import get_admin_client
+        sb = get_admin_client()
+        # Look up user_id for this brand
+        brand_row = sb.table("personal_brands").select("user_id").eq("id", brand_id).limit(1).execute()
+        if not brand_row.data:
+            return ""
+        user_id = brand_row.data[0]["user_id"]
+
+        result = (
+            sb.table("hook_library")
+            .select("hook_text, hook_type, times_used")
+            .eq("user_id", user_id)
+            .eq("brand_id", brand_id)
+            .order("times_used", desc=True)
+            .limit(20)
+            .execute()
+        )
+        if not result.data:
+            return ""
+
+        # Group by type
+        grouped: dict = {}
+        for h in result.data:
+            t = h.get("hook_type", "custom")
+            grouped.setdefault(t, [])
+            grouped[t].append(h["hook_text"])
+
+        lines = ["## Your Hook Library — Use These As Opening Line Examples\n"]
+        for htype, texts in grouped.items():
+            lines.append(f"\n### {htype.title()} Hooks")
+            for text in texts[:4]:
+                lines.append(f"- {text}")
+        return "\n".join(lines) + "\n"
+
+    except Exception as exc:
+        logger.warning("get_hooks_for_brand failed brand=%s: %s", brand_id, exc)
+        return ""
+
+
 def _get_user_for_brand(brand_id: str, sb) -> str:
     """Helper: look up the user_id that owns this brand."""
     try:
@@ -633,18 +741,71 @@ def build_writing_prompt(
     analytics_ctx: str,
     rejection_history: str,
     experiences_ctx: str = "",
+    brand_context: Optional[dict] = None,
+    hooks_ctx: str = "",
+    topic_focus: Optional[str] = None,
 ) -> str:
-    """Return the system prompt for the writing phase."""
+    """Return the system prompt for the writing phase.
+
+    brand_context (from fetch_brand_profile) is pre-injected so the copywriter
+    has deep brand intelligence WITHOUT needing an extra tool-call round-trip.
+    """
     rejection_section = (
         f"\n{rejection_history}\n" if rejection_history.strip() else ""
     )
     experiences_section = (
         f"\n{experiences_ctx}\n" if experiences_ctx.strip() else ""
     )
+    hooks_section = f"\n{hooks_ctx}\n" if hooks_ctx.strip() else ""
+
+    # ── Pre-inject deep brand intelligence ───────────────────────────────
+    brand_section = ""
+    if brand_context:
+        bc = brand_context
+        anxiety = bc.get("anxiety_list", [])
+        benefits = bc.get("benefit_list", [])
+        power_words = bc.get("power_words", [])
+        lingo = bc.get("industry_lingo", [])
+        metaphors = bc.get("metaphors", [])
+        journals = bc.get("emotional_journal_summary", [])
+        brand_section = (
+            "\n## Brand Intelligence (Use This — Do NOT Be Generic)\n"
+            f"**Voice:** {bc.get('voice', '')}\n"
+            f"**ICA:** {bc.get('ica', '')}\n"
+            f"**Positioning:** {bc.get('positioning', '')}\n"
+            f"**Tagline:** {bc.get('tagline', '')}\n"
+            f"**Transformation:** {bc.get('transformation_zero', '')} → {bc.get('transformation_dream', '')}\n"
+            f"**ICA's TOP FEARS (mirror these):** {', '.join(str(x) for x in anxiety[:5]) if anxiety else 'not set'}\n"
+            f"**ICA's TOP DESIRES (speak to these):** {', '.join(str(x) for x in benefits[:5]) if benefits else 'not set'}\n"
+            f"**Power Words (use their vocabulary):** {', '.join(str(x) for x in power_words[:10]) if power_words else 'not set'}\n"
+            f"**Industry Lingo:** {', '.join(str(x) for x in lingo[:8]) if lingo else 'not set'}\n"
+            f"**Resonant Metaphors:** {', '.join(str(x) for x in metaphors[:3]) if metaphors else 'not set'}\n"
+        )
+        if journals:
+            brand_section += (
+                "**Real Stories to Ground Your Post (use at least one):**\n"
+                + "\n".join(f"  - {j}" for j in journals) + "\n"
+            )
+
+    topic_section = ""
+    if topic_focus and topic_focus.strip():
+        topic_section = (
+            "## PRIORITY TOPIC (User-Approved)\n"
+            f"Write specifically about: **{topic_focus.strip()}**\n"
+            "Use the brand context below but centre this post on the topic above.\n\n"
+        )
+
+    research_section = ""
+    if research_brief and research_brief.strip():
+        research_section = f"## Research Brief\n{research_brief}"
+
     return (
         "You are an expert LinkedIn Copywriter for personal brand creators.\n\n"
         "Your job: Write ONE compelling LinkedIn post based on the research brief below.\n\n"
+        f"{topic_section}"
         f"{analytics_ctx}\n"
+        f"{brand_section}"
+        f"{hooks_section}"
         f"{rejection_section}"
         f"{experiences_section}"
         "## Writing Rules\n"
@@ -653,16 +814,17 @@ def build_writing_prompt(
         "- No em dashes (— or –), no 'in conclusion', no AI-tell phrases\n"
         "- First-person voice (I, my, we)\n"
         "- End with a clear, specific call to action\n"
-        "- Target: 150–300 words\n\n"
+        "- Target: 150–300 words\n"
+        "- CRITICAL: Sound like a real human, not an AI. Use specific numbers, names, real experiences.\n"
+        "- Mirror the ICA's fears and desires. Use their exact vocabulary (power words above).\n\n"
         "## Your Process\n"
         "1. Call read_playbook(agent_id='copywriter', user_id=<user_id>) to load your playbook\n"
-        "2. Call fetch_brand_profile(brand_id=<brand_id>) to load voice, ICA, and positioning\n"
-        "3. Write the post using the research brief and brand voice\n"
+        "2. Call fetch_brand_profile(brand_id=<brand_id>) to load full brand voice + intelligence\n"
+        "3. Write the post — ground it in a real story, specific number, or fear from the Brand Intelligence above\n"
         "4. Call score_content_quality(content=<your draft>) to self-check\n"
         "5. If issues found, revise once — then output the final post\n"
         "6. Output ONLY the final post text (no commentary)\n\n"
-        "## Research Brief\n"
-        f"{research_brief[:3000]}"
+        f"{research_section}"
     )
 
 
@@ -723,6 +885,7 @@ def save_deliverable(
     content: str,
     qa_score: int,
     title: Optional[str] = None,
+    source: str = "autonomous",
 ) -> str:
     """Save draft to agent_deliverables. Returns deliverable_id (empty string on error).
 
@@ -746,6 +909,7 @@ def save_deliverable(
             "created_by_agent_id": "copywriter",
             "status": status,
             "qa_score": qa_score,
+            "source": source,
         }).execute()
 
         logger.info(

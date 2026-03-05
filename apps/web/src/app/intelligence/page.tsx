@@ -14,6 +14,7 @@ import { useBrand } from "@/lib/brand-context";
 import { gatewayApi, GatewayAgent } from "@/lib/api/gateway";
 import { missionControlApi, Deliverable } from "@/lib/api/mission-control";
 import { journalApi, JournalEntry, SourceType, SuggestResult } from "@/lib/api/journal";
+import { agentBridgeApi } from "@/lib/api/agent-bridge";
 import AgentTrainingPanel from "@/components/agent-training-panel";
 
 type Tab = "agents" | "deliverables" | "journal";
@@ -63,6 +64,11 @@ function AgentsTab() {
   const [taskInputs, setTaskInputs] = useState<Record<string, string>>({});
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
+  const [activityFeed, setActivityFeed] = useState<Array<{
+    id: string; agent_id: string; task_type: string; summary: string;
+    status: string; created_at: string; emoji: string;
+  }>>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -73,6 +79,19 @@ function AgentsTab() {
       })
       .catch(() => setConnected(false))
       .finally(() => setLoading(false));
+  }, []);
+
+  // Load real activity feed from agent_ledger (polls every 15s)
+  useEffect(() => {
+    const load = () => {
+      agentBridgeApi.getActivityFeed(20)
+        .then((res) => setActivityFeed(res.items))
+        .catch(() => {})
+        .finally(() => setActivityLoading(false));
+    };
+    load();
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
   }, []);
 
   const handleSendTask = async (agentId: string) => {
@@ -179,6 +198,43 @@ function AgentsTab() {
           })}
         </div>
       )}
+
+      {/* Real Activity Feed from agent_ledger */}
+      <div className="rounded-xl border border-border bg-card/50">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">Agent Activity Feed</h3>
+          <span className="text-[10px] text-muted-foreground">Live · updates every 15s</span>
+        </div>
+        {activityLoading ? (
+          <div className="p-4 space-y-2">
+            {[...Array(5)].map((_, i) => <div key={i} className="h-8 rounded bg-muted/20 animate-pulse" />)}
+          </div>
+        ) : activityFeed.length === 0 ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            No agent activity yet. Run the pipeline to see agents in action.
+          </div>
+        ) : (
+          <div className="divide-y divide-border/50 max-h-80 overflow-y-auto">
+            {activityFeed.map((item) => (
+              <div key={item.id} className="flex items-start gap-3 px-4 py-2.5">
+                <span className="text-base shrink-0 mt-0.5">{item.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-foreground capitalize">{item.agent_id}</span>
+                    <span className={`text-[9px] px-1 py-0.5 rounded font-mono ${item.status === "done" ? "bg-green-500/15 text-green-400" : item.status === "error" ? "bg-red-500/15 text-red-400" : "bg-zinc-500/15 text-zinc-400"}`}>
+                      {item.status}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
+                      {item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">{item.summary}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

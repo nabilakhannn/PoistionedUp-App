@@ -184,4 +184,53 @@ export const agentBridgeApi = {
   /** Get active brand */
   getActiveBrand: () =>
     apiFetch("/agent-api/active-brand"),
+
+  /** Get real agent activity feed from agent_ledger */
+  getActivityFeed: (limit?: number) =>
+    apiFetch<{
+      items: Array<{
+        id: string;
+        agent_id: string;
+        task_type: string;
+        summary: string;
+        status: string;
+        created_at: string;
+        brand_id: string | null;
+        emoji: string;
+      }>;
+      total: number;
+    }>(`/agent-api/activity-feed?limit=${limit ?? 20}`),
+
+  /** Get real analytics summary from agent_ledger + agent_deliverables */
+  getAnalyticsSummary: (brandId?: string) =>
+    apiFetch<{
+      posts: {
+        total_generated: number;
+        approved: number;
+        rejected: number;
+        approval_rate: number;
+        avg_qa_score: number;
+      };
+      agents: {
+        tasks_completed: number;
+        tasks_failed: number;
+        by_agent: Record<string, number>;
+      };
+      rejection_reasons: Record<string, number>;
+    }>(`/agent-api/analytics-summary${brandId ? `?brand_id=${brandId}` : ""}`),
+
+  /** Get proactive Jumbo suggestions based on 7 trigger conditions */
+  getProactiveSuggestions: (brandId?: string) =>
+    apiFetch<{
+      suggestions: Array<{
+        id: string;
+        priority: "urgent" | "high" | "normal";
+        trigger_type: string;
+        title: string;
+        body: string;
+        action_url: string;
+        cta: string;
+      }>;
+      total: number;
+    }>(`/agent-api/suggestions${brandId ? `?brand_id=${brandId}` : ""}`),
 };

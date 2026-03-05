@@ -25,6 +25,7 @@ import logging
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
 try:
@@ -241,6 +242,157 @@ def run_pipeline_for_brand(user_id: str, brand_id: str, brand_name: str = "") ->
         return False
 
 
+# ── Content plan execution ────────────────────────────────────────────────
+
+
+def _update_plan_status(plan_id: str, status: str) -> None:
+    """PATCH /plan/{plan_id}/status — mark plan status during/after execution."""
+    try:
+        httpx.patch(
+            f"{VERCEL_URL}/plan/{plan_id}/status",
+            json={"status": status},
+            headers=HEADERS,
+            timeout=10.0,
+        )
+    except Exception as exc:
+        logger.warning("_update_plan_status failed plan=%s status=%s: %s", plan_id, status, exc)
+
+
+def run_plan_item(user_id: str, brand_id: str, item: dict) -> bool:
+    """Execute one planned content item through write + QA (skips Phase 1 research).
+
+    The topic_focus is already user-approved — no research needed.
+    """
+    topic = item.get("topic", "")
+    angle = item.get("angle", "")
+    fmt = item.get("format", "post")
+    label = topic[:60] if topic else "(no topic)"
+
+    base = f"{VERCEL_URL}/orchestrator/pipeline"
+    payload_base = {"brand_id": brand_id, "user_id": user_id}
+
+    logger.info("  [PLAN] Item start — %s", label)
+
+    try:
+        # Phase 2: Write (topic_focus skips research brief; source='planned' for display)
+        topic_focus = f"{topic} — {angle}".strip(" —") if angle else topic
+        r2 = httpx.post(
+            f"{base}/write",
+            json={
+                **payload_base,
+                "research_brief": "",         # empty — topic_focus overrides
+                "topic_focus": topic_focus[:500],
+                "source": "planned",
+                "format": fmt,
+            },
+            headers=HEADERS,
+            timeout=58.0,
+        )
+        r2.raise_for_status()
+        draft = r2.json().get("draft", "")
+
+        if not draft:
+            logger.warning("  [PLAN] Write returned empty draft — %s", label)
+            return False
+
+        # Phase 3: QA (thread source so deliverable is tagged correctly)
+        r3 = httpx.post(
+            f"{base}/qa",
+            json={**payload_base, "draft": draft, "source": "planned"},
+            headers=HEADERS,
+            timeout=58.0,
+        )
+        r3.raise_for_status()
+        qa_data = r3.json()
+
+        logger.info(
+            "  [PLAN] Item done — score=%d verdict=%s topic=%s",
+            qa_data.get("qa_score", 0),
+            qa_data.get("verdict", "?"),
+            label,
+        )
+        return True
+
+    except httpx.HTTPStatusError as exc:
+        body = ""
+        try:
+            body = exc.response.text[:500]
+        except Exception:
+            pass
+        logger.error("[PLAN] HTTP error %d for topic=%s body=%s", exc.response.status_code, label, body)
+        return False
+    except httpx.TimeoutException:
+        logger.error("[PLAN] Timeout writing topic=%s", label)
+        return False
+    except Exception as exc:
+        logger.error("[PLAN] Unexpected error topic=%s: %s", label, exc)
+        return False
+
+
+def run_approved_plans() -> None:
+    """Fetch and execute all user-approved content plans.
+
+    Called at the start of each poll cycle — user-planned content takes priority
+    over the autonomous pipeline. Plans are executed with up to 3 parallel workers
+    (one per item), so a 3-post plan completes in ~1 minute instead of ~3.
+    """
+    try:
+        resp = httpx.get(
+            f"{VERCEL_URL}/plan/approved-for-runner",
+            headers=HEADERS,
+            timeout=15.0,
+        )
+        resp.raise_for_status()
+        plans = resp.json().get("plans", [])
+    except Exception as exc:
+        logger.error("run_approved_plans: fetch failed: %s", exc)
+        return
+
+    if not plans:
+        return
+
+    logger.info("[PLAN] %d approved plan(s) to execute", len(plans))
+
+    for plan in plans:
+        plan_id = plan.get("id", "")
+        user_id = plan.get("user_id", "")
+        brand_id = plan.get("brand_id", "")
+        items = plan.get("items", [])
+
+        if not (plan_id and user_id and brand_id and items):
+            logger.warning("[PLAN] Skipping malformed plan=%s", plan_id)
+            continue
+
+        logger.info("[PLAN] Executing plan=%s items=%d", plan_id[:8], len(items))
+        _update_plan_status(plan_id, "executing")
+
+        try:
+            with ThreadPoolExecutor(max_workers=3) as ex:
+                futures = {
+                    ex.submit(run_plan_item, user_id, brand_id, item): item
+                    for item in items
+                }
+                failed = 0
+                for future in as_completed(futures):
+                    item = futures[future]
+                    if not future.result():
+                        failed += 1
+                        logger.warning("[PLAN] Item failed — topic: %s", item.get("topic", "unknown"))
+
+            final_status = "failed" if failed == len(items) else "done"
+            _update_plan_status(plan_id, final_status)
+            logger.info(
+                "[PLAN] plan=%s %s (%d/%d succeeded)",
+                plan_id[:8],
+                final_status,
+                len(items) - failed,
+                len(items),
+            )
+        except Exception as exc:
+            logger.error("[PLAN] plan=%s executor failed: %s", plan_id[:8], exc)
+            _update_plan_status(plan_id, "failed")
+
+
 def run_publish() -> None:
     """Call /cron/publish to post any approved scheduled content."""
     try:
@@ -297,8 +449,11 @@ def main() -> None:
     )
 
     while True:
-        controls = get_pipeline_controls()
+        # 1. User-planned content first (priority over autonomous pipeline)
+        run_approved_plans()
 
+        # 2. Autonomous pipeline for scheduled users
+        controls = get_pipeline_controls()
         due = [c for c in controls if is_due(c)]
         if due:
             logger.info("%d user(s) due for pipeline run", len(due))

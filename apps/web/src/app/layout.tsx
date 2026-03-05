@@ -5,6 +5,7 @@ import { NavBar } from "./nav-bar";
 import { BrandProvider } from "@/lib/brand-context";
 import { OnboardingGuard } from "./onboarding-guard";
 import { PostHogProvider } from "./posthog-provider";
+import { JumboSuggestions } from "@/components/jumbo-suggestions";
 
 export const metadata: Metadata = {
   title: "PositionedUp",
@@ -29,6 +30,7 @@ export default function RootLayout({
           <main className="md:pl-60 pt-14 md:pt-0 min-h-screen">
             {children}
           </main>
+          <JumboSuggestions />
         </BrandProvider>
       </body>
     </html>

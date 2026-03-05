@@ -39,7 +39,9 @@ from app.services.jumbo_pipeline import (
     build_writing_prompt,
     check_monthly_budget,
     get_analytics_context,
+    get_brand_context,
     get_competitor_context,
+    get_hooks_for_brand,
     get_rejection_history,
     get_relevant_experiences,
     get_trend_memory,
@@ -131,6 +133,9 @@ class WriteRequest(BaseModel):
     brand_id: str
     user_id: str
     research_brief: str
+    topic_focus: Optional[str] = None  # user-planned content: explicit topic (capped at 500 chars)
+    source: str = "autonomous"          # 'autonomous' | 'planned'
+    format: Optional[str] = None        # e.g. 'carousel', 'thread', 'post'
 
 
 class WriteResponse(BaseModel):
@@ -142,6 +147,7 @@ class QARequest(BaseModel):
     brand_id: str
     user_id: str
     draft: str
+    source: str = "autonomous"          # threaded from Phase 2
 
 
 class QAResponse(BaseModel):
@@ -226,14 +232,23 @@ async def pipeline_write(
     """
     _validate_ids(req.brand_id, req.user_id)
 
+    # topic_focus: cap to prevent prompt injection; prefer it over research_brief for relevance ranking
+    safe_topic = (req.topic_focus or "")[:500].strip()
+
     analytics_ctx = get_analytics_context(req.brand_id)
     rejection_history = get_rejection_history(req.user_id, req.brand_id)
     experiences_ctx, experience_ids = get_relevant_experiences(
-        req.user_id, req.brand_id, topic=req.research_brief[:500]
+        req.user_id, req.brand_id,
+        topic=safe_topic if safe_topic else req.research_brief[:500],
     )
+    brand_ctx = get_brand_context(req.brand_id)
+    hooks_ctx = get_hooks_for_brand(req.brand_id)
 
     system_prompt = build_writing_prompt(
-        req.research_brief, analytics_ctx, rejection_history, experiences_ctx
+        req.research_brief, analytics_ctx, rejection_history, experiences_ctx,
+        brand_context=brand_ctx,
+        hooks_ctx=hooks_ctx,
+        topic_focus=safe_topic or None,
     )
     user_prompt = (
         f"Write a LinkedIn post for brand_id={req.brand_id}. "
@@ -308,6 +323,7 @@ async def pipeline_qa(
             content=req.draft,
             qa_score=0,
             title="Pipeline post — QA failed",
+            source=req.source,
         )
         return QAResponse(
             qa_score=0,
@@ -324,6 +340,7 @@ async def pipeline_qa(
         content=req.draft,
         qa_score=qa_score,
         title=f"Pipeline post — QA {qa_score}/100",
+        source=req.source,
     )
 
     if qa_score >= 80 and deliverable_id:

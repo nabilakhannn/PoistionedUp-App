@@ -81,6 +81,7 @@ class PipelineSettingsResponse(BaseModel):
     run_now: bool
     last_run_at: Optional[str] = None
     next_run_at: Optional[str] = None
+    monthly_budget_usd: float = 20.0
 
 
 class UpdateSettingsRequest(BaseModel):
@@ -109,6 +110,7 @@ async def get_pipeline_settings(user: CurrentUser = Depends(get_current_user)):
         run_now=row.get("run_now", False),
         last_run_at=row.get("last_run_at"),
         next_run_at=row.get("next_run_at"),
+        monthly_budget_usd=float(row.get("monthly_budget_usd") or 20.0),
     )
 
 
@@ -146,7 +148,30 @@ async def update_pipeline_settings(
         run_now=row.get("run_now", False),
         last_run_at=row.get("last_run_at"),
         next_run_at=row.get("next_run_at"),
+        monthly_budget_usd=float(row.get("monthly_budget_usd") or 20.0),
     )
+
+
+@router.get("/pipeline/approvals/count")
+async def get_approvals_count(user: CurrentUser = Depends(get_current_user)):
+    """Return count of agent deliverables waiting for approval (status='review').
+
+    Used by the NavBar to show the Approvals badge on Today without
+    polling the full deliverables list.
+    """
+    try:
+        sb = get_admin_client()
+        result = (
+            sb.table("agent_deliverables")
+            .select("id", count="exact")
+            .eq("user_id", user.id)
+            .eq("status", "review")
+            .execute()
+        )
+        return {"count": result.count or 0}
+    except Exception as exc:
+        logger.warning("get_approvals_count failed for user=%s: %s", user.id, exc)
+        return {"count": 0}
 
 
 @router.post("/pipeline/run-now", response_model=PipelineSettingsResponse)
@@ -168,6 +193,7 @@ async def trigger_run_now(user: CurrentUser = Depends(get_current_user)):
         run_now=True,
         last_run_at=row.get("last_run_at"),
         next_run_at=row.get("next_run_at"),
+        monthly_budget_usd=float(row.get("monthly_budget_usd") or 20.0),
     )
 
 

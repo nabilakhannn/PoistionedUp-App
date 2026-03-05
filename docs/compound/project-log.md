@@ -4757,3 +4757,189 @@ Key architectural decisions:
 | `apps/web/tests/new-features-auth.spec.ts` | NEW — 31 authenticated tests with API mock |
 | `apps/web/tests/new-features.spec.ts` | UPDATED — stripped to 29 unauthenticated tests; added Slice 101 API health checks |
 | `apps/web/playwright.config.ts` | UPDATED — added globalSetup |
+
+---
+
+## Slice 102 — Make Everything Real
+
+**Date:** 2026-03-05
+**Tests:** 22 new tests — 22/22 passing
+**TypeScript:** 0 errors
+**Migrations:** 040_hook_library.sql
+
+**What we did:** Fixed all 7 broken feedback loops that were making content feel generic and agents feel fake. The root diagnosis: deep brand intelligence (anxiety_list, power_words, metaphors, emotional journals) was gated behind `is_client_brand=True` — the entire 8-section dossier built in Slices 97-99 was unreachable for 99% of users. Rejection feedback was silently failing because `submit_report` required `X-Agent-Key` but the frontend sends JWT (hidden by `.catch(() => {})`). QA was regex-only. Activity feed and analytics showed fake/hardcoded data. Now all 7 loops are live.
+
+**Key behaviors unlocked:**
+1. **Fix A — Rich brand context**: All brands (not just `is_client_brand=True`) now receive the full 8-section dossier injected directly into the copywriter system prompt — no extra tool-call round-trip. `build_writing_prompt()` pre-loads ICA fears, power words, metaphors, and real journal stories before the LLM writes.
+2. **Fix B — Rejection feedback**: `handleReject()` now saves `"voice_feedback | tag: {tag} | excerpt: {first 300 chars}"` to `agent_memory`. The broken auth was fixed by a new `get_user_or_agent_caller` dual-auth dependency that accepts either `X-Agent-Key` (agents) or `Authorization: Bearer {jwt}` (frontend).
+3. **Fix C — LLM QA**: Hybrid approach — fast rule-based checks (AI tells, em dashes) + gpt-4o-mini semantic scoring across 6 dimensions: voice_authenticity, hook_strength, grounding, human_feel, virality, goal_alignment. Pass = avg ≥ 7.0. Cost ~$0.001/call. Graceful fallback to rule-based if LLM unavailable.
+4. **Fix D — Real activity feed**: `GET /agent-api/activity-feed` reads from `agent_ledger`. Intelligence page AgentsTab now shows live agent activity with emoji + timestamps, polling every 15s.
+5. **Fix E — Real analytics**: `GET /agent-api/analytics-summary` aggregates from `agent_deliverables` (posts generated/approved/rejected, avg QA), `agent_ledger` (tasks by agent), and `agent_memory` (rejection reason breakdown). Analytics page shows real metrics at top.
+6. **Fix F — Hook Library**: New `hook_library` table (migration 040). Full CRUD at `/hooks`. Agents pull hooks before every write via `get_hooks_for_brand()`. Auto-populated: approving a post saves its opening line as a `source: "pipeline_approved"` hook. Studio → Hooks page with filter tabs, grouped grid, inline edit/delete.
+7. **Fix G — Proactive Jumbo triggers**: 7 trigger conditions (48h no post, 3-day journal gap, same hook type 3x, competitor threat >70, stale approvals, new leads ≥3, avg QA <75 this week). Floating suggestion bubble bottom-right on every page, polls every 5 min.
+
+**Security:** A01 IDOR — hook mutations check user_id match; analytics/activity enforce caller's user_id. A03 Injection — brand_id UUID regex before all queries; hook text stripped + max 1000 chars; `VALID_HOOK_TYPES` whitelist. A07 Auth — `get_user_or_agent_caller`: either API key (timing-safe `hmac.compare_digest`) or validated JWT. No anonymous access.
+
+**Root cause discoveries:**
+- `is_client_brand` gate silently starved regular brands of intelligence since Slice 97
+- `submit_report` required `X-Agent-Key` since Slice 85 — frontend JWT calls always failed, hidden by `.catch(() => {})`
+- `import httpx` inside function body bypasses `patch("module.httpx")` — fixed by using module-level import
+- Lazy `from app.deps import get_admin_client` inside functions requires patching `app.deps.get_admin_client`, not calling module
+
+| File | Change |
+|------|--------|
+| `apps/api/app/services/tool_use_agents.py` | Fix A: removed `is_client_brand` gate, all brands get full dossier; Fix C: hybrid LLM QA scoring |
+| `apps/api/app/services/jumbo_pipeline.py` | Fix A: `get_brand_context()` + `get_hooks_for_brand()` helpers; `build_writing_prompt()` + `brand_context` + `hooks_ctx` params; removed `[:3000]` truncation |
+| `apps/api/app/routers/pipeline.py` | Fix A: calls `get_brand_context()` + `get_hooks_for_brand()`, passes to prompt builder |
+| `apps/api/app/routers/agent_bridge.py` | Fix B: `get_user_or_agent_caller` dual-auth; Fix D: `GET /agent-api/activity-feed`; Fix E: `GET /agent-api/analytics-summary`; Fix G: `GET /agent-api/suggestions` |
+| `apps/api/app/routers/hooks.py` | NEW — Full Hook Library CRUD + `GET /hooks/for-agent` |
+| `apps/api/app/services/proactive_triggers.py` | NEW — 7 trigger conditions, `get_suggestions()` |
+| `apps/api/app/main.py` | Register hooks router |
+| `infra/supabase/migrations/040_hook_library.sql` | NEW — hook_library table + RLS + `increment_hook_usage` RPC |
+| `apps/web/src/app/mission-control/page.tsx` | Fix B: `handleReject()` saves post excerpt; Fix F: `handleApprove()` auto-saves hook |
+| `apps/web/src/app/intelligence/page.tsx` | Fix D: activity feed panel, polls 15s |
+| `apps/web/src/app/mission-control/analytics/page.tsx` | Fix E: real analytics section from API |
+| `apps/web/src/app/studio/hooks/page.tsx` | NEW — Hook Library UI (filter tabs, grid, inline edit) |
+| `apps/web/src/app/layout.tsx` | Fix G: `<JumboSuggestions />` added inside BrandProvider |
+| `apps/web/src/components/jumbo-suggestions.tsx` | NEW — floating suggestion bubble |
+| `apps/web/src/lib/api/agent-bridge.ts` | Added `getActivityFeed`, `getAnalyticsSummary`, `getProactiveSuggestions` |
+| `apps/web/src/lib/api/hooks.ts` | NEW — `hooksApi` client + `HOOK_TYPE_LABELS` |
+| `apps/api/tests/test_slice102_make_real.py` | NEW — 22 tests (all passing) |
+| `docs/compound/patterns/slice-102-make-everything-real.md` | NEW — slice pattern doc |
+
+See full details: `docs/compound/patterns/slice-102-make-everything-real.md`
+
+---
+
+## Slice 103 — Morning Briefing Home Screen
+
+**Date:** 2026-03-05
+**Tests:** 8 new tests — 8/8 passing
+**TypeScript:** 0 errors
+**Migrations:** None
+
+**What we did:** Transformed the Mission Control home from a pipeline operations dashboard into a single "Morning Briefing" screen. Removed the 5-stage Pipeline Funnel, AgentOffice, and TranscriptDrop shortcut. Added inline post expand/collapse on approval cards (click "▼ Show post" to read in full without navigating away), Today's Priorities (top 3 proactive suggestions from Slice 102), What Happened Overnight (real activity feed grouped by agent), Leads Pulse (3 counts from new endpoint), and Performance Pulse (approval rate + avg QA + top rejection reason). Side-by-side Leads/Performance on wide screens. Renamed nav: Home→Today, Marketing→Create, Sales→Grow. Added `GET /leads/pulse` backend endpoint with IDOR + UUID validation.
+
+**Key behaviors unlocked:**
+1. User opens app → one screen answers everything: what needs approval, what to do today, what happened, how leads and content are performing
+2. Approval card: collapsed shows first 120 chars + QA score + Approve/Reject. Click "▼ Show post" → full text expands inline. No navigation needed.
+3. "Today's Priorities" shows top 3 from Jumbo's proactive trigger engine. Empty state: "Nothing urgent — agents are running."
+4. "What Happened Overnight" groups agent_ledger entries by agent — plain English: "Copywriter · 3 tasks · 2 ✓ · 1 ✗ · 2h ago"
+5. Leads Pulse: `new_leads` = last 24h, `unreviewed` = status in (new, enriched), `active_sequences` = sequences with status=active
+6. Nav now reads: Today / Brand / Create / Grow / Studio / Settings
+
+**Security:** A01 IDOR (`leads_pulse` verifies brand belongs to caller), A03 UUID regex before DB query, A07 `Depends(get_current_user)` on endpoint.
+
+| File | Change |
+|------|--------|
+| `apps/api/app/routers/leads.py` | Added `GET /leads/pulse` + datetime import |
+| `apps/web/src/app/mission-control/page.tsx` | Complete rewrite as Morning Briefing |
+| `apps/web/src/lib/api/leads.ts` | Added `getLeadsPulse()` method |
+| `apps/web/src/app/nav-bar.tsx` | Renamed 3 nav labels |
+| `apps/api/tests/test_slice103_morning_briefing.py` | NEW — 8 tests (all passing) |
+| `docs/compound/patterns/slice-103-morning-briefing.md` | NEW — slice pattern doc |
+
+See full details: `docs/compound/patterns/slice-103-morning-briefing.md`
+
+---
+
+## Slice 104 — UX Cleanup Sprint
+**Date:** 2026-03-05 | **Status:** Complete
+
+**Why:** Full-app UX audit found 6 issues making the app feel fake or jumbled: hardcoded data, missing guards, inconsistent labels.
+
+**Issues fixed:**
+1. **Monthly budget hardcoded $20** → now reads `monthly_budget_usd` from `pipeline_settings` DB column via API
+2. **Marketing Strategy 5 hardcoded generic pillars** → now loads real `content_pillars` from `agentBridgeApi.getContext()` with skeleton + empty CTA fallback
+3. **Hook Library no brand guard** → early return with "Select a brand" card if no brand selected
+4. **Hook card Edit/Del invisible on mobile** → changed `opacity-0` to `opacity-40` (always tappable)
+5. **MC_SUB_NAV "Home" label** → renamed to "Today" (consistent with Slice 103 nav rename)
+6. **Marketing room h1 "📣 Marketing"** → renamed to "📣 Create" (consistent with nav)
+
+**Gate check:** 0 TS errors · 30/30 pytest · both Vercel projects deployed
+
+| File | Change |
+|------|--------|
+| `apps/api/app/routers/pipeline_settings.py` | Added `monthly_budget_usd` to `PipelineSettingsResponse` |
+| `apps/web/src/lib/api/pipeline-settings.ts` | Added `monthly_budget_usd: number` to interface |
+| `apps/web/src/app/mission-control/page.tsx` | StatusBar uses API budget |
+| `apps/web/src/app/marketing/page.tsx` | Real content pillars + h1 rename |
+| `apps/web/src/app/studio/hooks/page.tsx` | Brand guard + Edit/Del mobile fix |
+| `apps/web/src/app/mission-control/constants.ts` | MC_SUB_NAV "Home" → "Today" |
+| `docs/compound/patterns/slice-104-ux-cleanup.md` | NEW — slice pattern doc |
+
+See full details: `docs/compound/patterns/slice-104-ux-cleanup.md`
+
+---
+
+## Slice 105 — Nav Clarity Sprint
+
+**Date:** 2026-03-05
+**Status:** Complete
+
+**Goal:** Nav felt like an admin control panel. 6 rooms with no explanation. Users couldn't tell what "Studio" or "Today" did without clicking.
+
+**Gap analysis before build caught:**
+- Original plan had "Write a post" CTA → contradicts autonomous agent value prop → replaced with Approvals badge
+- Original plan put Studio in a gear dropdown → breaks Hook Library + Agent Training discoverability → kept visible
+- Settings moved to bottom section instead
+
+**What shipped:**
+1. One-line subtitle under every nav item (Today → "Approvals & briefing", etc.)
+2. Settings out of primary nav → moved to bottom section with gear icon
+3. Live Approvals (N) badge on Today — polls `GET /pipeline/approvals/count` every 60s
+
+| File | Change |
+|------|--------|
+| `apps/api/app/routers/pipeline_settings.py` | `GET /pipeline/approvals/count` — JWT auth, counts review-status deliverables |
+| `apps/web/src/lib/api/pipeline-settings.ts` | `getApprovalsCount()` method |
+| `apps/web/src/app/nav-bar.tsx` | Subtitles, Settings to bottom, Approvals badge on Today |
+| `docs/compound/patterns/slice-105-nav-clarity.md` | NEW — slice pattern doc |
+
+See full details: `docs/compound/patterns/slice-105-nav-clarity.md`
+
+---
+
+## Slice 106 — Plan with Jumbo (Content Planning Conversation)
+
+**Date:** 2026-03-05
+**Status:** Complete
+
+**Goal:** The autonomous pipeline picks topics without asking — users feel like passengers. This slice adds a collaborative planning conversation on the Today screen: Jumbo surfaces trending opportunities, the user decides what they want (topics, angles, how many posts), approves the plan, and Jumbo executes exactly that — skipping Phase 1 research since topics are already user-decided.
+
+**Gap analysis before build caught:**
+1. `build_writing_prompt()` with empty research_brief → hallucination risk → made Research Brief section conditional
+2. VPS runner endpoint needed pipeline-key auth, not JWT → explicit `GET /plan/approved-for-runner`
+3. PLAN: format deviations → manual fallback always available
+4. New users have no trend memory → fall back to `content_pillars` as seed
+5. Zombie plans: executing forever if VPS crashes → `last_updated_at` + >10 min zombie detection
+6. Post-approval UX → 15s status polling + "Jumbo is writing N posts..." banner on Today
+7. Source tagging → `source` column on `agent_deliverables` distinguishes planned vs autonomous posts
+
+**What shipped:**
+1. `content_plans` DB table (migration 041) — items JSONB, status lifecycle, RLS
+2. `content_planning.py` router — 6 endpoints (brainstorm/chat/approve/status + VPS runner endpoints)
+3. `jumbo_pipeline.py` — `topic_focus` param + conditional research_brief section
+4. `pipeline.py` WriteRequest — `topic_focus` + `source` fields
+5. `content-planning.ts` API client (4 methods)
+6. `content-plan-chat.tsx` component — auto-brainstorm on mount, parsePlan(), approval cards, manual fallback
+7. `mission-control/page.tsx` — Plan Content section + 15s status polling + executing banner
+8. `pipeline_runner.py` — `run_plan_item()`, `run_approved_plans()`, ThreadPoolExecutor fan-out
+
+**Gate check:** 25/25 pytest · 0 TS errors
+
+| File | Change |
+|------|--------|
+| `infra/supabase/migrations/041_content_plans.sql` | NEW — content_plans table + source column on deliverables |
+| `apps/api/app/services/jumbo_pipeline.py` | topic_focus param + conditional research_brief |
+| `apps/api/app/routers/pipeline.py` | WriteRequest: topic_focus + source fields |
+| `apps/api/app/routers/content_planning.py` | NEW — 6 endpoints |
+| `apps/api/app/main.py` | Register content_planning.router |
+| `apps/web/src/lib/api/content-planning.ts` | NEW — API client |
+| `apps/web/src/components/content-plan-chat.tsx` | NEW — planning chat component |
+| `apps/web/src/app/mission-control/page.tsx` | Plan Content section + activePlan polling |
+| `deploy/pipeline_runner.py` | run_plan_item() + run_approved_plans() + ThreadPoolExecutor |
+| `apps/api/tests/test_slice106_content_planning.py` | NEW — 25 tests |
+| `docs/compound/patterns/slice-106-plan-with-jumbo.md` | NEW — slice pattern doc |
+
+See full details: `docs/compound/patterns/slice-106-plan-with-jumbo.md`

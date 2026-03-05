@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useBrand } from "@/lib/brand-context";
 import { NotificationBell } from "@/app/mission-control/components/notification-bell";
+import { pipelineSettingsApi } from "@/lib/api/pipeline-settings";
 
 /* ── Icon components ─────────────────────────────────── */
 
@@ -101,44 +102,43 @@ function CloseIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── 5 Primary Rooms ─────────────────────────────────── */
+/* ── Primary Rooms ───────────────────────────────────── */
 
 const PRIMARY_NAV = [
   {
     href: "/mission-control",
-    label: "Home",
+    label: "Today",
+    subtitle: "Approvals & briefing",
     icon: CommandIcon,
     match: (p: string) => p === "/mission-control" || (p.startsWith("/mission-control/") && !p.startsWith("/mission-control/settings")),
   },
   {
     href: "/brands",
     label: "Brand",
+    subtitle: "Brand intelligence",
     icon: BrandIcon,
     match: (p: string) => p.startsWith("/brands"),
   },
   {
     href: "/marketing",
-    label: "Marketing",
+    label: "Create",
+    subtitle: "Content & campaigns",
     icon: MarketingIcon,
     match: (p: string) => p.startsWith("/marketing"),
   },
   {
     href: "/sales",
-    label: "Sales",
+    label: "Grow",
+    subtitle: "Leads & outreach",
     icon: SalesIcon,
     match: (p: string) => p.startsWith("/sales"),
   },
   {
     href: "/intelligence",
     label: "Studio",
+    subtitle: "Agents & tools",
     icon: IntelligenceIcon,
     match: (p: string) => p.startsWith("/intelligence"),
-  },
-  {
-    href: "/mission-control/settings",
-    label: "Settings",
-    icon: SettingsIcon,
-    match: (p: string) => p.startsWith("/mission-control/settings"),
   },
 ];
 
@@ -153,6 +153,7 @@ export function NavBar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { brands, currentBrand, selectBrand, loading: brandsLoading } = useBrand();
+  const [approvalCount, setApprovalCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -166,6 +167,18 @@ export function NavBar() {
   }, []);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  // Poll approval count every 60s so the badge stays current
+  useEffect(() => {
+    const fetchCount = () => {
+      pipelineSettingsApi.getApprovalsCount()
+        .then((r) => setApprovalCount(r.count))
+        .catch(() => {/* silent — badge just stays at last value */});
+    };
+    fetchCount();
+    const id = setInterval(fetchCount, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -257,7 +270,7 @@ export function NavBar() {
         </div>
       )}
 
-      {/* 5 Primary Rooms */}
+      {/* Primary Rooms */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
         <p className="px-3 mb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           Rooms
@@ -265,36 +278,57 @@ export function NavBar() {
         {PRIMARY_NAV.map((item) => {
           const Icon = item.icon;
           const active = item.match(pathname || "");
+          const isTodayBadge = item.href === "/mission-control" && approvalCount > 0;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                 active
                   ? "bg-primary/15 text-primary border border-primary/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent border border-transparent"
               }`}
             >
-              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} />
-              {item.label}
+              <Icon className={`w-[18px] h-[18px] flex-shrink-0 mt-0.5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-medium">{item.label}</span>
+                  {isTodayBadge && (
+                    <span className="text-[9px] font-bold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 leading-none">
+                      {approvalCount}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[10px] leading-none ${active ? "text-primary/70" : "text-muted-foreground/70"}`}>
+                  {item.subtitle}
+                </span>
+              </div>
             </Link>
           );
         })}
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 pb-4 mt-auto border-t border-sidebar-border pt-3 space-y-1">
+      <div className="px-3 pb-4 mt-auto border-t border-sidebar-border pt-3 space-y-0.5">
         {/* Journal quick-access — one click from anywhere */}
         <Link
           href="/intelligence?tab=journal"
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            pathname?.startsWith("/intelligence")
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+        >
+          <JournalIcon className="w-[18px] h-[18px]" />
+          Journal
+        </Link>
+        {/* Settings */}
+        <Link
+          href="/mission-control/settings"
+          className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            pathname?.startsWith("/mission-control/settings")
               ? "text-primary"
               : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
           }`}
         >
-          <JournalIcon className="w-[18px] h-[18px]" />
-          Journal
+          <SettingsIcon className="w-[18px] h-[18px]" />
+          Settings
         </Link>
         <div className="flex items-center gap-3 px-3 py-2">
           <NotificationBell />
@@ -302,7 +336,7 @@ export function NavBar() {
         </div>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
         >
           <LogOutIcon className="w-[18px] h-[18px]" />
           Sign out

@@ -5,9 +5,10 @@
  * Left sidebar section list + full-page main content area.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useBrand } from "@/lib/brand-context";
+import { agentBridgeApi } from "@/lib/api/agent-bridge";
 import { ContentKanban } from "@/components/content-kanban";
 import { ImageStudio } from "@/components/image-studio";
 import { MarketingCalendar } from "@/components/marketing-calendar";
@@ -26,9 +27,22 @@ const SECTIONS: { key: Section; label: string; emoji: string; description: strin
   { key: "strategy", label: "Strategy", emoji: "🗺️", description: "Content pillars & monthly content plan" },
 ];
 
+const PILLAR_EMOJIS = ["🌱", "⚡", "🔍", "⚙️", "🎯", "💡", "🚀", "🎨"];
+
 export default function MarketingPage() {
   const [activeSection, setActiveSection] = useState<Section>("content");
   const { currentBrand } = useBrand();
+  const [pillars, setPillars] = useState<string[]>([]);
+  const [pillarsLoading, setPillarsLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeSection !== "strategy" || !currentBrand?.id) return;
+    setPillarsLoading(true);
+    agentBridgeApi.getContext(currentBrand.id)
+      .then((ctx) => setPillars(ctx.content_pillars ?? []))
+      .catch(() => setPillars([]))
+      .finally(() => setPillarsLoading(false));
+  }, [activeSection, currentBrand?.id]);
 
   const current = SECTIONS.find((s) => s.key === activeSection)!;
 
@@ -40,7 +54,7 @@ export default function MarketingPage() {
           {/* Room title */}
           <div className="px-2 mb-4">
             <h1 className="text-sm font-bold text-foreground flex items-center gap-2">
-              📣 Marketing
+              📣 Create
             </h1>
             {currentBrand && (
               <span className="text-[10px] text-muted-foreground truncate block mt-0.5">
@@ -198,25 +212,35 @@ export default function MarketingPage() {
                       Edit brand profile →
                     </Link>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {[
-                      { title: "Origin & Mission", desc: "Why you started, what you stand for", emoji: "🌱" },
-                      { title: "Client Transformations", desc: "Before/after stories from your work", emoji: "⚡" },
-                      { title: "Industry Insights", desc: "Contrarian takes and market truths", emoji: "🔍" },
-                      { title: "Behind the Process", desc: "How you work, your methodology", emoji: "⚙️" },
-                      { title: "Rapid-fire Value", desc: "Quick tips, frameworks, and tools", emoji: "🎯" },
-                    ].map((pillar, i) => (
-                      <div key={i} className="rounded-lg border border-border bg-card/50 p-4">
-                        <div className="text-lg mb-2">{pillar.emoji}</div>
-                        <div className="text-sm font-medium text-foreground">{pillar.title}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{pillar.desc}</div>
-                      </div>
-                    ))}
-                    <div className="rounded-lg border border-dashed border-border bg-card/20 p-4 flex flex-col items-center justify-center gap-1 text-center">
-                      <div className="text-lg">✨</div>
-                      <span className="text-xs text-muted-foreground">AI-personalised pillars<br />from your brand research</span>
+                  {pillarsLoading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="rounded-lg border border-border bg-card/30 p-4 h-20 animate-pulse" />
+                      ))}
                     </div>
-                  </div>
+                  ) : pillars.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {pillars.map((pillar, i) => (
+                        <div key={i} className="rounded-lg border border-border bg-card/50 p-4">
+                          <div className="text-lg mb-2">{PILLAR_EMOJIS[i % PILLAR_EMOJIS.length]}</div>
+                          <div className="text-sm font-medium text-foreground">{pillar}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border bg-card/20 px-6 py-8 text-center">
+                      <div className="text-2xl mb-2">✨</div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        No content pillars set yet. Run your brand research to generate personalised pillars.
+                      </p>
+                      <Link
+                        href={`/brands/${currentBrand.id}`}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Run brand research →
+                      </Link>
+                    </div>
+                  )}
                 </div>
 
                 {/* Monthly Focus */}
@@ -228,7 +252,6 @@ export default function MarketingPage() {
                   <div className="flex flex-wrap gap-2">
                     <Link
                       href="/marketing"
-                      onClick={() => {}}
                       className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg font-medium hover:bg-primary/20 transition"
                     >
                       📅 Open Calendar

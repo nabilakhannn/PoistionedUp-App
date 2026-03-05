@@ -49,7 +49,7 @@ export const MESSAGE_TYPE_ICONS: Record<string, string> = {
 };
 
 export const MC_SUB_NAV = [
-  { href: "/mission-control", label: "Home" },
+  { href: "/mission-control", label: "Today" },
   { href: "/mission-control/orchestrator", label: "My Team" },
   { href: "/mission-control/analytics", label: "Results" },
   { href: "/mission-control/settings", label: "Settings" },
