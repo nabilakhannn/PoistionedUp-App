@@ -37,8 +37,8 @@ async function login(page: Page) {
   // Submit via Enter key from the password field (avoids native form GET)
   await passwordInput.press("Enter");
 
-  // Wait for redirect to /brands (login redirects to /brands)
-  await expect(page).toHaveURL(/.*brand/, { timeout: 20000 });
+  // Wait for redirect to /brands or /onboarding (new users go to onboarding)
+  await expect(page).toHaveURL(/(brand|onboarding)/, { timeout: 20000 });
 }
 
 test.describe("Authentication Flow", () => {
@@ -52,7 +52,7 @@ test.describe("Authentication Flow", () => {
 
     await page.goto("http://localhost:3000/brands", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/.*brands/);
-    await expect(page.locator("main")).toBeVisible();
+    await expect(page.locator("main").first()).toBeVisible();
 
     await page.click('button:has-text("Sign out")');
     await expect(page).toHaveURL(/.*login/, { timeout: 10000 });

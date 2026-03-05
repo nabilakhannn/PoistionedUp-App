@@ -18,6 +18,7 @@ import { useBrand } from "@/lib/brand-context";
 import { MC_SUB_NAV } from "./constants";
 import { QuickCapture } from "./components/quick-capture";
 import { AgentOffice } from "@/components/agent-office";
+import TranscriptDrop from "@/components/transcript-drop";
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -193,6 +194,7 @@ export default function MissionControlHome() {
   const [runningNow, setRunningNow] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
+  const [showTranscriptDrop, setShowTranscriptDrop] = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
@@ -516,6 +518,47 @@ export default function MissionControlHome() {
             </div>
           </section>
         )}
+
+        {/* ── CLIENT CALL ANALYSIS ──────────────────── */}
+        <section>
+          {showTranscriptDrop ? (
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  🎙 Analyze Client Call
+                </span>
+                <button
+                  onClick={() => setShowTranscriptDrop(false)}
+                  className="text-muted-foreground hover:text-foreground text-xs transition"
+                >
+                  Close ✕
+                </button>
+              </div>
+              <div className="p-4">
+                <TranscriptDrop
+                  brandId={currentBrand?.id ?? ""}
+                  onSessionCreated={() => setShowTranscriptDrop(false)}
+                />
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowTranscriptDrop(true)}
+              className="w-full rounded-xl border border-dashed border-indigo-500/40 bg-indigo-950/10 hover:bg-indigo-950/20 hover:border-indigo-500/60 px-5 py-4 flex items-center gap-3 transition-colors group"
+            >
+              <span className="text-2xl">🎙</span>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-indigo-300 group-hover:text-indigo-200 transition-colors">
+                  Analyze a Client Call
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Paste or upload a transcript — Account Manager extracts action items
+                </p>
+              </div>
+              <span className="ml-auto text-indigo-500 group-hover:text-indigo-400 text-sm transition-colors">→</span>
+            </button>
+          )}
+        </section>
 
         {/* ── AGENT OFFICE ───────────────────────────── */}
         <AgentOffice />

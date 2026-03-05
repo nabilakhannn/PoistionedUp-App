@@ -317,54 +317,179 @@ def get_knowledge_docs(user_id: str, brand_id: str, agent_id: Optional[str] = No
         return ""
 
 
-def get_relevant_experiences(user_id: str, brand_id: str, topic: str = "") -> str:
+def get_relevant_experiences(
+    user_id: str,
+    brand_id: str,
+    topic: str = "",
+    max_entries: int = 5,
+) -> tuple:
     """Return relevant journal entries for grounding content in real experience.
 
-    Fetches the most recent entries from experience_journal.
-    When a topic is provided, prioritizes matching tags.
+    Selection strategy (in order of priority):
+      1. Pinned entries — user explicitly flagged these (always included, up to max_entries)
+      2. Never-used entries — prefer fresh material the agent hasn't touched yet
+      3. Least-recently-used — avoids repeating the same stories
+
+    When a topic is provided (e.g. Phase 1 research brief), Claude Haiku ranks
+    all candidates by relevance and the top max_entries are chosen.
+
+    Returns:
+      tuple[str, list[str]]: (formatted_context_for_prompt, list_of_selected_entry_ids)
+      The caller should pass the IDs to mark_experiences_used() after a successful write.
     """
     if not _is_valid_uuid(user_id) or not _is_valid_uuid(brand_id):
-        return ""
+        return ("", [])
 
     try:
         from app.deps import get_admin_client
         sb = get_admin_client()
 
+        # Fetch all entries — ordered: pinned first, then least-used, then oldest
         result = (
             sb.table("experience_journal")
-            .select("title, source_type, raw_content, tags, created_at")
+            .select("id, title, source_type, raw_content, tags, created_at, times_used, pinned")
             .eq("user_id", user_id)
             .eq("brand_id", brand_id)
-            .order("created_at", desc=True)
-            .limit(3)
+            .order("pinned", desc=True)
+            .order("times_used", desc=False)
+            .order("created_at", desc=False)
+            .limit(50)
             .execute()
         )
 
         if not result.data:
-            return ""
+            return ("", [])
+
+        all_entries = result.data
+
+        # If topic is provided, use AI to rank by relevance
+        selected = _rank_entries_by_topic(all_entries, topic, max_entries) if topic.strip() else all_entries[:max_entries]
+
+        selected_ids = [e["id"] for e in selected]
 
         lines = ["## Your Real Experiences — Use These in Your Writing\n"]
         lines.append(
             "Ground your content in these real experiences. "
-            "Reference them naturally (e.g., 'I was on a call last week...'):\n"
+            "Reference them naturally (e.g., 'I was on a call last week...', "
+            "'A client told me...', 'I just helped someone with...'):\n"
         )
 
-        for entry in result.data:
+        for entry in selected:
             title = entry.get("title") or entry.get("source_type", "Experience")
-            preview = str(entry.get("raw_content", ""))[:300].strip()
+            preview = str(entry.get("raw_content", ""))[:400].strip()
             tags = entry.get("tags") or []
             date = str(entry.get("created_at", ""))[:10]
-            lines.append(f"**{title}** ({date})")
+            used = entry.get("times_used", 0)
+            pinned = entry.get("pinned", False)
+
+            pin_marker = " 📌" if pinned else ""
+            used_note = " (never used before — fresh story)" if used == 0 else f" (used {used}x)"
+            lines.append(f"**{title}**{pin_marker} — {date}{used_note}")
             if tags:
                 lines.append(f"Tags: {', '.join(tags)}")
-            lines.append(f"{preview}...")
+            lines.append(preview + ("..." if len(str(entry.get("raw_content", ""))) > 400 else ""))
             lines.append("")
 
-        return "\n".join(lines)
+        return ("\n".join(lines), selected_ids)
 
     except Exception as exc:
         logger.warning("get_relevant_experiences failed user=%s brand=%s: %s", user_id, brand_id, exc)
-        return ""
+        return ("", [])
+
+
+def _rank_entries_by_topic(entries: list, topic: str, max_entries: int) -> list:
+    """Use Claude Haiku to rank journal entries by relevance to a topic.
+
+    Falls back to the default ordering (pinned first, least-used) if the
+    AI call fails. Pinned entries are always preserved in the final selection.
+
+    Returns the top max_entries entries from AI ranking.
+    """
+    pinned = [e for e in entries if e.get("pinned")]
+    unpinned = [e for e in entries if not e.get("pinned")]
+
+    # If we already have enough pinned entries, skip AI ranking
+    if len(pinned) >= max_entries:
+        return pinned[:max_entries]
+
+    slots_left = max_entries - len(pinned)
+
+    # Build compact entry summaries for Haiku (avoid sending huge content)
+    summaries = []
+    for e in unpinned[:30]:  # cap at 30 to stay within Haiku token budget
+        preview = str(e.get("raw_content", ""))[:150].strip().replace("\n", " ")
+        summaries.append(f"ID:{e['id']} | {e.get('title') or e.get('source_type','note')} | {preview}")
+
+    if not summaries:
+        return pinned
+
+    try:
+        import openai as _openai
+        client = _openai.OpenAI()
+
+        prompt = (
+            f"You are selecting journal entries to ground a LinkedIn post.\n\n"
+            f"Topic/Research Brief (first 400 chars):\n{topic[:400]}\n\n"
+            f"Journal entries (one per line — ID | title | preview):\n"
+            + "\n".join(summaries)
+            + f"\n\nReturn ONLY the {slots_left} most relevant entry IDs, "
+            f"comma-separated. Prefer entries that haven't been used recently. "
+            f"Example: abc-123, def-456"
+        )
+
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=100,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = resp.choices[0].message.content.strip()
+
+        # Parse IDs from response
+        id_set = {e["id"] for e in unpinned}
+        selected_ids = [
+            part.strip()
+            for part in raw.replace("\n", ",").split(",")
+            if part.strip() in id_set
+        ][:slots_left]
+
+        selected_unpinned = [e for e in unpinned if e["id"] in selected_ids]
+
+        # Fill remaining slots with least-used if AI returned fewer than needed
+        if len(selected_unpinned) < slots_left:
+            seen = {e["id"] for e in selected_unpinned}
+            for e in unpinned:
+                if e["id"] not in seen and len(selected_unpinned) < slots_left:
+                    selected_unpinned.append(e)
+
+        return pinned + selected_unpinned
+
+    except Exception as exc:
+        logger.warning("_rank_entries_by_topic AI call failed: %s — using default order", exc)
+        return pinned + unpinned[:slots_left]
+
+
+def mark_experiences_used(entry_ids: list) -> None:
+    """Atomically increment times_used + set last_used_at for each entry.
+
+    Called by the pipeline after a successful Phase 2 write so the same
+    journal entries are not repeated indefinitely. Silent failure — never
+    blocks the pipeline.
+    """
+    if not entry_ids:
+        return
+
+    # Validate every ID before sending to DB
+    valid_ids = [eid for eid in entry_ids if _is_valid_uuid(str(eid))]
+    if not valid_ids:
+        return
+
+    try:
+        from app.deps import get_admin_client
+        sb = get_admin_client()
+        sb.rpc("increment_journal_usage", {"entry_ids": valid_ids}).execute()
+        logger.info("Marked %d journal entries as used: %s", len(valid_ids), valid_ids)
+    except Exception as exc:
+        logger.warning("mark_experiences_used failed: %s", exc)
 
 
 def save_research_brief(user_id: str, brand_id: str, content: str) -> bool:
@@ -507,16 +632,21 @@ def build_writing_prompt(
     research_brief: str,
     analytics_ctx: str,
     rejection_history: str,
+    experiences_ctx: str = "",
 ) -> str:
     """Return the system prompt for the writing phase."""
     rejection_section = (
         f"\n{rejection_history}\n" if rejection_history.strip() else ""
+    )
+    experiences_section = (
+        f"\n{experiences_ctx}\n" if experiences_ctx.strip() else ""
     )
     return (
         "You are an expert LinkedIn Copywriter for personal brand creators.\n\n"
         "Your job: Write ONE compelling LinkedIn post based on the research brief below.\n\n"
         f"{analytics_ctx}\n"
         f"{rejection_section}"
+        f"{experiences_section}"
         "## Writing Rules\n"
         "- Open with a strong hook: question, bold claim, or provocative statement\n"
         "- Short sentences, line breaks between every 2-3 lines\n"

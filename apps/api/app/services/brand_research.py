@@ -197,24 +197,34 @@ def _research(queries: List[str], max_per_query: int = 5) -> str:
 
 
 def _run_niche_analysis(seed: Dict[str, Any], prior_results: Dict) -> Dict[str, Any]:
-    """Stage 1: Research the industry/niche and identify sub-niches."""
+    """Stage 1: Research the industry/niche and identify sub-niches with TAM + ticket size."""
     name = seed.get("name", "")
     industry = seed.get("industry", "")
     description = seed.get("description", "")
 
     research_context = _research([
-        f"{industry} niche market size trends 2025 2026",
-        f"{industry} sub-niches personal branding opportunities",
-        f"best niches for personal brand {industry}",
+        f"{industry} niche market size TAM total addressable market 2025 2026",
+        f"{industry} sub-niches personal branding opportunities ticket size pricing",
+        f"best niches for personal brand {industry} revenue potential",
+        f"{industry} coaching consulting service pricing average deal size",
     ])
 
     result = _llm_json_call(
         system_prompt=(
-            "You are a niche analysis expert. Analyze the industry and identify "
-            "the best sub-niches for personal branding. Return JSON with these keys:\n"
+            "You are a niche analysis expert who also evaluates business viability. "
+            "Analyze the industry and identify the best sub-niches for personal branding "
+            "AND their revenue potential. Return JSON with these keys:\n"
             "- industry_overview: string (2-3 sentence overview)\n"
             "- market_size_trend: string (growing/stable/declining + context)\n"
-            "- sub_niches: array of {name, description, opportunity_score (1-10), reasoning}\n"
+            "- tam: string (Total Addressable Market estimate with source reasoning, e.g. '$4.2B globally')\n"
+            "- tam_reasoning: string (how you estimated it)\n"
+            "- ticket_size: object with {low: string, mid: string, high: string, typical: string} "
+            "  (e.g. low='$97/mo', mid='$2,500 program', high='$25,000 retainer', typical='$3,000-8,000')\n"
+            "- revenue_potential: string (estimated monthly revenue if person gets 3-10 clients)\n"
+            "- agency_revenue_note: string (what a marketing agency managing this person could earn — "
+            "  factor in lead gen, content retainer, and commissions)\n"
+            "- sub_niches: array of {name, description, opportunity_score (1-10), reasoning, "
+            "  typical_ticket_size: string, tam_slice: string}\n"
             "- recommended_niche: string (best sub-niche for this person)\n"
             "- recommended_niche_reasoning: string\n"
             "- key_trends: array of strings (3-5 trends)\n"
@@ -540,7 +550,7 @@ def run_stage(session_id: str, user_id: str) -> Dict[str, Any]:
         "results": results,
         "stages_completed": new_completed,
         "current_stage": STAGES[STAGES.index(current_stage) + 1] if not all_done else current_stage,
-        "status": "completed" if all_done else "running",
+        "status": "completed" if all_done else "pending",
         "completed_at": datetime.now(timezone.utc).isoformat() if all_done else None,
     })
 

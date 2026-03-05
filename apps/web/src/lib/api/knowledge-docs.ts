@@ -7,7 +7,7 @@
 
 import { apiFetch } from "./client";
 
-export type DocType = "writing_sop" | "cold_email" | "framework" | "ad_copy" | "case_study" | "other";
+export type DocType = "writing_sop" | "cold_email" | "framework" | "ad_copy" | "case_study" | "instructions" | "other";
 export type Platform = "linkedin" | "youtube" | "twitter" | "email" | "all";
 
 export interface KnowledgeDoc {

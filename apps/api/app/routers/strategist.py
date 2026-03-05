@@ -240,7 +240,7 @@ async def strategist_chat(
             model=strategist_model,
             temperature=0.7,
             max_tokens=2500,
-            # NO response_format -- model can reason freely and output JSON
+            response_format={"type": "json_object"},
         )
     except Exception as e:
         error_msg = str(e)

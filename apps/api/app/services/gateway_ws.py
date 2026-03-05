@@ -15,8 +15,11 @@ collect response, disconnect. This works within Vercel's serverless timeout
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
+import os
+import time
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -28,6 +31,48 @@ logger = logging.getLogger("app.services.gateway_ws")
 PROTOCOL_VERSION = 3
 CONNECT_TIMEOUT = 10  # seconds for handshake
 RESPONSE_TIMEOUT = 55  # seconds for agent responses (Vercel has ~60s limit)
+
+# Pre-registered gateway-client device credentials (from VPS identity/device.json)
+_DEVICE_ID = "db3d12bfa504d70ceee68715b6841a0d620073995cfd7dee2cf85cd6d39cd4c4"
+_DEVICE_PUBKEY = "SAILTafH0W2hpC2joedqhxCX7lVJV45e72z7YizSwCg"
+_DEVICE_TOKEN = "ZBvmHYRqgo9rdyGldoU0wQSh7xxJ8xbtwIudtHXcq1Y"
+_CLIENT_ID = "gateway-client"
+_CLIENT_MODE = "backend"
+_ROLE = "operator"
+_SCOPES = ["operator.read", "operator.write"]
+
+
+def _load_private_key():
+    """Load the Ed25519 private key from env or inline base64."""
+    try:
+        from cryptography.hazmat.primitives.serialization import load_pem_private_key
+    except ImportError:
+        return None
+    key_b64 = os.environ.get("OPENCLAW_DEVICE_PRIVATE_KEY_B64", "")
+    if not key_b64:
+        # Inline fallback (same key stored in env)
+        key_b64 = "MC4CAQAwBQYDK2VwBCIEIB0h4w/zwCTNesjOumxYMXLhSgk43BsH8ZMTBuhoSIiT"
+    try:
+        pem = f"-----BEGIN PRIVATE KEY-----\n{key_b64}\n-----END PRIVATE KEY-----\n"
+        return load_pem_private_key(pem.encode(), password=None)
+    except Exception as e:
+        logger.warning("Failed to load device private key: %s", e)
+        return None
+
+
+def _sign_connect_payload(nonce: str, signed_at_ms: int) -> Optional[str]:
+    """Build the v3 auth payload and sign it with the device private key."""
+    priv_key = _load_private_key()
+    if priv_key is None:
+        return None
+    scopes_str = ",".join(_SCOPES)
+    payload = "|".join([
+        "v3", _DEVICE_ID, _CLIENT_ID, _CLIENT_MODE, _ROLE,
+        scopes_str, str(signed_at_ms), _DEVICE_TOKEN, nonce,
+        "linux", "",  # platform, deviceFamily
+    ])
+    sig_bytes = priv_key.sign(payload.encode("utf-8"))
+    return base64.urlsafe_b64encode(sig_bytes).rstrip(b"=").decode()
 
 
 class GatewayWSError(Exception):
@@ -46,37 +91,42 @@ def _get_ws_url() -> str:
     return url.replace("http://", "ws://").replace("https://", "wss://")
 
 
-def _make_connect_params() -> Dict[str, Any]:
-    """Build the connect request params for the handshake."""
-    params: Dict[str, Any] = {
+def _make_connect_params(nonce: str) -> Dict[str, Any]:
+    """Build the connect request params including Ed25519 device signature."""
+    signed_at_ms = int(time.time() * 1000)
+    signature = _sign_connect_payload(nonce, signed_at_ms)
+
+    device: Dict[str, Any] = {
+        "id": _DEVICE_ID,
+        "publicKey": _DEVICE_PUBKEY,
+        "nonce": nonce,
+        "signedAt": signed_at_ms,
+    }
+    if signature:
+        device["signature"] = signature
+
+    return {
         "minProtocol": PROTOCOL_VERSION,
         "maxProtocol": PROTOCOL_VERSION,
         "client": {
-            "id": "positionedup-api",
+            "id": _CLIENT_ID,
             "displayName": "PositionedUp API",
             "version": "1.0.0",
             "platform": "linux",
-            "mode": "backend",
+            "mode": _CLIENT_MODE,
         },
-        "role": "operator",
-        "scopes": ["operator.read", "operator.write"],
-        "device": {
-            "id": f"positionedup-api-{uuid.uuid4().hex[:8]}",
-        },
+        "role": _ROLE,
+        "scopes": _SCOPES,
+        "device": device,
+        "auth": {"token": _DEVICE_TOKEN},
     }
-    # Include auth token if configured
-    if settings.openclaw_gateway_token:
-        params["auth"] = {"token": settings.openclaw_gateway_token}
-    else:
-        params["auth"] = {}
-    return params
 
 
 async def _connect_and_handshake(ws: Any) -> Dict[str, Any]:
     """Perform the OpenClaw WebSocket handshake.
 
-    1. Receive connect.challenge from server
-    2. Send connect request
+    1. Receive connect.challenge from server (contains nonce)
+    2. Sign nonce with Ed25519 device key, send connect request
     3. Receive hello-ok response
 
     Returns the hello-ok payload.
@@ -84,16 +134,18 @@ async def _connect_and_handshake(ws: Any) -> Dict[str, Any]:
     # Step 1: Receive challenge
     raw = await asyncio.wait_for(ws.recv(), timeout=CONNECT_TIMEOUT)
     challenge = json.loads(raw)
-    if challenge.get("type") != "event" or challenge.get("event") != "connect.challenge":
+    nonce = ""
+    if challenge.get("type") == "event" and challenge.get("event") == "connect.challenge":
+        nonce = challenge.get("payload", {}).get("nonce", "")
+    else:
         logger.debug("Unexpected first message: %s", challenge.get("type"))
-        # Some versions may not send a challenge — proceed anyway
 
-    # Step 2: Send connect
+    # Step 2: Send connect with signed device credentials
     connect_req = {
         "type": "req",
         "id": "handshake-1",
         "method": "connect",
-        "params": _make_connect_params(),
+        "params": _make_connect_params(nonce),
     }
     await ws.send(json.dumps(connect_req))
 
@@ -105,7 +157,8 @@ async def _connect_and_handshake(ws: Any) -> Dict[str, Any]:
         return hello.get("payload", {})
 
     # Handle error response
-    error_msg = hello.get("payload", {}).get("message", "Handshake failed")
+    error = hello.get("error", {})
+    error_msg = error.get("message", "Handshake failed") if isinstance(error, dict) else str(error)
     raise GatewayWSError(f"Gateway handshake failed: {error_msg}")
 
 

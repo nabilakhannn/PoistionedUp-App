@@ -27,19 +27,37 @@ export default function PlaybooksPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadPlaybooks = useCallback(async () => {
+  const loadPlaybooks = useCallback(async (autoSeedIfEmpty = false) => {
     try {
       const data = await playbooksApi.list();
-      setPlaybooks(data);
+      if (data.length === 0 && autoSeedIfEmpty) {
+        // First load — auto-seed default playbooks for this user
+        await playbooksApi.seed();
+        const seeded = await playbooksApi.list();
+        setPlaybooks(seeded);
+      } else {
+        setPlaybooks(data);
+      }
     } catch {
-      setError("Failed to load playbooks");
+      // Table may not have rows yet — try seeding once
+      if (autoSeedIfEmpty) {
+        try {
+          await playbooksApi.seed();
+          const seeded = await playbooksApi.list();
+          setPlaybooks(seeded);
+        } catch {
+          setError("Failed to load playbooks");
+        }
+      } else {
+        setError("Failed to load playbooks");
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadPlaybooks();
+    loadPlaybooks(true); // auto-seed on first load
   }, [loadPlaybooks]);
 
   const handleSeed = async () => {

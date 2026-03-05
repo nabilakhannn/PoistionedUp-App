@@ -38,18 +38,16 @@ export default function GlobalError({
             Go to Home
           </a>
         </div>
-        {process.env.NODE_ENV === "development" && (
-          <details className="mt-6 text-left">
-            <summary className="text-xs text-zinc-500 cursor-pointer">
-              Error details (dev only)
-            </summary>
-            <pre className="mt-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg overflow-auto max-h-48">
-              {error.message}
-              {"\n"}
-              {error.stack}
-            </pre>
-          </details>
-        )}
+        <details className="mt-6 text-left">
+          <summary className="text-xs text-zinc-500 cursor-pointer">
+            Error details
+          </summary>
+          <pre className="mt-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg overflow-auto max-h-48">
+            {error.message}
+            {error.digest ? `\n\nDigest: ${error.digest}` : ""}
+            {process.env.NODE_ENV === "development" ? `\n\n${error.stack}` : ""}
+          </pre>
+        </details>
       </div>
     </main>
   );

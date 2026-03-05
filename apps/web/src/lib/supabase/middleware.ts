@@ -5,7 +5,9 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute =
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/signup") ||
-    request.nextUrl.pathname.startsWith("/auth/callback");
+    request.nextUrl.pathname.startsWith("/auth/callback") ||
+    request.nextUrl.pathname.startsWith("/intake/") ||
+    request.nextUrl.pathname.startsWith("/share/");
 
   // If heading to a public route with no Supabase auth cookie,
   // skip the getUser() network call entirely — the user is clearly
@@ -48,7 +50,7 @@ export async function updateSession(request: NextRequest) {
     const result = await Promise.race([
       supabase.auth.getUser(),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Auth timeout")), 5000)
+        setTimeout(() => reject(new Error("Auth timeout")), 15000)
       ),
     ]);
     user = result.data?.user ?? null;
@@ -62,7 +64,9 @@ export async function updateSession(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/signup") &&
-    !request.nextUrl.pathname.startsWith("/auth/callback")
+    !request.nextUrl.pathname.startsWith("/auth/callback") &&
+    !request.nextUrl.pathname.startsWith("/intake/") &&
+    !request.nextUrl.pathname.startsWith("/share/")
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

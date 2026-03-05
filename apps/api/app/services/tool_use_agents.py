@@ -170,6 +170,29 @@ TOOL_DEFINITIONS: List[Dict[str, Any]] = [
         },
     },
     {
+        "name": "read_agent_training_docs",
+        "description": (
+            "Load training materials uploaded by the user for this specific agent "
+            "(PDFs, frameworks, books, SOPs). Always call this at the start of a task "
+            "to ground your work in user-provided methodology. "
+            "Returns formatted markdown chunks from the knowledge base."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "string",
+                    "description": "The agent ID to load training docs for (e.g. 'brand-researcher', 'account-manager').",
+                },
+                "user_id": {
+                    "type": "string",
+                    "description": "The user ID (to load user-specific training documents).",
+                },
+            },
+            "required": ["agent_id", "user_id"],
+        },
+    },
+    {
         "name": "generate_image",
         "description": (
             "Generate a photorealistic image from plain English. "
@@ -298,7 +321,7 @@ def _exec_fetch_brand_profile(brand_id: str) -> str:
         sb = get_admin_client()
         result = (
             sb.table("personal_brands")
-            .select("name, description, profile_json")
+            .select("name, description, profile_json, is_client_brand")
             .eq("id", brand_id)
             .limit(1)
             .execute()
@@ -307,14 +330,29 @@ def _exec_fetch_brand_profile(brand_id: str) -> str:
             return f"[Brand {brand_id!r} not found]"
         row = result.data[0]
         profile = row.get("profile_json") or {}
-        summary = {
+        is_client = row.get("is_client_brand", False)
+        summary: dict = {
             "name": row.get("name", ""),
             "description": row.get("description", ""),
             "positioning": profile.get("positioning", ""),
             "voice": profile.get("voice", ""),
             "ica": profile.get("ica", ""),
             "offer": profile.get("offer", ""),
+            "content_pillars": profile.get("content_pillars", []),
+            "voice_adjectives": profile.get("voice_adjectives", []),
         }
+        # For client brands inject emotional journals + anxiety/benefit lists
+        # so copywriter, landing page, and ad creative agents can write hyper-targeted copy
+        if is_client:
+            summary["is_client_brand"] = True
+            summary["ica_summary"] = profile.get("ica_summary", "")
+            summary["emotional_pain_journal"] = profile.get("emotional_pain_journal", "")
+            summary["emotional_win_journal"] = profile.get("emotional_win_journal", "")
+            summary["anxiety_list"] = profile.get("anxiety_list", [])
+            summary["benefit_list"] = profile.get("benefit_list", [])
+            summary["hormozi"] = profile.get("hormozi", {})
+            summary["competitor_gap"] = profile.get("competitor_gap", "")
+            summary["first_week_angles"] = profile.get("first_week_angles", [])
         return json.dumps(summary, ensure_ascii=False)
     except Exception as exc:
         logger.warning("fetch_brand_profile failed for %s: %s", brand_id, exc)
@@ -397,6 +435,33 @@ def _exec_score_content_quality(content: str) -> str:
     return json.dumps(scores)
 
 
+def _exec_read_agent_training_docs(agent_id: str, user_id: str) -> str:
+    """Fetch training documents for an agent from knowledge_documents table."""
+    try:
+        sb = get_admin_client()
+        result = (
+            sb.table("knowledge_documents")
+            .select("title, content, doc_type, created_at")
+            .eq("user_id", user_id)
+            .contains("agent_scope", [agent_id])
+            .order("created_at", desc=True)
+            .limit(10)
+            .execute()
+        )
+        if not result.data:
+            return f"[No training documents found for agent {agent_id!r}. Using default methodology.]"
+        chunks = []
+        for doc in result.data:
+            title = doc.get("title", "Untitled")
+            content = (doc.get("content") or "")[:2000]
+            dtype = doc.get("doc_type", "doc")
+            chunks.append(f"## {title} ({dtype})\n\n{content}")
+        return f"# Training Materials for {agent_id}\n\n" + "\n\n---\n\n".join(chunks)
+    except Exception as exc:
+        logger.warning("read_agent_training_docs failed (%s / %s): %s", agent_id, user_id, exc)
+        return f"[Training docs error: {exc} — proceeding with default methodology]"
+
+
 def _exec_generate_image(description: str, style: str = "photorealistic", img_format: str = "square") -> str:
     """Generate an image via Nano Banana 2 (Higgsfield/Gemini). Returns JSON {url, prompt}."""
     try:
@@ -438,6 +503,11 @@ def _dispatch_tool(tool_name: str, tool_input: Dict[str, Any]) -> str:
         )
     if tool_name == "score_content_quality":
         return _exec_score_content_quality(tool_input.get("content", ""))
+    if tool_name == "read_agent_training_docs":
+        return _exec_read_agent_training_docs(
+            tool_input.get("agent_id", ""),
+            tool_input.get("user_id", ""),
+        )
     if tool_name == "generate_image":
         return _exec_generate_image(
             description=tool_input.get("description", ""),

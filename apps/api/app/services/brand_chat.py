@@ -996,3 +996,101 @@ def _count_filled(data: Dict[str, Any], depth: int = 0) -> int:
         elif val is not None and val != "":
             count += 1
     return count
+
+
+# ── Jumbo Brand Chat (Slice 100) ───────────────────────────────────────────
+# Brand-context-aware chat: injects full 8-section dossier into system prompt.
+# Separate from the discovery chat above — this is for agency owner chatting
+# with Jumbo AFTER research is complete to generate materials on demand.
+
+import json as _json
+
+_JUMBO_CHAT_SYSTEM = """\
+You are Jumbo, the lead content strategist and orchestrator for PositionedUp.
+The agency owner is asking you to generate brand-specific materials for their client.
+You have FULL ACCESS to the client's 8-section Brand Intelligence Dossier below.
+
+CRITICAL RULES:
+1. Every output MUST be specific to THIS client. Quote from the dossier. No generic templates.
+2. When generating hooks — cover ALL types: anxiety, benefit, story, competitor, belief, metaphor.
+3. When generating posts — use the client's EXACT voice adjectives and power words.
+4. When generating sequences — reference the emotional pain journal and benefit list directly.
+5. Format all outputs clearly with headers, numbered lists, and sections.
+6. If the user asks for something not covered by the dossier, use web_search to find what you need.
+
+BRAND INTELLIGENCE DOSSIER:
+{dossier_json}
+"""
+
+
+async def send_chat_message(
+    brand_id: str,
+    user_id: str,
+    message: str,
+) -> Dict[str, Any]:
+    """Send a message to Jumbo with the full brand dossier pre-injected.
+
+    Security:
+      - brand_id UUID format validated by router before this is called
+      - IDOR guard: .eq("user_id", user_id) on DB lookup
+      - message length capped at 5000 chars by router
+    """
+    from app.deps import get_admin_client
+    from app.services.tool_use_agents import run_tool_use_agent
+
+    sb = get_admin_client()
+    brand_row = (
+        sb.table("personal_brands")
+        .select("name, profile_json")
+        .eq("id", brand_id)
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if not brand_row.data:
+        raise ValueError(f"Brand {brand_id!r} not found for user {user_id!r}")
+
+    brand_name = brand_row.data[0].get("name", "")
+    profile = brand_row.data[0].get("profile_json") or {}
+
+    trimmed = _trim_dossier(profile)
+    dossier_json = _json.dumps(trimmed, indent=2, ensure_ascii=False)
+    system_prompt = _JUMBO_CHAT_SYSTEM.format(dossier_json=dossier_json)
+
+    result = run_tool_use_agent(
+        agent_id="jumbo",
+        task_type="brand_chat",
+        system_prompt=system_prompt,
+        user_prompt=f"CLIENT: {brand_name}\n\n{message}",
+        user_id=user_id,
+        brand_id=brand_id,
+        available_tools=["web_search", "read_agent_training_docs"],
+        temperature=0.7,
+    )
+
+    if not result.success:
+        raise RuntimeError(f"Jumbo brand chat failed: {result.error}")
+
+    return {"response": result.content, "brand_id": brand_id, "brand_name": brand_name}
+
+
+def _trim_dossier(profile: Dict[str, Any]) -> Dict[str, Any]:
+    """Cap large lists and truncate long strings to keep system prompt manageable."""
+    trimmed = dict(profile)
+    for key in ("anxiety_list", "benefit_list", "first_week_angles",
+                "relevance_topics", "power_words", "industry_lingo",
+                "uvps", "metaphors", "content_pillars", "voice_adjectives"):
+        if isinstance(trimmed.get(key), list):
+            trimmed[key] = trimmed[key][:10]
+    for key in ("emotional_pain_journal", "emotional_win_journal"):
+        val = trimmed.get(key)
+        if isinstance(val, str) and len(val) > 800:
+            trimmed[key] = val[:800] + "..."
+    if isinstance(trimmed.get("competitors"), list):
+        trimmed["competitors"] = trimmed["competitors"][:3]
+    bf = trimmed.get("belief_framework")
+    if isinstance(bf, dict) and isinstance(bf.get("false_beliefs"), list):
+        trimmed["belief_framework"] = {**bf, "false_beliefs": bf["false_beliefs"][:3]}
+    if isinstance(trimmed.get("customer_segments"), list):
+        trimmed["customer_segments"] = trimmed["customer_segments"][:3]
+    return trimmed

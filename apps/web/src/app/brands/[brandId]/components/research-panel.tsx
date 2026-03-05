@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { personalBrandsApi, BrandResearchSession } from "@/lib/api/brand";
 import { scheduleApi } from "@/lib/api/schedule";
@@ -25,6 +25,44 @@ const STAGE_ICONS: Record<string, string> = {
   content_ideas: "7",
 };
 
+const STAGE_THOUGHTS: Record<string, string[]> = {
+  niche_analysis: [
+    "Searching live web for niche trends...",
+    "Scoring sub-niche opportunities...",
+    "Identifying market positioning angles...",
+  ],
+  audience_research: [
+    "Profiling your ideal audience...",
+    "Mapping pain points and desires...",
+    "Analysing buying triggers and objections...",
+  ],
+  competitive_intel: [
+    "Scanning competitor landscape...",
+    "Finding market gaps and weaknesses...",
+    "Mapping differentiation opportunities...",
+  ],
+  content_landscape: [
+    "Analysing top-performing content in your niche...",
+    "Identifying trending formats and topics...",
+    "Scoring content opportunities by engagement...",
+  ],
+  voice_positioning: [
+    "Crafting your unique positioning statement...",
+    "Defining voice archetypes...",
+    "Building your IT factor...",
+  ],
+  content_strategy: [
+    "Designing your content pillar framework...",
+    "Allocating content ratios by goal...",
+    "Mapping pillars to audience pain points...",
+  ],
+  content_ideas: [
+    "Generating quick-win content ideas...",
+    "Building a 30-day content bank...",
+    "Scoring ideas by estimated engagement...",
+  ],
+};
+
 const STAGES = [
   "niche_analysis",
   "audience_research",
@@ -34,6 +72,12 @@ const STAGES = [
   "content_strategy",
   "content_ideas",
 ];
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
 
 interface ResearchPanelProps {
   brandId: string;
@@ -59,7 +103,200 @@ export function ResearchPanel({
   const [scheduling, setScheduling] = useState(false);
   const [scheduledCount, setScheduledCount] = useState<number | null>(null);
   const [skipping, setSkipping] = useState(false);
+
+  // Timer state
+  const [elapsed, setElapsed] = useState(0);
+  const [stageElapsed, setStageElapsed] = useState(0);
+  const [stageTimes, setStageTimes] = useState<Record<string, number>>({});
+  const [thoughtIdx, setThoughtIdx] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stageStartRef = useRef<number>(0);
+
   const router = useRouter();
+
+  const handleDownload = useCallback(() => {
+    if (!session?.results) return;
+    const r = session.results;
+    const lines: string[] = [];
+    lines.push(`# Brand Research Report — ${brandName}`);
+    lines.push(`Generated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`);
+    lines.push("");
+
+    // 1. Niche Analysis
+    const n = r.niche_analysis;
+    if (n) {
+      lines.push("## 1. Niche Analysis");
+      if (n.industry_overview) lines.push(n.industry_overview);
+      if (n.recommended_niche) lines.push(`\n**Recommended Niche:** ${n.recommended_niche}`);
+      if (n.recommended_niche_reasoning) lines.push(`*${n.recommended_niche_reasoning}*`);
+      if (n.sub_niches?.length) {
+        lines.push("\n**Sub-Niches:**");
+        n.sub_niches.forEach((s: any) => lines.push(`- ${s.name} (${s.opportunity_score}/10) — ${s.reasoning || ""}`));
+      }
+      lines.push("");
+    }
+
+    // 2. Audience Research
+    const a = r.audience_research;
+    if (a) {
+      lines.push("## 2. Audience Research");
+      if (a.primary_audience) {
+        const p = a.primary_audience;
+        lines.push(`**Primary Audience:** ${p.age_range || ""} | ${p.gender || ""} | ${p.income_level || ""}`);
+        if (p.job_titles?.length) lines.push(`**Job Titles:** ${p.job_titles.join(", ")}`);
+        if (p.education) lines.push(`**Education:** ${p.education}`);
+      }
+      if (a.pain_points?.length) {
+        lines.push("\n**Pain Points:**");
+        a.pain_points.forEach((p: any) => lines.push(`- ${p.pain_point} (Severity: ${p.severity}/10) — ${p.emotional_impact || ""}`));
+      }
+      if (a.goals?.length) {
+        lines.push("\n**Goals:**");
+        a.goals.forEach((g: any) => lines.push(`- ${g.goal} — ${g.why_it_matters || ""}`));
+      }
+      if (a.psychographics) {
+        const ps = a.psychographics;
+        if (ps.values?.length) lines.push(`\n**Values:** ${ps.values.join(", ")}`);
+        if (ps.content_preferences?.length) lines.push(`**Content Preferences:** ${ps.content_preferences.join(", ")}`);
+      }
+      lines.push("");
+    }
+
+    // 3. Competitive Intelligence
+    const ci = r.competitive_intel;
+    if (ci) {
+      lines.push("## 3. Competitive Intelligence");
+      if (ci.competitive_landscape) lines.push(ci.competitive_landscape);
+      if (ci.competitors?.length) {
+        lines.push("\n**Competitors:**");
+        ci.competitors.forEach((c: any) => lines.push(`- **${c.name}** (${c.platform || ""}) — Followers: ${c.follower_count || "?"} | Weakness: ${c.weakness || "?"}`));
+      }
+      if (ci.market_gaps?.length) {
+        lines.push("\n**Market Gaps:**");
+        ci.market_gaps.forEach((g: any) => lines.push(`- ${g.gap} — ${g.opportunity || ""}`));
+      }
+      lines.push("");
+    }
+
+    // 4. Content Landscape
+    const cl = r.content_landscape;
+    if (cl) {
+      lines.push("## 4. Content Landscape");
+      if (cl.top_topics?.length) {
+        lines.push("**Top Topics:**");
+        cl.top_topics.forEach((t: any) => lines.push(`- [${t.engagement_level?.toUpperCase()}] ${t.topic} — ${t.why_it_works}`));
+      }
+      if (cl.hook_styles?.length) {
+        lines.push("\n**Hook Styles:**");
+        cl.hook_styles.forEach((h: any) => lines.push(`- **${h.style}** (${h.effectiveness}/10): "${h.example}"`));
+      }
+      if (cl.top_formats?.length) {
+        lines.push("\n**Top Formats:**");
+        cl.top_formats.forEach((f: any) => lines.push(`- ${f.format} (${f.effectiveness}/10) — Platforms: ${f.platforms?.join(", ")}`));
+      }
+      if (cl.posting_patterns) {
+        lines.push(`\n**Posting Frequency:** ${cl.posting_patterns.frequency_recommendation || ""}`);
+        if (cl.posting_patterns.platform_priority?.length) lines.push(`**Platform Priority:** ${cl.posting_patterns.platform_priority.join(" → ")}`);
+      }
+      lines.push("");
+    }
+
+    // 5. Voice & Positioning
+    const vp = r.voice_positioning;
+    if (vp) {
+      lines.push("## 5. Voice & Positioning");
+      if (vp.positioning_statement) lines.push(`**Positioning:** ${vp.positioning_statement}`);
+      if (vp.it_factor) lines.push(`**IT Factor:** ${vp.it_factor}`);
+      if (vp.unique_angle) lines.push(`**Unique Angle:** ${vp.unique_angle}`);
+      if (vp.recommended_voice) lines.push(`**Recommended Voice:** ${vp.recommended_voice}`);
+      if (vp.recommended_voice_reasoning) lines.push(`*${vp.recommended_voice_reasoning}*`);
+      if (vp.voice_options?.length) {
+        lines.push("\n**Voice Options:**");
+        vp.voice_options.forEach((v: any) => {
+          lines.push(`\n### ${v.name}${v.name === vp.recommended_voice ? " ✓ RECOMMENDED" : ""}`);
+          lines.push(v.description || "");
+          if (v.tone_words?.length) lines.push(`Tone: ${v.tone_words.join(", ")}`);
+          if (v.example_post) lines.push(`Example: "${v.example_post}"`);
+        });
+      }
+      lines.push("");
+    }
+
+    // 6. Content Strategy
+    const cs = r.content_strategy;
+    if (cs) {
+      lines.push("## 6. Content Strategy");
+      if (cs.content_pillars?.length) {
+        lines.push("**Content Pillars:**");
+        cs.content_pillars.forEach((p: any) => {
+          lines.push(`\n### ${p.name} (${p.content_ratio}%)`);
+          lines.push(p.description || "");
+          if (p.post_types?.length) lines.push(`Post Types: ${p.post_types.join(", ")}`);
+        });
+      }
+      lines.push("");
+    }
+
+    // 7. Content Ideas
+    const ideas = r.content_ideas;
+    if (ideas) {
+      lines.push("## 7. Content Ideas");
+      if (ideas.quick_wins?.length) {
+        lines.push("**Quick Wins (Post Now):**");
+        ideas.quick_wins.forEach((w: string, i: number) => lines.push(`${i + 1}. ${w}`));
+      }
+      if (ideas.content_ideas?.length) {
+        lines.push("\n**Content Bank:**");
+        ideas.content_ideas.forEach((idea: any, i: number) => {
+          lines.push(`\n${i + 1}. **${idea.title}**`);
+          lines.push(`   Format: ${idea.format} | Platform: ${idea.platform} | Est. Engagement: ${idea.estimated_engagement}`);
+          if (idea.hook) lines.push(`   Hook: "${idea.hook}"`);
+          if (idea.description) lines.push(`   ${idea.description}`);
+        });
+      }
+      lines.push("");
+    }
+
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${brandName.toLowerCase().replace(/\s+/g, "-")}-research-report.md`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [session, brandName]);
+
+  // Start/stop elapsed timer
+  useEffect(() => {
+    if (loading) {
+      stageStartRef.current = Date.now();
+      timerRef.current = setInterval(() => {
+        setElapsed((e) => e + 1);
+        setStageElapsed(Math.floor((Date.now() - stageStartRef.current) / 1000));
+        setThoughtIdx((i) => i + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setStageElapsed(0);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [loading]);
+
+  // Auto-expand newly completed stages
+  const prevCompletedRef = useRef<string[]>([]);
+  useEffect(() => {
+    if (!session) return;
+    const prev = prevCompletedRef.current;
+    const curr = session.stages_completed || [];
+    const newlyDone = curr.filter((s) => !prev.includes(s));
+    if (newlyDone.length > 0) {
+      setExpandedStage(newlyDone[newlyDone.length - 1]);
+      // Record stage time
+      const stageKey = newlyDone[newlyDone.length - 1];
+      setStageTimes((t) => ({ ...t, [stageKey]: Math.floor((Date.now() - stageStartRef.current) / 1000) }));
+    }
+    prevCompletedRef.current = curr;
+  }, [session?.stages_completed]);
 
   // Load existing sessions on mount
   const loadExisting = useCallback(async () => {
@@ -67,6 +304,7 @@ export function ResearchPanel({
       const data = await personalBrandsApi.listResearch(brandId);
       if (data.sessions.length > 0) {
         setSession(data.sessions[0]);
+        prevCompletedRef.current = data.sessions[0].stages_completed || [];
       }
     } catch {
       // No existing sessions
@@ -78,6 +316,7 @@ export function ResearchPanel({
     if (!industry.trim()) return;
     setLoading(true);
     setError(null);
+    setElapsed(0);
     try {
       const sess = await personalBrandsApi.startResearch(brandId, {
         industry: industry.trim(),
@@ -92,27 +331,55 @@ export function ResearchPanel({
     }
   };
 
-  // Run next stage or all stages
+  // Run next stage (single) or all stages (loop)
   const handleRun = async (runAll: boolean = false) => {
     if (!session) return;
     setLoading(true);
     setError(null);
+    stageStartRef.current = Date.now();
+
+    if (!runAll) {
+      try {
+        const updated = await personalBrandsApi.runResearchStage(brandId, session.id, false);
+        setSession(updated);
+      } catch (err: any) {
+        setError(err.message || "Research stage failed");
+        try {
+          const refreshed = await personalBrandsApi.getResearch(brandId, session.id);
+          setSession(refreshed);
+        } catch { /* ignore */ }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Run All — loop one stage at a time on the frontend
+    let current = session;
     try {
-      const updated = await personalBrandsApi.runResearchStage(
-        brandId,
-        session.id,
-        runAll,
-      );
-      setSession(updated);
+      while (
+        current.status !== "completed" &&
+        current.status !== "failed" &&
+        current.status !== "cancelled"
+      ) {
+        stageStartRef.current = Date.now();
+        const updated = await personalBrandsApi.runResearchStage(brandId, current.id, false);
+        setSession(updated);
+        current = updated;
+        if (
+          updated.status === "completed" ||
+          updated.status === "failed" ||
+          updated.status === "cancelled"
+        ) break;
+        // 10s pause between stages to avoid API rate limits
+        await new Promise((res) => setTimeout(res, 10000));
+      }
     } catch (err: any) {
       setError(err.message || "Research stage failed");
-      // Refresh session to get latest state
       try {
-        const refreshed = await personalBrandsApi.getResearch(brandId, session.id);
+        const refreshed = await personalBrandsApi.getResearch(brandId, current.id);
         setSession(refreshed);
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
     } finally {
       setLoading(false);
     }
@@ -166,6 +433,11 @@ export function ResearchPanel({
   const completedCount = session?.stages_completed?.length ?? 0;
   const totalStages = STAGES.length;
   const progressPct = totalStages > 0 ? Math.round((completedCount / totalStages) * 100) : 0;
+  const currentStage = session?.current_stage || "";
+  const thoughts = STAGE_THOUGHTS[currentStage] || [];
+  const currentThought = loading && thoughts.length > 0
+    ? thoughts[thoughtIdx % thoughts.length]
+    : null;
 
   // If no session yet, show the start form
   if (!session) {
@@ -252,12 +524,17 @@ export function ResearchPanel({
             </div>
             <div>
               <h3 className="text-lg font-bold text-zinc-100">Brand Research Pipeline</h3>
-              <p className="text-xs text-zinc-500">
-                {session.seed_input.industry}
-              </p>
+              <p className="text-xs text-zinc-500">{session.seed_input.industry}</p>
             </div>
           </div>
-          <StatusBadge status={session.status} />
+          <div className="flex items-center gap-3">
+            {elapsed > 0 && (
+              <span className="text-xs text-zinc-500 font-mono">
+                ⏱ {formatTime(elapsed)}
+              </span>
+            )}
+            <StatusBadge status={session.status} />
+          </div>
         </div>
 
         {/* Progress bar */}
@@ -277,6 +554,19 @@ export function ResearchPanel({
             />
           </div>
         </div>
+
+        {/* Live thought process ticker */}
+        {loading && currentThought && (
+          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-violet-900/20 border border-violet-700/30 rounded-lg">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse flex-shrink-0" />
+            <span className="text-xs text-violet-300 font-mono">{currentThought}</span>
+            {stageElapsed > 0 && (
+              <span className="ml-auto text-[10px] text-zinc-500 font-mono flex-shrink-0">
+                {formatTime(stageElapsed)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stages list */}
@@ -286,6 +576,7 @@ export function ResearchPanel({
           const isCurrent = session.current_stage === stage && session.status === "running";
           const isExpanded = expandedStage === stage;
           const stageResult = session.results?.[stage];
+          const stageTime = stageTimes[stage];
 
           return (
             <div key={stage} className="px-6 py-3">
@@ -319,18 +610,30 @@ export function ResearchPanel({
                   >
                     {STAGE_LABELS[stage]}
                   </h4>
+                  {isCurrent && loading && (
+                    <p className="text-[10px] text-violet-400/70 mt-0.5 animate-pulse">
+                      Running...
+                    </p>
+                  )}
                 </div>
 
-                {isCompleted && stageResult && (
-                  <span className="text-[10px] text-zinc-500">
-                    {isExpanded ? "▲" : "▼"}
-                  </span>
-                )}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {stageTime && (
+                    <span className="text-[10px] text-zinc-600 font-mono">
+                      {formatTime(stageTime)}
+                    </span>
+                  )}
+                  {isCompleted && stageResult && (
+                    <span className="text-[10px] text-zinc-500">
+                      {isExpanded ? "▲" : "▼"}
+                    </span>
+                  )}
+                </div>
               </button>
 
-              {/* Expanded result preview */}
+              {/* Expanded result preview — auto-shown when stage completes */}
               {isExpanded && stageResult && (
-                <div className="mt-3 ml-11 bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                <div className="mt-3 ml-11 bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4 max-h-72 overflow-y-auto">
                   <StageResultPreview stage={stage} result={stageResult} />
                 </div>
               )}
@@ -378,7 +681,7 @@ export function ResearchPanel({
         )}
 
         <div className="flex flex-wrap gap-2">
-          {/* Running / Pending — show Run Next + Run All */}
+          {/* Running / Pending */}
           {session.status !== "completed" && session.status !== "failed" && (
             <>
               <button
@@ -389,7 +692,7 @@ export function ResearchPanel({
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Running {STAGE_LABELS[session.current_stage]}...
+                    {STAGE_LABELS[session.current_stage] || "Running"}...
                   </span>
                 ) : (
                   `Run Next: ${STAGE_LABELS[session.current_stage] || "Stage"}`
@@ -400,12 +703,12 @@ export function ResearchPanel({
                 disabled={loading}
                 className="px-4 py-2.5 rounded-lg bg-zinc-800 text-zinc-300 text-sm font-medium hover:bg-zinc-700 disabled:opacity-40 transition"
               >
-                Run All
+                {loading ? `${completedCount}/${totalStages}` : "Run All"}
               </button>
             </>
           )}
 
-          {/* Failed — show Retry + Skip */}
+          {/* Failed */}
           {session.status === "failed" && (
             <>
               <button
@@ -432,7 +735,7 @@ export function ResearchPanel({
             </>
           )}
 
-          {/* Completed — show Apply + Auto-Schedule */}
+          {/* Completed */}
           {session.status === "completed" && !appliedFields && (
             <button
               onClick={handleApply}
@@ -460,9 +763,21 @@ export function ResearchPanel({
             </button>
           )}
 
+          {session.status === "completed" && session.results && (
+            <button
+              onClick={handleDownload}
+              className="px-4 py-2.5 rounded-lg bg-zinc-800 text-zinc-300 text-sm font-medium hover:bg-zinc-700 transition flex items-center gap-1.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download Report
+            </button>
+          )}
+
           {(session.status === "completed" || session.status === "failed") && (
             <button
-              onClick={() => { setSession(null); setAppliedFields(null); setError(null); setScheduledCount(null); }}
+              onClick={() => { setSession(null); setAppliedFields(null); setError(null); setScheduledCount(null); setElapsed(0); setStageTimes({}); }}
               className="px-4 py-2.5 rounded-lg bg-zinc-800 text-zinc-400 text-sm hover:text-zinc-200 transition"
             >
               New Research
@@ -501,14 +816,45 @@ function StageResultPreview({ stage, result }: { stage: string; result: any }) {
   switch (stage) {
     case "niche_analysis":
       return (
-        <div className="space-y-2 text-xs">
+        <div className="space-y-3 text-xs">
           <p className="text-zinc-300">{result.industry_overview}</p>
           <p className="text-zinc-400"><strong className="text-zinc-300">Recommended Niche:</strong> {result.recommended_niche}</p>
           <p className="text-zinc-500 text-[11px]">{result.recommended_niche_reasoning}</p>
+          {(result.tam || result.ticket_size || result.revenue_potential || result.agency_revenue_note) && (
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              {result.tam && (
+                <div className="p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <p className="text-[10px] text-green-400 font-bold mb-0.5">MARKET SIZE (TAM)</p>
+                  <p className="text-green-300 font-medium">{result.tam}</p>
+                  {result.tam_reasoning && <p className="text-zinc-500 text-[10px] mt-0.5">{result.tam_reasoning}</p>}
+                </div>
+              )}
+              {result.ticket_size && (
+                <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-[10px] text-blue-400 font-bold mb-0.5">TICKET SIZE</p>
+                  <p className="text-blue-300 font-medium">{result.ticket_size.typical || result.ticket_size.mid}</p>
+                  {result.ticket_size.high && <p className="text-zinc-500 text-[10px]">High: {result.ticket_size.high}</p>}
+                </div>
+              )}
+              {result.revenue_potential && (
+                <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <p className="text-[10px] text-amber-400 font-bold mb-0.5">YOUR REVENUE POTENTIAL</p>
+                  <p className="text-amber-300">{result.revenue_potential}</p>
+                </div>
+              )}
+              {result.agency_revenue_note && (
+                <div className="p-2 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+                  <p className="text-[10px] text-violet-400 font-bold mb-0.5">AGENCY UPSIDE</p>
+                  <p className="text-violet-300">{result.agency_revenue_note}</p>
+                </div>
+              )}
+            </div>
+          )}
           {result.sub_niches?.map((n: any, i: number) => (
             <div key={i} className="flex items-center gap-2">
               <span className="text-violet-400 font-mono text-[10px]">{n.opportunity_score}/10</span>
               <span className="text-zinc-300">{n.name}</span>
+              {n.typical_ticket_size && <span className="text-zinc-500 text-[10px] ml-auto">{n.typical_ticket_size}</span>}
             </div>
           ))}
         </div>
@@ -564,6 +910,60 @@ function StageResultPreview({ stage, result }: { stage: string; result: any }) {
               <p className="text-zinc-500 text-[10px]">Tone: {v.tone_words?.join(", ")}</p>
             </div>
           ))}
+        </div>
+      );
+
+    case "content_landscape":
+      return (
+        <div className="space-y-3 text-xs">
+          {result.top_topics?.length > 0 && (
+            <div>
+              <p className="text-zinc-400 font-bold mb-1">Top Topics</p>
+              {result.top_topics.slice(0, 5).map((t: any, i: number) => (
+                <div key={i} className="flex items-start gap-2 mb-1">
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0 ${t.engagement_level === "high" ? "bg-green-500/20 text-green-400" : t.engagement_level === "medium" ? "bg-yellow-500/20 text-yellow-400" : "bg-zinc-700 text-zinc-400"}`}>
+                    {t.engagement_level}
+                  </span>
+                  <div>
+                    <p className="text-zinc-200">{t.topic}</p>
+                    <p className="text-zinc-500 text-[11px]">{t.why_it_works}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {result.hook_styles?.length > 0 && (
+            <div>
+              <p className="text-zinc-400 font-bold mb-1">Hook Styles</p>
+              {result.hook_styles.slice(0, 4).map((h: any, i: number) => (
+                <div key={i} className="mb-1">
+                  <p className="text-zinc-300 font-medium">{h.style} <span className="text-zinc-500 font-normal">({h.effectiveness}/10)</span></p>
+                  <p className="text-zinc-500 text-[11px] italic">"{h.example}"</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {result.top_formats?.length > 0 && (
+            <div>
+              <p className="text-zinc-400 font-bold mb-1">Top Formats</p>
+              {result.top_formats.slice(0, 4).map((f: any, i: number) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-violet-400 font-mono text-[10px]">{f.effectiveness}/10</span>
+                  <span className="text-zinc-300">{f.format}</span>
+                  <span className="text-zinc-600 text-[10px]">{f.platforms?.join(", ")}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {result.posting_patterns && (
+            <div>
+              <p className="text-zinc-400 font-bold mb-1">Posting Pattern</p>
+              <p className="text-zinc-300">{result.posting_patterns.frequency_recommendation}</p>
+              {result.posting_patterns.platform_priority?.length > 0 && (
+                <p className="text-zinc-500 text-[11px]">Priority: {result.posting_patterns.platform_priority.join(" → ")}</p>
+              )}
+            </div>
+          )}
         </div>
       );
 

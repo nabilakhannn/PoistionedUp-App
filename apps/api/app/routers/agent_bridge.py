@@ -873,3 +873,52 @@ async def agent_competitive_landscape(
         "content_gaps": gaps,
         "threat_summary": threat_summary,
     }
+
+
+# ── 18. Transcript Analyze (MCP endpoint) ─────────────────
+
+@router.post("/transcript/analyze")
+async def transcript_analyze(
+    body: dict,
+    caller: AgentCaller = Depends(get_agent_caller),
+):
+    """MCP-compatible endpoint: analyze a client call transcript.
+
+    Called from Claude.ai via REST or MCP server. Authenticates with Agent API key
+    rather than JWT. Returns session_id + action plan.
+
+    Body:
+      - brand_id (required): UUID of the brand
+      - transcript (required): Full call transcript text
+      - call_date (optional): ISO date string
+      - intake_form_id (optional): UUID of associated intake form
+    """
+    brand_id = body.get("brand_id", "")
+    transcript = body.get("transcript", "")
+    if not brand_id:
+        raise HTTPException(400, "brand_id is required")
+    if not transcript or len(transcript) < 10:
+        raise HTTPException(400, "transcript is required and must be at least 10 characters")
+
+    import re
+    _uuid_re = re.compile(
+        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        re.IGNORECASE,
+    )
+    if not _uuid_re.match(brand_id):
+        raise HTTPException(400, "brand_id must be a valid UUID")
+
+    from app.services.account_manager import analyze_transcript
+    try:
+        session = await analyze_transcript(
+            brand_id=brand_id,
+            user_id=caller.user_id,
+            transcript=transcript,
+            call_date=body.get("call_date"),
+            intake_form_id=body.get("intake_form_id"),
+        )
+        return {"ok": True, **session}
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(502, str(exc))

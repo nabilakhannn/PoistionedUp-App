@@ -290,7 +290,7 @@ class BrandCompleteness(BaseModel):
 class BrandChatRequest(BaseModel):
     """POST /brand/chat request body."""
     module: str = Field(..., pattern="^(foundation|ica|offer|brand|authority|messaging|positioning|competitors)$")
-    message: str = Field(..., min_length=1, max_length=5000)
+    message: str = Field(..., min_length=1, max_length=20000)
     brand_id: Optional[str] = Field(
         None,
         description="Personal brand ID to scope this chat to. If omitted, uses legacy profiles table.",

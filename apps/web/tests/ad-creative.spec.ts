@@ -14,7 +14,7 @@ async function login(page: Page) {
   await page.fill('input[type="password"]', TEST_PASSWORD);
   await page.waitForTimeout(500);
   await page.locator('input[type="password"]').press("Enter");
-  await expect(page).toHaveURL(/.*brand/, { timeout: 20000 });
+  await expect(page).toHaveURL(/(brand|onboarding)/, { timeout: 20000 });
 }
 
 // ── Ad Creative Page Tests ───────────────────────────────────
@@ -33,12 +33,15 @@ test.describe("Ad Creative Page — navigation", () => {
     await login(page);
   });
 
-  test("should appear in sidebar navigation", async ({ page }) => {
-    await page.goto(`${BASE}/brands`, { waitUntil: "domcontentloaded" });
-    // Sidebar nav link should be visible
-    const adCreativeLink = page.locator('a[href="/ad-creative"]');
-    await expect(adCreativeLink).toBeVisible({ timeout: 10000 });
-    await expect(adCreativeLink).toContainText("Ad Creative");
+  test("ad-creative page is accessible when authenticated", async ({ page }) => {
+    // Navigate directly — the primary nav was redesigned in Slice 88-90 (5 rooms:
+    // Command Center, Marketing, Sales, Intelligence, Settings). Ad Creative is
+    // still a valid protected route, just not a top-level nav link.
+    await page.goto(`${BASE}/ad-creative`, { waitUntil: "domcontentloaded" });
+    // Should not redirect to login — user is authenticated
+    await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 });
+    // Page should render some content
+    await expect(page.locator("main").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should load ad-creative page with two-panel layout", async ({ page }) => {

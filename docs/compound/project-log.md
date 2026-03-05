@@ -4496,3 +4496,264 @@ See full details: `docs/compound/patterns/slice-92d-ux-fixes.md`
 | `apps/api/tests/test_slice93_landing_page.py` | NEW — 12 tests |
 
 See full details: `docs/compound/patterns/slice-93-landing-page-generator.md`
+
+
+## Slice 94 — Pipeline Dashboard + Research Brief Live Feed
+
+**Date:** 2026-03-03
+**Tests:** 8/8 new | 1406/1406 total
+**TS errors:** 0
+
+**What:** Replaced the dead Command Center with a live pipeline dashboard. Mission Control home now shows a CRM-style Content Pipeline Funnel (5 stages: Research → Writing → QA → Review → Scheduled) with real counts from existing data sources. A "Latest Research" card shows the last brief snippet with a "View full brief →" link. Intelligence → Research tab now fetches real data from the `research_briefs` table instead of a hardcoded placeholder. Added clickable pipeline ON/OFF toggle button (was read-only). Run Now errors now surface as a visible red banner instead of failing silently.
+
+**Security:** A01 IDOR guard (.eq user_id on research_briefs), A03 UUID regex on brand_id, A07 JWT required on /research/briefs/latest.
+
+| File | Change |
+|------|--------|
+| `apps/api/app/routers/research.py` | NEW endpoint: GET /research/briefs/latest (UUID guard + IDOR) |
+| `apps/web/src/lib/api/research-briefs.ts` | NEW — API client following project pattern |
+| `apps/web/src/app/intelligence/page.tsx` | Research tab: live brief + empty state CTA |
+| `apps/web/src/app/mission-control/page.tsx` | Pipeline Funnel + Research card + clickable toggle + error feedback |
+| `apps/api/tests/test_slice94_pipeline_dashboard.py` | NEW — 8 tests (all pass) |
+
+See full details: `docs/compound/patterns/slice-94-pipeline-dashboard.md`
+
+## Slice 95 — Lead Gen CRM + Full Sales Room
+
+**Date:** 2026-03-03
+**Tests:** 16/16 new | 1422/1422 total
+**TS errors:** 0
+
+**What:** Replaced all 4 Sales room placeholder tabs with fully functional components. Built a complete lead generation CRM (Clay/Apollo-style) with 3-engine AI enrichment (personal LinkedIn → professional topics/achievements; company LinkedIn → hiring signals/pain points; website → company changes/industries/growth signals), BANT auto-scoring (0-4), and a 3-message outreach sequence generator. Added editable icebreaker textarea that saves on blur, `.xlsx` export (Instantly.ai-compatible with icebreaker custom variable column), and a lead detail panel with 3 tabs (Profile / Transcript / Outreach). Newsletter tab now generates 400-600 word drafts from the latest pipeline research brief. Outreach and Sequences tabs are derived views from the `leads` table — no extra DB tables needed. Sequence messages track `sent_at` timestamps with checkbox toggles.
+
+**Security:** A01 IDOR (.eq user_id on all leads queries), A03 UUID regex on all id + brand_id params, A07 JWT required everywhere, A10 SSRF guard (validate_url_for_fetch before httpx website fetch), A05 Transcripts/notes never included in .xlsx export.
+
+| File | Change |
+|------|--------|
+| `infra/supabase/migrations/036_leads.sql` | NEW — leads table with BANT score, 7-field enrichment JSONB, sequence JSONB with sent_at, RLS, dedup constraint |
+| `apps/api/app/services/lead_gen.py` | NEW — 3-engine enrichment + BANT scoring + outreach generation (Perplexity + Claude) |
+| `apps/api/app/routers/leads.py` | NEW — 9 endpoints; PATCH accepts icebreaker + sequence; GET /leads/export returns .xlsx |
+| `apps/api/app/routers/newsletter.py` | NEW — GET /newsletter/draft + POST /newsletter/generate |
+| `apps/api/app/main.py` | Register leads + newsletter routers |
+| `apps/api/requirements.txt` | Add openpyxl>=3.1.0 |
+| `apps/web/src/lib/api/leads.ts` | NEW — Lead interface (bant_score, SequenceMessage with sent_at) + leadsApi 9 methods |
+| `apps/web/src/lib/api/newsletter.ts` | NEW — newsletterApi (getDraft + generate) |
+| `apps/web/src/components/leads-crm.tsx` | NEW — table-first + Kanban toggle, bulk actions, enrichment panel, editable icebreaker |
+| `apps/web/src/components/newsletter-engine.tsx` | NEW — generate + editable draft + copy to clipboard |
+| `apps/web/src/components/outreach-queue.tsx` | NEW — derived view from leads; grouped LinkedIn/Email; copy buttons |
+| `apps/web/src/components/sequences-tracker.tsx` | NEW — per-lead sequence tracker; checkbox marks sent_at |
+| `apps/web/src/app/sales/page.tsx` | All 4 tabs replaced — no "Slice 91/92" placeholders |
+| `apps/api/tests/test_slice95_lead_gen.py` | NEW — 16 tests (all pass) |
+
+See full details: `docs/compound/patterns/slice-95-lead-gen-crm.md`
+
+
+## Slice 97 + 98 — Client Intelligence System
+
+**Date:** 2026-03-03
+**Tests:** 46/46 new | 1468/1468 total
+**TS errors:** 0
+
+**What:** Built the full Client Intelligence System — Brand Researcher agent (5-layer deep research: LinkedIn/voice analysis, 20-item anxiety list, 20-item benefit list, 500-word emotional journals, Hormozi Value Equation, competitor gap), client intake form (public shareable URL), and Account Manager agent (reads call transcripts + cross-call memory + 7-category action plan). Slice 97 covers the 8-step onboarding wizard + research pipeline; Slice 98 covers the transcript drop, action plan UI, client deliverables (proposal/landing page/nurture sequence), and MCP endpoint.
+
+**15 gaps closed:**
+1. Client intake form — `client_intake_forms` table + public `/intake/[token]` page
+2. Wizard extended to 8 steps with offer, best clients, content goal
+3. Full Hormozi framework + anxiety_list[20] + benefit_list[20] + emotional journals in profile_json
+4. Deliverables page at `/deliverables` with preview/download/share/version history
+5. Guided Next Steps screen with 5 content angle cards after research completes
+6. Each angle has [Write Post →] button pre-loading the text editor
+7. Cross-call memory: last 3 sessions loaded before analysis, `call_number` + `cross_call_themes`
+8. MCP tab in TranscriptDrop with setup instructions + curl example
+9. `is_client_brand` flag on `personal_brands` separates client vs SB pipeline
+10. Nurture category in action plan → 5-email sequence using emotional journals
+11. Content angles include `angle_type`, `driven_by`, `offer_connection` fields
+12. Per-section refresh buttons on Brand Intelligence Report (`POST /client-research/refresh/{id}`)
+13. `share_token` on deliverables + `/share/[token]` public preview page
+14. Emotional journals injected into `fetch_brand_profile` when `is_client_brand=true`
+15. Client health dashboard at `/mission-control/clients`
+
+**Security:** A01 IDOR (.eq user_id everywhere), A03 UUID regex on all IDs + 64-char hex validation on share tokens, A07 JWT on all private endpoints, A10 SSRF (validate_url_for_fetch on linkedin_url, website_url), A04 10MB cap on PDF training doc uploads. Public routes (intake form, share preview) use random 64-char hex token — mathematically secure without auth.
+
+| File | Change |
+|------|--------|
+| `infra/supabase/migrations/037_client_intake.sql` | NEW — client_intake_forms + is_client_brand on personal_brands |
+| `infra/supabase/migrations/038_account_manager.sql` | NEW — account_manager_sessions + share_token/version/client_brand on agent_deliverables |
+| `apps/api/app/services/client_researcher.py` | NEW — 5-layer Brand Researcher: research_client(), refresh_section(), _parse_dossier() |
+| `apps/api/app/services/account_manager.py` | NEW — analyze_transcript(), cross-call memory, get/list/update sessions |
+| `apps/api/app/services/client_deliverables.py` | NEW — generate_proposal(), generate_landing_page(), generate_nurture_sequence() |
+| `apps/api/app/routers/client_research.py` | NEW — POST /run, GET /report/{id}, POST /refresh/{id} |
+| `apps/api/app/routers/intake.py` | NEW — public GET/POST /{token}, POST /create, GET /my |
+| `apps/api/app/routers/account_manager.py` | NEW — POST /analyze, GET/PATCH /sessions |
+| `apps/api/app/routers/client_deliverables.py` | NEW — proposal/landing-page/nurture-sequence + GET /share/{token} (public HTMLResponse) |
+| `apps/api/app/routers/agent_bridge.py` | Add POST /agent-api/transcript/analyze (MCP endpoint) |
+| `apps/api/app/services/playbooks.py` | Add brand-researcher + account-manager to _DEFAULT_PLAYBOOKS |
+| `apps/api/app/services/tool_use_agents.py` | Add read_agent_training_docs tool; inject emotional journals for client brands |
+| `apps/api/app/main.py` | Register 4 new routers |
+| `apps/web/src/lib/api/client-research.ts` | NEW — ClientDossier + clientResearchApi |
+| `apps/web/src/lib/api/intake.ts` | NEW — intakeApi + publicIntakeApi |
+| `apps/web/src/lib/api/account-manager.ts` | NEW — AccountManagerSession + accountManagerApi |
+| `apps/web/src/lib/api/client-deliverables.ts` | NEW — ClientDeliverable + clientDeliverablesApi |
+| `apps/web/src/app/onboarding/client/page.tsx` | NEW — 8-step ACTi-style wizard |
+| `apps/web/src/app/intake/[token]/page.tsx` | NEW — public client intake form |
+| `apps/web/src/components/brand-intelligence-report.tsx` | NEW — full dossier with per-section refresh + Next Steps screen |
+| `apps/web/src/components/agent-training-panel.tsx` | NEW — Training Docs + Playbook tabs |
+| `apps/web/src/components/transcript-drop.tsx` | NEW — Paste/Upload/Intake/MCP tabs |
+| `apps/web/src/components/account-manager-panel.tsx` | NEW — 7-category action plan with approve/execute |
+| `apps/web/src/app/share/[token]/page.tsx` | NEW — public deliverable preview (iframe with branded header) |
+| `apps/web/src/app/deliverables/page.tsx` | NEW — deliverables gallery with filter tabs + share/download |
+| `apps/web/src/app/mission-control/clients/page.tsx` | NEW — client health dashboard |
+| `apps/web/src/app/mission-control/page.tsx` | Add 🎙 Analyze Client Call inline panel |
+| `apps/api/tests/test_slice97_client_researcher.py` | NEW — 16 tests (all pass) |
+| `apps/api/tests/test_slice98_account_manager.py` | NEW — 30 tests (all pass) |
+
+See full details: `docs/compound/patterns/slice-97-client-intelligence.md`
+
+---
+
+## Slice 99 — Brand Intelligence Expansion (8-Section Framework Complete)
+
+**Date:** 2026-03-03
+**Tests:** 20 new tests — 20/20 passing
+**TypeScript:** 0 errors
+**Migrations:** None (profile_json schema change only — no new columns)
+
+**What we did:** Expanded the Brand Researcher agent from a 5-layer research system to a complete 8-section intelligence framework. The agent now produces all 8 sections: Niche Market, Transformation (ZERO→DREAM), New Opportunity (UVPs + Tagline), Metaphors, Content Strategy, Your Story, Belief Framework, and Revenue Streams. Added 15 new profile_json fields, updated the brand-researcher playbook and system prompt, and added 6 new UI sections to the Brand Intelligence Report. Created a permanent master system design document.
+
+**Key behaviors unlocked:**
+1. Brand Researcher now instructs 8+ web searches (was 5)
+2. System prompt includes: transformation, uvps, tagline, niche_statement, metaphors, your_story, belief_framework, power_words, industry_lingo, market_gap, customer_segments, relevance_topics
+3. refresh_section() accepts 7 new section names (transformation, uvps, metaphors, your_story, belief_framework, power_words, market_gap)
+4. Brand Intelligence Report shows ZERO→DREAM card, UVPs+Tagline card, Metaphors card, Your Story card, Belief Framework card, Power Words+Market Gap card
+5. Belief Framework card shows false beliefs with counter-stories (red ✗ → green →)
+6. Transformation card has two-column ZERO/DREAM layout with emotional journey below
+7. Content Angles now expect 7 angles covering all types: anxiety, benefit, story, competitor, belief, metaphor
+8. MASTER-SYSTEM-DESIGN.md created at docs/compound/ — permanent reference for all engineers
+9. All new UI sections conditionally render (won't show for old brands without new fields)
+
+**Security:** No new endpoints, no new SSRF surfaces. Existing UUID guard + user_id scoping covers all profile_json updates. Public routes unchanged.
+
+| File | Change |
+|------|--------|
+| `apps/api/app/services/client_researcher.py` | Expanded `_BRAND_RESEARCHER_SYSTEM` with 5 new sections; updated refresh_section() allowed set; added 2 more search steps in user_prompt |
+| `apps/api/app/services/playbooks.py` | Replaced 5-layer brand-researcher playbook with 8-section framework |
+| `apps/web/src/lib/api/client-research.ts` | Added Transformation, YourStory, FalseBelief, BeliefFramework, CustomerSegment interfaces; 15 new fields on ClientDossier; 7 new values on RefreshSection type |
+| `apps/web/src/components/brand-intelligence-report.tsx` | Added 6 new IntelCard sections; updated content angles header; imported FalseBelief type |
+| `apps/api/tests/test_slice99_brand_intelligence.py` | NEW — 20 tests across 3 classes (all pass) |
+| `docs/compound/MASTER-SYSTEM-DESIGN.md` | NEW — permanent master system design document |
+| `docs/compound/patterns/slice-99-brand-intelligence-expansion.md` | NEW — slice pattern doc |
+
+See full details: `docs/compound/patterns/slice-99-brand-intelligence-expansion.md`
+
+---
+
+## Slice 100 — Jumbo Brand Chat (Brand-Context-Aware AI)
+
+**Tests:** 11 new tests — 11/11 passing
+**TypeScript:** 0 errors
+**Migrations:** None (no new DB tables — chat is stateless)
+
+**What we did:** Added a brand-context-aware chat panel to the Brand Intelligence Report. The agency owner can ask Jumbo to generate any content material using the full 8-section client dossier — Jumbo has the entire dossier pre-loaded in its system prompt (no tool call needed, so responses are fast). Six quick action buttons generate: 30 hooks, 5-email nurture sequence, Grand Slam Offer outline, 5 LinkedIn posts, comment drafts, and a 90-day content calendar.
+
+**Key behaviors unlocked:**
+1. Agency owner clicks "📎 30 Hooks" → Jumbo returns 30 hooks organized by type, all referencing the client's specific niche, voice adjectives, and power words
+2. Agency owner types "write a carousel about [client name]'s false beliefs" → Jumbo uses belief_framework data from dossier to craft it
+3. All quick action prompts are injected into the chat as user messages → full chat history visible
+4. Each Jumbo response has a "Copy" button → one-click copy to clipboard
+5. Dossier trimmed at service layer (_trim_dossier): lists capped at 10, journals at 800 chars → system prompt stays under 8k tokens
+6. UUID validation on brand_id in router (A03), user_id scoping on DB lookup (A01 IDOR), JWT auth (A07)
+7. Message length capped at 5000 chars via Pydantic (DoS protection)
+
+**Architecture decision:** System prompt injection (not tool call) chosen for dossier loading. Removes ~10s latency, fits Vercel 60s limit even for long generation tasks.
+
+**Security:** A01 IDOR (eq user_id), A03 UUID regex, A07 JWT, message length cap 5000 chars. No SSRF risk (no user-supplied URLs). No new DB tables → no migration needed.
+
+| File | Change |
+|------|--------|
+| `apps/api/app/services/brand_chat.py` | NEW — Jumbo Brand Chat service with dossier injection + _trim_dossier |
+| `apps/api/app/routers/brand_chat.py` | NEW — POST /brand-chat/{brand_id}, UUID guard, IDOR, 502 on agent failure |
+| `apps/api/app/main.py` | Added brand_chat import + router registration |
+| `apps/web/src/lib/api/brand-chat.ts` | NEW — API client + QUICK_ACTIONS array with 6 prompt definitions |
+| `apps/web/src/components/jumbo-brand-chat.tsx` | NEW — chat UI with quick actions, message history, loading indicator, copy button |
+| `apps/web/src/components/brand-intelligence-report.tsx` | Added JumboBrandChat panel + import |
+| `apps/api/tests/test_slice100_brand_chat.py` | NEW — 11 tests across 3 classes (all pass) |
+| `docs/compound/patterns/slice-100-jumbo-brand-chat.md` | NEW — slice pattern doc |
+
+See full details: `docs/compound/patterns/slice-100-jumbo-brand-chat.md`
+
+---
+
+## Slice 101 — Gemini-Style Agent Training + ICP Research Pipeline
+
+**Date:** 2026-03-04
+**Tests:** 12 new tests — 12/12 passing
+**TypeScript:** 0 errors
+**Migrations:** None (uses existing knowledge_docs table)
+
+**What we did:** Two features shipped together. (1) Rebuilt the Intelligence page's per-agent panel as a Gemini-style training interface: Instructions textarea persists as a `doc_type: "instructions"` knowledge doc scoped to the agent, and a Knowledge card grid lets users add Quick Notes, PDFs, and URLs. Added "instructions" to `VALID_DOC_TYPES` in the router and `DocType` in the TypeScript API client. (2) Added a 4-stage ICP Research pipeline as the new first tab in the Sales room: Stage 1 derives Objective from brand profile, Stage 2 builds a Brand & Product Snapshot, Stage 3 runs Perplexity sonar-pro search for target companies and ICP signals, Stage 4 outputs ready-to-use Apollo.io company + contact + keyword filter sets. Each stage animates through Pending → Running → Complete with an indigo pulse indicator. Methodology collapsible shows the full Sales Lead Research System Prompt Template.
+
+**Key behaviors unlocked:**
+1. Agency owner opens Intelligence → clicks "🎓 Train" on Copywriter → Instructions textarea pre-loaded; typing and saving persists as instructions knowledge doc for that agent
+2. Knowledge card grid: Quick Note titles auto-fill from first 60 chars; PDF file is uploaded and stored; URL is stored as a reference
+3. One instructions doc per agent — auto-upserted (existing doc updated, not duplicated) via list-then-create-or-patch pattern in component
+4. Sales → ICP Research tab is now the default landing tab; old "Leads" tab still accessible
+5. ICP Research Stage 3 uses Perplexity sonar-pro; gracefully falls back to brand profile data if Perplexity key not configured
+6. Stage 4 Apollo filter set is copyable with one click; includes company filters, contact filters, keywords + tech stack, and an Apify scraper hint
+7. `GET /leads/icp-methodology` endpoint returns the full template text for agent seeding
+8. Intelligence page rewired from old agent-office layout to AgentCommandPage with Agents / Deliverables / Journal tabs
+
+**Security:** A01 IDOR (`research_icp()` verifies `brand_id` belongs to `user_id`), A03 UUID regex in router before DB access, A07 `Depends(get_current_user)` on all new endpoints. "instructions" doc type uses same user-scoped RLS as other doc types — no system-scope leak possible.
+
+| File | Change |
+|------|--------|
+| `apps/api/app/services/lead_gen.py` | Added `research_icp()` function + `ICP_METHODOLOGY` constant |
+| `apps/api/app/routers/leads.py` | Added `POST /leads/icp-research`, `GET /leads/icp-methodology`, `IcpResearchRequest` schema |
+| `apps/api/app/routers/knowledge_docs.py` | Added "instructions" to `VALID_DOC_TYPES` |
+| `apps/web/src/components/agent-training-panel.tsx` | NEW — Gemini-style Instructions textarea + Knowledge card grid |
+| `apps/web/src/components/icp-research-panel.tsx` | NEW — 4-stage ICP pipeline UI with animated stage cards |
+| `apps/web/src/app/intelligence/page.tsx` | Rewired as AgentCommandPage with 3 tabs; Train button + expandedAgent state |
+| `apps/web/src/app/sales/page.tsx` | ICP Research added as first tab; default tab changed from "leads" to "icp" |
+| `apps/web/src/lib/api/leads.ts` | Added `icpResearch()` and `icpMethodology()` API methods |
+| `apps/web/src/lib/api/knowledge-docs.ts` | Added "instructions" to `DocType` union |
+| `apps/api/tests/test_slice101_icp_agent_training.py` | NEW — 12 tests across 3 classes (all pass) |
+| `docs/compound/patterns/slice-101-icp-research-agent-training.md` | NEW — slice pattern doc |
+
+See full details: `docs/compound/patterns/slice-101-icp-research-agent-training.md`
+
+---
+
+## E2E Test Infrastructure — 2026-03-04
+
+**Slice:** Cross-slice / Infrastructure
+**Date:** 2026-03-04
+**Tests:** 60/60 passing (29 unauthenticated + 31 authenticated) | 0 TS errors
+**Migrations:** None
+
+**What we did:** Built a full Playwright E2E test infrastructure that covers all 101 slices without requiring a live production backend. Three new files and two updated files.
+
+Architecture:
+- `tests/global-setup.ts` — logs in ONCE using TEST_EMAIL/TEST_PASSWORD, saves storageState to `tests/.auth-state.json`; avoids Supabase rate-limiting from per-test logins
+- `tests/new-features-auth.spec.ts` — 31 authenticated tests using `test.use({ storageState })` at file level + `beforeEach` API mock interceptor
+- `tests/new-features.spec.ts` — 29 unauthenticated tests (protected route redirects, public routes, API health checks)
+- `playwright.config.ts` — updated to use globalSetup
+
+Key architectural decisions:
+- `page.addInitScript()` injects `onboarding_done=true` + `positionedup_current_brand_id` into localStorage before React mounts — bypasses OnboardingGuard without modifying production code
+- `page.route("https://api-iota-puce.vercel.app/**")` intercepts all backend calls — returns correctly-shaped mock responses, decoupling UI tests from backend auth
+- Default mock body is `[]` (empty array), not `{ data: [] }` — safe for `.filter()`/`.map()` on array-returning endpoints without crashing React renders
+- Each endpoint uses its actual response shape: `/brands` → `{ brands: [], total: 0 }`, `/pipeline/settings` → `{ enabled, run_now, next_run_at }`, `/schedule` → `{ draft: [], scheduled: [] }`, etc.
+
+**Root causes diagnosed and fixed:**
+1. Production backend 401 for test account → route interceptor mocks all API calls
+2. OnboardingGuard redirect loop → localStorage injection via addInitScript
+3. React render crashes from wrong-shaped mock data (`{}.filter()` TypeError) → typed mock responses per endpoint
+4. Playwright strict mode violations (`page.locator("main")`) → `.first()` added
+
+**Key behaviors tested:** Protected route redirects (19), public route loads (4), API health checks (6), Mission Control pipeline funnel (4), Sales ICP + Lead Gen (5), Marketing sidebar + Kanban (3), Intelligence agent training (4), Deliverables gallery (2), Clients dashboard (2), Composer (2), Brand Intelligence + Jumbo Chat (3), Onboarding flow (1), MC sub-pages (5)
+
+| File | Change |
+|------|--------|
+| `apps/web/tests/global-setup.ts` | NEW — one-time login + storageState save |
+| `apps/web/tests/new-features-auth.spec.ts` | NEW — 31 authenticated tests with API mock |
+| `apps/web/tests/new-features.spec.ts` | UPDATED — stripped to 29 unauthenticated tests; added Slice 101 API health checks |
+| `apps/web/playwright.config.ts` | UPDATED — added globalSetup |

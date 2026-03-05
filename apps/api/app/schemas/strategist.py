@@ -116,7 +116,7 @@ StrategistResponse = Union[
 class StrategistChatRequest(BaseModel):
     """POST /brand/strategist/chat request body."""
 
-    message: str = Field(..., min_length=1, max_length=5000)
+    message: str = Field(..., min_length=1, max_length=20000)
     brand_id: str = Field(..., description="Personal brand ID")
     selected_option: Optional[str] = Field(
         None,

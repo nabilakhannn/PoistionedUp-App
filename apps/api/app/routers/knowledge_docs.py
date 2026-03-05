@@ -37,7 +37,7 @@ _UUID_RE = re.compile(
     re.IGNORECASE,
 )
 
-VALID_DOC_TYPES = {"writing_sop", "cold_email", "framework", "ad_copy", "case_study", "other"}
+VALID_DOC_TYPES = {"writing_sop", "cold_email", "framework", "ad_copy", "case_study", "instructions", "other"}
 VALID_PLATFORMS = {"linkedin", "youtube", "twitter", "email", "all"}
 
 

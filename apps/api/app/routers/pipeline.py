@@ -41,7 +41,9 @@ from app.services.jumbo_pipeline import (
     get_analytics_context,
     get_competitor_context,
     get_rejection_history,
+    get_relevant_experiences,
     get_trend_memory,
+    mark_experiences_used,
     notify_approval_needed,
     parse_qa_score,
     save_deliverable,
@@ -226,9 +228,12 @@ async def pipeline_write(
 
     analytics_ctx = get_analytics_context(req.brand_id)
     rejection_history = get_rejection_history(req.user_id, req.brand_id)
+    experiences_ctx, experience_ids = get_relevant_experiences(
+        req.user_id, req.brand_id, topic=req.research_brief[:500]
+    )
 
     system_prompt = build_writing_prompt(
-        req.research_brief, analytics_ctx, rejection_history
+        req.research_brief, analytics_ctx, rejection_history, experiences_ctx
     )
     user_prompt = (
         f"Write a LinkedIn post for brand_id={req.brand_id}. "
@@ -253,6 +258,9 @@ async def pipeline_write(
             "Write phase failed brand=%s: %s", req.brand_id, result.error
         )
         raise HTTPException(500, f"Write phase failed: {result.error}")
+
+    # Track which journal entries were used so the agent rotates to fresh material next time
+    mark_experiences_used(experience_ids)
 
     self_qa_passed = len(result.content.strip()) >= 50
 

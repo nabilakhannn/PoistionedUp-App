@@ -36,5 +36,8 @@ tavily-python>=0.5.0
 # WebSocket (OpenClaw gateway relay)
 websockets>=14.0
 
+# Excel export for leads CRM (Slice 95 — Instantly.ai compatible .xlsx)
+openpyxl>=3.1.0
+
 # Analytics
 posthog>=3.0.0

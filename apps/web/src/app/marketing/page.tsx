@@ -14,7 +14,7 @@ import { MarketingCalendar } from "@/components/marketing-calendar";
 import { CompetitorIntelEmbed } from "@/components/competitor-intel-embed";
 import { LandingPageStudio } from "@/components/landing-page-studio";
 
-type Section = "content" | "calendar" | "ads" | "images" | "landing" | "competitors" | "analytics";
+type Section = "content" | "calendar" | "ads" | "images" | "landing" | "competitors" | "strategy";
 
 const SECTIONS: { key: Section; label: string; emoji: string; description: string }[] = [
   { key: "content", label: "Content", emoji: "📋", description: "Content pipeline & Kanban board" },
@@ -23,7 +23,7 @@ const SECTIONS: { key: Section; label: string; emoji: string; description: strin
   { key: "images", label: "Images", emoji: "🖼️", description: "AI image generation studio" },
   { key: "landing", label: "Landing Pages", emoji: "🚀", description: "AI-generated pages from inspiration URLs" },
   { key: "competitors", label: "Competitors", emoji: "🕵️", description: "Threat scores & intel feed" },
-  { key: "analytics", label: "Analytics", emoji: "📊", description: "Voice DNA, QA tiers, performance" },
+  { key: "strategy", label: "Strategy", emoji: "🗺️", description: "Content pillars & monthly content plan" },
 ];
 
 export default function MarketingPage() {
@@ -178,23 +178,79 @@ export default function MarketingPage() {
             )
           )}
 
-          {/* ── ANALYTICS ─────────────────────────────── */}
-          {activeSection === "analytics" && (
-            <div className="rounded-xl border border-border bg-card/50 p-5">
-              <p className="text-sm text-muted-foreground">
-                Your full analytics dashboard is at{" "}
-                <Link href="/mission-control/analytics" className="text-primary hover:underline">
-                  Mission Control → Analytics
-                </Link>
-                .
-              </p>
-              <Link
-                href="/mission-control/analytics"
-                className="inline-block mt-3 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90 transition"
-              >
-                Open Analytics →
-              </Link>
-            </div>
+          {/* ── STRATEGY ──────────────────────────────── */}
+          {activeSection === "strategy" && (
+            currentBrand ? (
+              <div className="space-y-6">
+                {/* Content Pillars */}
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="flex items-start justify-between mb-5">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Content Pillars</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        The 5 core themes every piece of content should map to. Derived from your brand profile.
+                      </p>
+                    </div>
+                    <Link
+                      href={`/brands/${currentBrand.id}`}
+                      className="text-xs text-primary hover:underline flex-shrink-0 ml-4"
+                    >
+                      Edit brand profile →
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[
+                      { title: "Origin & Mission", desc: "Why you started, what you stand for", emoji: "🌱" },
+                      { title: "Client Transformations", desc: "Before/after stories from your work", emoji: "⚡" },
+                      { title: "Industry Insights", desc: "Contrarian takes and market truths", emoji: "🔍" },
+                      { title: "Behind the Process", desc: "How you work, your methodology", emoji: "⚙️" },
+                      { title: "Rapid-fire Value", desc: "Quick tips, frameworks, and tools", emoji: "🎯" },
+                    ].map((pillar, i) => (
+                      <div key={i} className="rounded-lg border border-border bg-card/50 p-4">
+                        <div className="text-lg mb-2">{pillar.emoji}</div>
+                        <div className="text-sm font-medium text-foreground">{pillar.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{pillar.desc}</div>
+                      </div>
+                    ))}
+                    <div className="rounded-lg border border-dashed border-border bg-card/20 p-4 flex flex-col items-center justify-center gap-1 text-center">
+                      <div className="text-lg">✨</div>
+                      <span className="text-xs text-muted-foreground">AI-personalised pillars<br />from your brand research</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Monthly Focus */}
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <h3 className="text-sm font-semibold text-foreground mb-1">This Month&apos;s Focus</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Use your content calendar and competitor intel to plan what to write this month.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href="/marketing"
+                      onClick={() => {}}
+                      className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg font-medium hover:bg-primary/20 transition"
+                    >
+                      📅 Open Calendar
+                    </Link>
+                    <Link
+                      href="/mission-control/analytics"
+                      className="text-xs bg-card border border-border px-3 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition"
+                    >
+                      📊 View Analytics
+                    </Link>
+                    <Link
+                      href="/sales"
+                      className="text-xs bg-card border border-border px-3 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition"
+                    >
+                      🎯 ICP Research
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <NoBrand icon="🗺️" />
+            )
           )}
 
         </div>
