@@ -19,10 +19,10 @@ export default function NotFound() {
             Go to Brands
           </Link>
           <Link
-            href="/content"
+            href="/mission-control"
             className="px-4 py-2 border border-zinc-700 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-800 transition"
           >
-            Go to Content
+            Go to Today
           </Link>
         </div>
       </div>

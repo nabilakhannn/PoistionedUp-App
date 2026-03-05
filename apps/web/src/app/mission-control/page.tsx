@@ -20,6 +20,7 @@ import { useBrand } from "@/lib/brand-context";
 import { MC_SUB_NAV } from "./constants";
 import { QuickCapture } from "./components/quick-capture";
 import { ContentPlanChat } from "@/components/content-plan-chat";
+import { GettingStartedChecklist } from "@/components/getting-started-checklist";
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -187,6 +188,7 @@ export default function MissionControlHome() {
   const { currentBrand } = useBrand();
 
   // Core state
+  const [allDeliverables, setAllDeliverables] = useState<Deliverable[]>([]);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [notifications, setNotifications] = useState<AgentNotification[]>([]);
   const [pipelineSettings, setPipelineSettings] = useState<PipelineSettings | null>(null);
@@ -200,6 +202,9 @@ export default function MissionControlHome() {
   const [perf, setPerf] = useState<AnalyticsSummary | null>(null);
   const [leadsPulse, setLeadsPulse] = useState<LeadsPulse | null>(null);
   const [priorities, setPriorities] = useState<Suggestion[]>([]);
+
+  // Research brief expand/collapse
+  const [briefExpanded, setBriefExpanded] = useState(false);
 
   // Content planning state
   const [planningOpen, setPlanningOpen] = useState(false);
@@ -221,6 +226,7 @@ export default function MissionControlHome() {
         usageApi.getSummary().catch(() => null),
         agentBridgeApi.getActivityFeed(15).catch(() => ({ items: [], total: 0 })),
       ]);
+      setAllDeliverables(deliverablesRes);
       setDeliverables(deliverablesRes.filter((d) => d.status === "review"));
       setNotifications(notifsRes.filter((n) => n.priority === "high" || n.priority === "urgent"));
       setPipelineSettings(pipelineRes);
@@ -404,6 +410,12 @@ export default function MissionControlHome() {
           <h1 className="text-xl font-bold text-foreground">Good morning!</h1>
           <p className="text-xs text-muted-foreground mt-0.5">{todayLabel()}</p>
         </div>
+
+        {/* ── GETTING STARTED ──────────────────────────────── */}
+        <GettingStartedChecklist
+          currentBrand={currentBrand}
+          deliverables={allDeliverables}
+        />
 
         {/* ── STATUS BAR ─────────────────────────────────── */}
         <StatusBar
@@ -669,7 +681,7 @@ export default function MissionControlHome() {
                 })}
                 <div className="pt-1 border-t border-border/40">
                   <Link
-                    href="/intelligence"
+                    href="/studio/agents"
                     className="text-[10px] text-primary hover:underline"
                   >
                     View full activity log →
@@ -773,15 +785,15 @@ export default function MissionControlHome() {
                   Trend Analyzer · {timeAgo(brief.created_at)}
                 </span>
               </div>
-              <p className="text-sm text-foreground/90 line-clamp-3 leading-relaxed">
+              <p className={`text-sm text-foreground/90 leading-relaxed ${briefExpanded ? "" : "line-clamp-3"}`}>
                 {brief.content}
               </p>
-              <Link
-                href="/intelligence"
-                className="inline-block mt-2 text-xs text-primary hover:underline"
+              <button
+                onClick={() => setBriefExpanded(!briefExpanded)}
+                className="mt-2 text-xs text-primary hover:underline"
               >
-                View full brief →
-              </Link>
+                {briefExpanded ? "▲ Collapse brief" : "▼ View full brief"}
+              </button>
             </div>
           </section>
         )}

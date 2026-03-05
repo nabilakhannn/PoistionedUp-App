@@ -59,14 +59,6 @@ function SettingsIcon({ className }: { className?: string }) {
   );
 }
 
-function JournalIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-    </svg>
-  );
-}
-
 function LogOutIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -135,10 +127,10 @@ const PRIMARY_NAV = [
   },
   {
     href: "/intelligence",
-    label: "Studio",
-    subtitle: "Agents & tools",
+    label: "Jumbo",
+    subtitle: "Chat & notes",
     icon: IntelligenceIcon,
-    match: (p: string) => p.startsWith("/intelligence"),
+    match: (p: string) => p.startsWith("/intelligence") || p.startsWith("/studio"),
   },
 ];
 
@@ -310,14 +302,6 @@ export function NavBar() {
 
       {/* Bottom */}
       <div className="px-3 pb-4 mt-auto border-t border-sidebar-border pt-3 space-y-0.5">
-        {/* Journal quick-access — one click from anywhere */}
-        <Link
-          href="/intelligence?tab=journal"
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
-        >
-          <JournalIcon className="w-[18px] h-[18px]" />
-          Journal
-        </Link>
         {/* Settings */}
         <Link
           href="/mission-control/settings"

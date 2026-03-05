@@ -95,7 +95,7 @@ export default function GapAnalysisPage() {
                       </div>
                     </div>
                     <Link
-                      href="/schedule"
+                      href="/marketing"
                       className="text-xs text-primary hover:underline shrink-0 ml-3"
                     >
                       Create content

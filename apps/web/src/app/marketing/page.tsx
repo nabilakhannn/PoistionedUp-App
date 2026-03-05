@@ -238,13 +238,13 @@ export default function MarketingPage() {
                     <div className="rounded-xl border border-dashed border-border bg-card/20 px-6 py-8 text-center">
                       <div className="text-2xl mb-2">✨</div>
                       <p className="text-sm text-muted-foreground mb-3">
-                        No content pillars set yet. Run your brand research to generate personalised pillars.
+                        No content pillars yet. Generate them from your brand profile.
                       </p>
                       <Link
                         href={`/brands/${currentBrand.id}`}
-                        className="text-xs text-primary hover:underline"
+                        className="inline-flex items-center gap-1.5 text-xs bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition"
                       >
-                        Run brand research →
+                        Generate from Brand Profile →
                       </Link>
                     </div>
                   )}
@@ -257,12 +257,12 @@ export default function MarketingPage() {
                     Use your content calendar and competitor intel to plan what to write this month.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Link
-                      href="/marketing"
+                    <button
+                      onClick={() => setActiveSection("calendar")}
                       className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg font-medium hover:bg-primary/20 transition"
                     >
                       📅 Open Calendar
-                    </Link>
+                    </button>
                     <Link
                       href="/mission-control/analytics"
                       className="text-xs bg-card border border-border px-3 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition"
@@ -270,7 +270,7 @@ export default function MarketingPage() {
                       📊 View Analytics
                     </Link>
                     <Link
-                      href="/sales"
+                      href="/sales?tab=icp"
                       className="text-xs bg-card border border-border px-3 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition"
                     >
                       🎯 ICP Research

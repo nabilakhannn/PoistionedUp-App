@@ -15,7 +15,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
 from app.middleware import RateLimitMiddleware
-from app.routers import account_manager, ad_creative, advisor, agent_bridge, brand, brand_chat, brands, client_deliverables, client_research, collections, competitors, connectors, content_chat, content_planning, experiments, gateway, goals, hooks, image_gen, inspo, intake, journal, knowledge_docs, landing_page, leads, ledger, memory, mission_control, newsletter, notifications, oauth, orchestrator, performance, picker, pipeline, pipeline_settings, playbooks, publishing, qa, repurpose, research, resources, schedule, stages, strategist, training, usage, workflows
+from app.routers import account_manager, ad_creative, advisor, agent_bridge, brand, brand_chat, brands, client_deliverables, client_research, collections, competitors, connectors, content_chat, content_planning, experiments, gateway, goals, hooks, image_gen, inspo, intake, journal, jumbo_hub, knowledge_docs, landing_page, leads, ledger, memory, mission_control, newsletter, notifications, oauth, orchestrator, performance, picker, pipeline, pipeline_settings, playbooks, publishing, qa, repurpose, research, resources, schedule, stages, strategist, training, usage, workflows
 
 
 # ── Structured JSON logging ──────────────────────────────
@@ -213,6 +213,7 @@ app.include_router(client_deliverables.router)
 app.include_router(brand_chat.router)
 app.include_router(hooks.router)
 app.include_router(content_planning.router)
+app.include_router(jumbo_hub.router)
 
 app.add_middleware(
     CORSMiddleware,
