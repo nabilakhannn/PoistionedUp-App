@@ -28,7 +28,7 @@ from app.utils.url_validation import validate_url_for_fetch as validate_url
 
 logger = logging.getLogger("app.services.connectors")
 
-SUPPORTED_SERVICES = {"linkedin", "twitter", "instagram", "webhook"}
+SUPPORTED_SERVICES = {"linkedin", "twitter", "instagram", "webhook", "manus_ai"}
 
 # ── Encryption helpers ────────────────────────────────────────────────────
 
@@ -75,6 +75,7 @@ _REQUIRED_FIELDS = {
     "twitter": ["api_key", "api_secret", "access_token", "access_token_secret"],
     "instagram": ["access_token", "page_id"],
     "webhook": ["url"],
+    "manus_ai": ["api_key"],
 }
 
 
@@ -185,11 +186,33 @@ def _test_webhook(creds: Dict[str, str]) -> str:
         return "error: could not reach webhook URL"
 
 
+def _test_manus_ai(creds: Dict[str, str]) -> str:
+    """Test Manus AI API key by listing tasks."""
+    api_key = creds.get("api_key", "").strip()
+    if not api_key:
+        return "error: API key is empty"
+    try:
+        resp = httpx.get(
+            "https://api.manus.im/v1/tasks",
+            headers={"Authorization": f"Bearer {api_key}"},
+            params={"limit": 1},
+            timeout=10.0,
+        )
+        if resp.status_code == 200:
+            return "ok"
+        if resp.status_code in (401, 403):
+            return "error: invalid API key"
+        return f"error: Manus API returned HTTP {resp.status_code}"
+    except Exception:
+        return "error: could not reach Manus AI API"
+
+
 _TEST_FUNCTIONS = {
     "linkedin": _test_linkedin,
     "twitter": _test_twitter,
     "instagram": _test_instagram,
     "webhook": _test_webhook,
+    "manus_ai": _test_manus_ai,
 }
 
 

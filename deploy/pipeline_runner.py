@@ -53,6 +53,11 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
+# ── Retry configuration ──────────────────────────────────────────────────
+
+MAX_PHASE_RETRIES = 3
+BACKOFF_SECONDS = [30, 120, 300]  # 30s, 2m, 5m
+
 # ── Logging ───────────────────────────────────────────────────────────────
 
 logging.basicConfig(
@@ -132,6 +137,59 @@ def get_brands_for_user(user_id: str) -> list:
         return []
 
 
+# ── Retry helper ──────────────────────────────────────────────────────────
+
+
+def _retry_phase(
+    url: str,
+    payload: dict,
+    phase_name: str,
+    label: str,
+) -> "Optional[httpx.Response]":
+    """Execute one pipeline phase HTTP call with exponential backoff retry.
+
+    Returns the response on success, None if all retries exhausted.
+    Retries only on transient failures (5xx, timeout, connection error).
+    4xx errors are non-retryable (client error).
+    """
+    for attempt in range(MAX_PHASE_RETRIES):
+        try:
+            resp = httpx.post(url, json=payload, headers=HEADERS, timeout=58.0)
+            resp.raise_for_status()
+            return resp
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code < 500:
+                logger.error(
+                    "  %s: HTTP %d (non-retryable) brand=%s",
+                    phase_name, exc.response.status_code, label,
+                )
+                return None  # 4xx — don't retry
+            logger.warning(
+                "  %s: HTTP %d (attempt %d/%d) brand=%s",
+                phase_name, exc.response.status_code,
+                attempt + 1, MAX_PHASE_RETRIES, label,
+            )
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+            logger.warning(
+                "  %s: %s (attempt %d/%d) brand=%s",
+                phase_name, type(exc).__name__,
+                attempt + 1, MAX_PHASE_RETRIES, label,
+            )
+        except Exception as exc:
+            logger.error(
+                "  %s: unexpected error (attempt %d/%d) brand=%s: %s",
+                phase_name, attempt + 1, MAX_PHASE_RETRIES, label, exc,
+            )
+
+        if attempt < MAX_PHASE_RETRIES - 1:
+            backoff = BACKOFF_SECONDS[min(attempt, len(BACKOFF_SECONDS) - 1)]
+            logger.info("  Backing off %ds before retry...", backoff)
+            time.sleep(backoff)
+
+    logger.error("  %s: all %d retries exhausted — brand=%s", phase_name, MAX_PHASE_RETRIES, label)
+    return None
+
+
 # ── Core pipeline ─────────────────────────────────────────────────────────
 
 
@@ -147,110 +205,97 @@ def run_pipeline_for_brand(user_id: str, brand_id: str, brand_name: str = "") ->
 
     logger.info("Pipeline start — brand=%s", label)
 
-    try:
-        # ── Phase 1: Research ─────────────────────────────────────────────
-        logger.info("  Phase 1: Research — brand=%s", label)
-        r1 = httpx.post(
-            f"{base}/research",
-            json=payload_base,
-            headers=HEADERS,
-            timeout=58.0,
-        )
-        r1.raise_for_status()
-        research_brief = r1.json().get("research_brief", "")
-
-        if not research_brief:
-            logger.warning("  Phase 1 returned empty brief — skipping brand=%s", label)
-            return False
-
-        logger.info(
-            "  Phase 1 done — %d chars, %d tokens",
-            len(research_brief),
-            r1.json().get("tokens", 0),
-        )
-
-        # ── Phase 2: Write ────────────────────────────────────────────────
-        logger.info("  Phase 2: Write — brand=%s", label)
-        r2 = httpx.post(
-            f"{base}/write",
-            json={**payload_base, "research_brief": research_brief},
-            headers=HEADERS,
-            timeout=58.0,
-        )
-        r2.raise_for_status()
-        draft = r2.json().get("draft", "")
-
-        if not draft:
-            logger.warning("  Phase 2 returned empty draft — skipping brand=%s", label)
-            return False
-
-        logger.info(
-            "  Phase 2 done — %d chars, self_qa=%s",
-            len(draft),
-            r2.json().get("self_qa_passed"),
-        )
-
-        # ── Phase 3: QA ───────────────────────────────────────────────────
-        logger.info("  Phase 3: QA — brand=%s", label)
-        r3 = httpx.post(
-            f"{base}/qa",
-            json={**payload_base, "draft": draft},
-            headers=HEADERS,
-            timeout=58.0,
-        )
-        r3.raise_for_status()
-        qa_data = r3.json()
-
-        qa_score = qa_data.get("qa_score", 0)
-        verdict = qa_data.get("verdict", "FAIL")
-        deliverable_id = qa_data.get("deliverable_id")
-
-        logger.info(
-            "  Phase 3 done — score=%d verdict=%s deliverable=%s brand=%s",
-            qa_score,
-            verdict,
-            deliverable_id,
-            label,
-        )
-
-        if verdict == "PASS":
-            logger.info("Pipeline SUCCESS — post queued for approval. brand=%s", label)
-        else:
-            logger.info(
-                "Pipeline complete — post failed QA (score=%d). brand=%s",
-                qa_score,
-                label,
-            )
-
-        return True
-
-    except httpx.HTTPStatusError as exc:
-        logger.error(
-            "Pipeline HTTP error %d on %s for brand=%s",
-            exc.response.status_code,
-            exc.request.url,
-            label,
-        )
+    # ── Phase 1: Research (with retry) ────────────────────────────────
+    logger.info("  Phase 1: Research — brand=%s", label)
+    r1 = _retry_phase(f"{base}/research", payload_base, "Phase 1 Research", label)
+    if r1 is None:
         return False
 
-    except httpx.TimeoutException:
-        logger.error("Pipeline timeout — brand=%s (Vercel >58s)", label)
+    research_brief = r1.json().get("research_brief", "")
+    if not research_brief:
+        logger.warning("  Phase 1 returned empty brief — skipping brand=%s", label)
         return False
 
-    except Exception as exc:
-        logger.error("Pipeline unexpected error brand=%s: %s", label, exc)
+    logger.info(
+        "  Phase 1 done — %d chars, %d tokens",
+        len(research_brief),
+        r1.json().get("tokens", 0),
+    )
+
+    # ── Phase 2: Write (with retry) ──────────────────────────────────
+    logger.info("  Phase 2: Write — brand=%s", label)
+    r2 = _retry_phase(
+        f"{base}/write",
+        {**payload_base, "research_brief": research_brief},
+        "Phase 2 Write",
+        label,
+    )
+    if r2 is None:
         return False
+
+    draft = r2.json().get("draft", "")
+    if not draft:
+        logger.warning("  Phase 2 returned empty draft — skipping brand=%s", label)
+        return False
+
+    logger.info(
+        "  Phase 2 done — %d chars, self_qa=%s",
+        len(draft),
+        r2.json().get("self_qa_passed"),
+    )
+
+    # ── Phase 3: QA (with retry) ─────────────────────────────────────
+    logger.info("  Phase 3: QA — brand=%s", label)
+    r3 = _retry_phase(
+        f"{base}/qa",
+        {**payload_base, "draft": draft},
+        "Phase 3 QA",
+        label,
+    )
+    if r3 is None:
+        return False
+
+    qa_data = r3.json()
+    qa_score = qa_data.get("qa_score", 0)
+    verdict = qa_data.get("verdict", "FAIL")
+    deliverable_id = qa_data.get("deliverable_id")
+
+    logger.info(
+        "  Phase 3 done — score=%d verdict=%s deliverable=%s brand=%s",
+        qa_score, verdict, deliverable_id, label,
+    )
+
+    if verdict == "PASS":
+        logger.info("Pipeline SUCCESS — post queued for approval. brand=%s", label)
+    else:
+        logger.info(
+            "Pipeline complete — post failed QA (score=%d). brand=%s",
+            qa_score, label,
+        )
+
+    return True
 
 
 # ── Content plan execution ────────────────────────────────────────────────
 
 
-def _update_plan_status(plan_id: str, status: str) -> None:
-    """PATCH /plan/{plan_id}/status — mark plan status during/after execution."""
+def _update_plan_status(
+    plan_id: str,
+    status: str,
+    item_results: list = None,
+) -> None:
+    """PATCH /plan/{plan_id}/status — mark plan status during/after execution.
+
+    Optionally sends per-item results so the API can track which items
+    succeeded vs failed (partial failure tracking).
+    """
+    body: dict = {"status": status}
+    if item_results is not None:
+        body["item_results"] = item_results
     try:
         httpx.patch(
             f"{VERCEL_URL}/plan/{plan_id}/status",
-            json={"status": status},
+            json=body,
             headers=HEADERS,
             timeout=10.0,
         )
@@ -273,60 +318,46 @@ def run_plan_item(user_id: str, brand_id: str, item: dict) -> bool:
 
     logger.info("  [PLAN] Item start — %s", label)
 
-    try:
-        # Phase 2: Write (topic_focus skips research brief; source='planned' for display)
-        topic_focus = f"{topic} — {angle}".strip(" —") if angle else topic
-        r2 = httpx.post(
-            f"{base}/write",
-            json={
-                **payload_base,
-                "research_brief": "",         # empty — topic_focus overrides
-                "topic_focus": topic_focus[:500],
-                "source": "planned",
-                "format": fmt,
-            },
-            headers=HEADERS,
-            timeout=58.0,
-        )
-        r2.raise_for_status()
-        draft = r2.json().get("draft", "")
-
-        if not draft:
-            logger.warning("  [PLAN] Write returned empty draft — %s", label)
-            return False
-
-        # Phase 3: QA (thread source so deliverable is tagged correctly)
-        r3 = httpx.post(
-            f"{base}/qa",
-            json={**payload_base, "draft": draft, "source": "planned"},
-            headers=HEADERS,
-            timeout=58.0,
-        )
-        r3.raise_for_status()
-        qa_data = r3.json()
-
-        logger.info(
-            "  [PLAN] Item done — score=%d verdict=%s topic=%s",
-            qa_data.get("qa_score", 0),
-            qa_data.get("verdict", "?"),
-            label,
-        )
-        return True
-
-    except httpx.HTTPStatusError as exc:
-        body = ""
-        try:
-            body = exc.response.text[:500]
-        except Exception:
-            pass
-        logger.error("[PLAN] HTTP error %d for topic=%s body=%s", exc.response.status_code, label, body)
+    # Phase 2: Write (with retry; topic_focus skips research brief)
+    topic_focus = f"{topic} — {angle}".strip(" —") if angle else topic
+    r2 = _retry_phase(
+        f"{base}/write",
+        {
+            **payload_base,
+            "research_brief": "",         # empty — topic_focus overrides
+            "topic_focus": topic_focus[:500],
+            "source": "planned",
+            "format": fmt,
+        },
+        "[PLAN] Write",
+        label,
+    )
+    if r2 is None:
         return False
-    except httpx.TimeoutException:
-        logger.error("[PLAN] Timeout writing topic=%s", label)
+
+    draft = r2.json().get("draft", "")
+    if not draft:
+        logger.warning("  [PLAN] Write returned empty draft — %s", label)
         return False
-    except Exception as exc:
-        logger.error("[PLAN] Unexpected error topic=%s: %s", label, exc)
+
+    # Phase 3: QA (with retry)
+    r3 = _retry_phase(
+        f"{base}/qa",
+        {**payload_base, "draft": draft, "source": "planned"},
+        "[PLAN] QA",
+        label,
+    )
+    if r3 is None:
         return False
+
+    qa_data = r3.json()
+    logger.info(
+        "  [PLAN] Item done — score=%d verdict=%s topic=%s",
+        qa_data.get("qa_score", 0),
+        qa_data.get("verdict", "?"),
+        label,
+    )
+    return True
 
 
 def run_approved_plans() -> None:
@@ -372,15 +403,28 @@ def run_approved_plans() -> None:
                     ex.submit(run_plan_item, user_id, brand_id, item): item
                     for item in items
                 }
+                item_results = []
                 failed = 0
                 for future in as_completed(futures):
                     item = futures[future]
-                    if not future.result():
+                    topic = item.get("topic", "unknown")
+                    success = future.result()
+                    item_results.append({
+                        "topic": topic,
+                        "status": "done" if success else "failed",
+                    })
+                    if not success:
                         failed += 1
-                        logger.warning("[PLAN] Item failed — topic: %s", item.get("topic", "unknown"))
+                        logger.warning("[PLAN] Item failed — topic: %s", topic)
 
-            final_status = "failed" if failed == len(items) else "done"
-            _update_plan_status(plan_id, final_status)
+            if failed == len(items):
+                final_status = "failed"
+            elif failed > 0:
+                final_status = "partial"
+            else:
+                final_status = "done"
+
+            _update_plan_status(plan_id, final_status, item_results=item_results)
             logger.info(
                 "[PLAN] plan=%s %s (%d/%d succeeded)",
                 plan_id[:8],

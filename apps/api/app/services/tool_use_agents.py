@@ -224,10 +224,70 @@ TOOL_DEFINITIONS: List[Dict[str, Any]] = [
             "required": ["description"],
         },
     },
+    {
+        "name": "save_raw_material",
+        "description": (
+            "Save raw material (note, idea, opinion, quote, take) to the user's Story Bank. "
+            "The material will be auto-extracted into structured stories for future content. "
+            "Use this when the user shares something worth saving during a conversation."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "brand_id": {
+                    "type": "string",
+                    "description": "The UUID of the brand to save material for.",
+                },
+                "user_id": {
+                    "type": "string",
+                    "description": "The user ID who owns this material.",
+                },
+                "raw_content": {
+                    "type": "string",
+                    "description": "The raw text content to save.",
+                },
+                "source_type": {
+                    "type": "string",
+                    "enum": ["note", "idea", "opinion", "quote", "take"],
+                    "description": "Type of material. Default: note.",
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Optional short title for the material.",
+                },
+            },
+            "required": ["brand_id", "user_id", "raw_content"],
+        },
+    },
 ]
 
 
 # ── Tool executors ────────────────────────────────────────────────────────
+
+
+def _exec_save_raw_material(
+    brand_id: str, user_id: str, raw_content: str,
+    source_type: str = "note", title: str = "",
+) -> str:
+    """Save raw material to the Story Bank (experience_journal)."""
+    try:
+        sb = get_admin_client()
+        row = {
+            "user_id": user_id,
+            "brand_id": brand_id,
+            "title": title[:255] if title else None,
+            "source_type": source_type if source_type in {"note", "idea", "opinion", "quote", "take"} else "note",
+            "raw_content": raw_content,
+            "tags": [],
+            "insights": [],
+            "extracted_stories": [],
+        }
+        result = sb.table("experience_journal").insert(row).execute()
+        if result.data:
+            return f"Saved to Story Bank (id: {result.data[0]['id']}). AI extraction will run automatically."
+        return "Failed to save material."
+    except Exception as exc:
+        return f"Error saving material: {str(exc)[:200]}"
 
 
 def _exec_web_search(query: str) -> str:
@@ -369,7 +429,7 @@ def _exec_fetch_brand_profile(brand_id: str) -> str:
             sb2 = get_admin_client()
             j_result = (
                 sb2.table("experience_journal")
-                .select("summary, type, created_at")
+                .select("raw_content, source_type, created_at")
                 .eq("brand_id", brand_id)
                 .order("created_at", desc=True)
                 .limit(3)
@@ -377,7 +437,7 @@ def _exec_fetch_brand_profile(brand_id: str) -> str:
             )
             if j_result.data:
                 summary["emotional_journal_summary"] = [
-                    f"[{r.get('type','note')}] {str(r.get('summary',''))[:200]}"
+                    f"[{r.get('source_type','note')}] {str(r.get('raw_content',''))[:200]}"
                     for r in j_result.data
                 ]
             else:
@@ -607,6 +667,14 @@ def _dispatch_tool(tool_name: str, tool_input: Dict[str, Any]) -> str:
             description=tool_input.get("description", ""),
             style=tool_input.get("style", "photorealistic"),
             img_format=tool_input.get("format", "square"),
+        )
+    if tool_name == "save_raw_material":
+        return _exec_save_raw_material(
+            brand_id=tool_input.get("brand_id", ""),
+            user_id=tool_input.get("user_id", ""),
+            raw_content=tool_input.get("raw_content", ""),
+            source_type=tool_input.get("source_type", "note"),
+            title=tool_input.get("title", ""),
         )
     return f"[Unknown tool: {tool_name!r}]"
 

@@ -1,6 +1,6 @@
 import { apiFetch } from "./client";
 
-export type ConnectorService = "linkedin" | "twitter" | "instagram" | "webhook";
+export type ConnectorService = "linkedin" | "twitter" | "instagram" | "webhook" | "manus_ai";
 
 export interface Connector {
   id: string;

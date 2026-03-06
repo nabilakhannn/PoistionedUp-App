@@ -184,3 +184,97 @@ async def public_share(share_token: str):
 
     # Fallback — JSON response
     return d
+
+
+# ── PATCH /deliverables/{id}/status — lifecycle tracking ─────────────────
+
+_VALID_PROPOSAL_STATUSES = {"draft", "sent", "accepted", "rejected", "closed_won", "closed_lost"}
+
+
+class DeliverableStatusBody(BaseModel):
+    proposal_status: str
+    deal_value: Optional[float] = None
+
+
+@router.patch("/deliverables/{deliverable_id}/status")
+async def update_deliverable_status(
+    deliverable_id: str,
+    body: DeliverableStatusBody,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Update proposal lifecycle status (draft -> sent -> accepted/rejected -> closed)."""
+    if not _UUID_RE.match(deliverable_id):
+        raise HTTPException(400, "Invalid deliverable_id — must be UUID")
+    if body.proposal_status not in _VALID_PROPOSAL_STATUSES:
+        raise HTTPException(
+            400,
+            f"Invalid status. Must be one of: {sorted(_VALID_PROPOSAL_STATUSES)}",
+        )
+
+    from app.deps import get_admin_client
+    sb = get_admin_client()
+
+    update_data = {"proposal_status": body.proposal_status}
+    if body.deal_value is not None:
+        update_data["deal_value"] = body.deal_value
+
+    result = (
+        sb.table("agent_deliverables")
+        .update(update_data)
+        .eq("id", deliverable_id)
+        .eq("user_id", user.id)  # IDOR guard
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(404, "Deliverable not found")
+
+    return {"ok": True, "proposal_status": body.proposal_status, "deal_value": body.deal_value}
+
+
+# ── POST /deliverables/{id}/regenerate — create new version ──────────────
+
+
+@router.post("/deliverables/{deliverable_id}/regenerate")
+async def regenerate_deliverable(
+    deliverable_id: str,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Regenerate a deliverable (creates a new version with incremented version number)."""
+    if not _UUID_RE.match(deliverable_id):
+        raise HTTPException(400, "Invalid deliverable_id — must be UUID")
+
+    from app.deps import get_admin_client
+    sb = get_admin_client()
+
+    # Fetch original deliverable
+    original = (
+        sb.table("agent_deliverables")
+        .select("deliverable_type, brand_id, metadata")
+        .eq("id", deliverable_id)
+        .eq("user_id", user.id)  # IDOR guard
+        .limit(1)
+        .execute()
+    )
+    if not original.data:
+        raise HTTPException(404, "Deliverable not found")
+
+    row = original.data[0]
+    dtype = row.get("deliverable_type", "")
+    brand_id = row.get("brand_id", "")
+    metadata = row.get("metadata") or {}
+
+    if dtype == "proposal":
+        session_id = metadata.get("session_id")
+        if not session_id:
+            raise HTTPException(400, "Cannot regenerate: original has no session_id in metadata")
+        from app.services.client_deliverables import generate_proposal as _gen
+        return await _gen(session_id=session_id, brand_id=brand_id, user_id=user.id)
+    elif dtype == "landing_page":
+        from app.services.client_deliverables import generate_landing_page as _gen_lp
+        return await _gen_lp(brand_id=brand_id, user_id=user.id)
+    elif dtype == "nurture_sequence":
+        lead_context = metadata.get("lead_context", "")
+        from app.services.client_deliverables import generate_nurture_sequence as _gen_ns
+        return await _gen_ns(brand_id=brand_id, user_id=user.id, lead_context=lead_context)
+    else:
+        raise HTTPException(400, f"Regeneration not supported for type: {dtype}")

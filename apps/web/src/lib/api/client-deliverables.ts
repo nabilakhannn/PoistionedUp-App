@@ -19,6 +19,14 @@ export interface NurtureEmail {
   cta: string;
 }
 
+export type ProposalStatus =
+  | "draft"
+  | "sent"
+  | "accepted"
+  | "rejected"
+  | "closed_won"
+  | "closed_lost";
+
 export interface ClientDeliverable {
   id: string;
   title: string;
@@ -28,6 +36,8 @@ export interface ClientDeliverable {
   share_token: string;
   content: string;
   metadata?: Record<string, unknown>;
+  proposal_status?: ProposalStatus;
+  deal_value?: number;
   created_at: string;
 }
 
@@ -84,4 +94,26 @@ export const clientDeliverablesApi = {
     const base = process.env.NEXT_PUBLIC_API_URL || "https://api-iota-puce.vercel.app";
     return `${base}/share/${shareToken}`;
   },
+
+  /** Update proposal lifecycle status (optionally with deal value) */
+  updateStatus: (deliverableId: string, proposalStatus: ProposalStatus, dealValue?: number) =>
+    apiFetch<{ ok: boolean; proposal_status: string; deal_value?: number }>(
+      `/deliverables/${deliverableId}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          proposal_status: proposalStatus,
+          ...(dealValue !== undefined ? { deal_value: dealValue } : {}),
+        }),
+      },
+    ),
+
+  /** Regenerate a deliverable (creates new version) */
+  regenerate: (deliverableId: string) =>
+    apiFetch<{
+      deliverable_id: string;
+      share_token: string;
+      version: number;
+      content: string;
+    }>(`/deliverables/${deliverableId}/regenerate`, { method: "POST" }),
 };

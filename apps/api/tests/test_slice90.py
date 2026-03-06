@@ -275,14 +275,15 @@ class TestBudgetCheck:
                 "Budget error message should mention the budget amount"
             )
 
-    def test_returns_none_on_db_error(self):
-        """DB errors during budget check must not crash the pipeline (silent fail)."""
+    def test_returns_structured_error_on_db_error(self):
+        """DB errors during budget check return structured error (never crash pipeline)."""
         from app.services.jumbo_pipeline import check_monthly_budget
         sb = MagicMock()
         sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.side_effect = Exception("DB down")
         with patch("app.deps.get_admin_client", return_value=sb):
             result = check_monthly_budget("00000000-0000-0000-0000-000000000001")
-        assert result is None, "check_monthly_budget must return None on DB error (never block pipeline)"
+        assert isinstance(result, str) and result.startswith("budget_check_failed:"), \
+            "check_monthly_budget must return 'budget_check_failed:...' on DB error"
 
 
 # ═══════════════════════════════════════════════════════════════════════════

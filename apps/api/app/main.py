@@ -15,7 +15,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
 from app.middleware import RateLimitMiddleware
-from app.routers import account_manager, ad_creative, advisor, agent_bridge, brand, brand_chat, brands, client_deliverables, client_research, collections, competitors, connectors, content_chat, content_planning, experiments, gateway, goals, hooks, image_gen, inspo, intake, journal, jumbo_hub, knowledge_docs, landing_page, leads, ledger, memory, mission_control, newsletter, notifications, oauth, orchestrator, performance, picker, pipeline, pipeline_settings, playbooks, publishing, qa, repurpose, research, resources, schedule, stages, strategist, training, usage, workflows
+from app.routers import account_manager, ad_creative, advisor, agent_bridge, analytics_dashboard, brand, brand_chat, brands, campaigns, client_deliverables, client_research, collections, competitors, connectors, content_chat, content_planning, experiments, gateway, goals, hooks, image_gen, inspo, intake, journal, jumbo_hub, knowledge_docs, landing_page, leads, ledger, manus_ai, marketplace, memory, mission_control, newsletter, notifications, oauth, orchestrator, performance, picker, pipeline, pipeline_settings, playbooks, publishing, qa, repurpose, research, resources, schedule, stages, stories, strategist, training, usage, video_content, workflows
 
 
 # ── Structured JSON logging ──────────────────────────────
@@ -214,6 +214,12 @@ app.include_router(brand_chat.router)
 app.include_router(hooks.router)
 app.include_router(content_planning.router)
 app.include_router(jumbo_hub.router)
+app.include_router(campaigns.router)
+app.include_router(video_content.router)
+app.include_router(stories.router)
+app.include_router(manus_ai.router)
+app.include_router(marketplace.router)
+app.include_router(analytics_dashboard.router)
 
 app.add_middleware(
     CORSMiddleware,

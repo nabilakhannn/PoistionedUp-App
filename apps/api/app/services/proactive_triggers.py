@@ -239,6 +239,31 @@ def get_suggestions(user_id: str, brand_id: Optional[str] = None) -> list[dict]:
     except Exception as exc:
         logger.warning("Trigger 7 failed user=%s: %s", user_id, exc)
 
+    # ── Trigger 8: No story bank material in 7 days ────────────────
+    try:
+        week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+        recent_stories = (
+            sb.table("experience_journal")
+            .select("id", count="exact")
+            .eq("user_id", user_id)
+            .gte("created_at", week_ago)
+            .limit(1)
+            .execute()
+        )
+        if (recent_stories.count or 0) == 0:
+            suggestions.append({
+                "id": "no_recent_stories",
+                "priority": "normal",
+                "trigger_type": "engagement",
+                "title": "Add fresh material to your Story Bank",
+                "body": "Your AI agents write better when they have real stories. "
+                        "Drop a recent win, insight, or opinion. Takes 30 seconds.",
+                "action_url": "/content/stories",
+                "cta": "Add Material",
+            })
+    except Exception as exc:
+        logger.warning("Trigger 8 failed user=%s: %s", user_id, exc)
+
     # Sort: urgent → high → normal
     priority_order = {"urgent": 0, "high": 1, "normal": 2}
     suggestions.sort(key=lambda s: priority_order.get(s["priority"], 3))

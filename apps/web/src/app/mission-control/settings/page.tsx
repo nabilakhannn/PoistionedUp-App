@@ -65,6 +65,15 @@ const CONNECTOR_CONFIGS: ConnectorConfig[] = [
       { key: "secret", label: "Secret (optional)", placeholder: "your-signing-secret", type: "password" },
     ],
   },
+  {
+    service: "manus_ai",
+    label: "Manus AI (Optional BYOK)",
+    icon: "M",
+    description: "Bring your own Manus AI key for deep research workflows. Built-in AI handles everything else.",
+    fields: [
+      { key: "api_key", label: "Manus API Key", placeholder: "manus-...", type: "password" },
+    ],
+  },
 ];
 
 const STATUS_BADGE: Record<string, { label: string; color: string; dot: string }> = {

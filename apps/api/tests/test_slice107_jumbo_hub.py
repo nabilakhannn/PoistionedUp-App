@@ -181,7 +181,6 @@ class TestOrphanArchive:
 
     def test_nav_updated_studio_to_jumbo(self):
         text = read(NAV_BAR)
-        assert '"Jumbo"' in text, "Nav should show 'Jumbo' instead of 'Studio'"
-        assert '"Chat & notes"' in text, (
-            "Nav subtitle should be 'Chat & notes' instead of 'Agents & tools'"
-        )
+        # Slice 108 redesign: Jumbo is now a special accent link (not a PRIMARY_NAV item)
+        assert "Jumbo" in text, "Nav should reference Jumbo somewhere"
+        assert "/jumbo" in text, "Nav should link to /jumbo"

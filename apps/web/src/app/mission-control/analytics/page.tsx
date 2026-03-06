@@ -1,179 +1,139 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
-import Link from "next/link";
-import {
-  missionControlApi,
-  Agent,
-  AgentTask,
-  AgentMessage,
-  DashboardStats,
-} from "@/lib/api/mission-control";
-import { agentBridgeApi } from "@/lib/api/agent-bridge";
+import { useEffect, useState, useCallback } from "react";
 import { useBrand } from "@/lib/brand-context";
-import { STATUS_COLORS, ROLE_TYPE_BADGES, MC_SUB_NAV } from "../constants";
+import {
+  analyticsDashboardApi,
+  type AnalyticsDashboard,
+} from "@/lib/api/analytics-dashboard";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
-/* ── Helpers ───────────────────────────────────────────── */
+/* ── Shared components ────────────────────────────────── */
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-function fmtDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
-/* ── Mini bar chart (pure CSS) ─────────────────────────── */
-
-function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+function StatCard({
+  label,
+  value,
+  sub,
+  accent = "text-violet-400",
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent?: string;
+}) {
   return (
-    <div className="h-5 w-full bg-accent rounded-sm overflow-hidden">
-      <div className={`h-full ${color} rounded-sm transition-all duration-500`} style={{ width: `${pct}%` }} />
+    <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4">
+      <div className="text-zinc-500 text-xs font-medium mb-1">{label}</div>
+      <div className={`text-2xl font-bold ${accent}`}>{value}</div>
+      {sub && <div className="text-zinc-600 text-[10px] mt-0.5">{sub}</div>}
     </div>
   );
 }
 
-/* ── Page component ────────────────────────────────────── */
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <h2 className="text-zinc-300 text-sm font-semibold tracking-wide uppercase mb-4 flex items-center gap-2">
+      <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+      {title}
+    </h2>
+  );
+}
 
-type RealAnalytics = Awaited<ReturnType<typeof agentBridgeApi.getAnalyticsSummary>>;
+const PERIODS = ["7d", "30d", "90d"] as const;
 
-export default function AnalyticsPage() {
+const CHART_THEME = {
+  grid: "#27272a",
+  violet: "#8b5cf6",
+  emerald: "#34d399",
+  red: "#f87171",
+  blue: "#60a5fa",
+  amber: "#fbbf24",
+  text: "#71717a",
+};
+
+const customTooltipStyle = {
+  backgroundColor: "#18181b",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: "8px",
+  fontSize: "12px",
+  color: "#e4e4e7",
+};
+
+/* ── Funnel bar ───────────────────────────────────────── */
+
+function FunnelBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-zinc-500 text-xs w-20 text-right">{label}</span>
+      <div className="flex-1 h-5 bg-white/[0.03] rounded-full overflow-hidden">
+        <div
+          className={`h-full ${color} rounded-full transition-all duration-500`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-zinc-400 text-xs font-mono w-8 text-right">{value}</span>
+    </div>
+  );
+}
+
+/* ── Page ─────────────────────────────────────────────── */
+
+export default function AnalyticsDashboardPage() {
   const { currentBrand } = useBrand();
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [tasks, setTasks] = useState<AgentTask[]>([]);
-  const [messages, setMessages] = useState<AgentMessage[]>([]);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [data, setData] = useState<AnalyticsDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("7d");
-  const [realData, setRealData] = useState<RealAnalytics | null>(null);
+  const [period, setPeriod] = useState<string>("30d");
 
   const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const [agentsRes, tasksRes, messagesRes, statsRes] = await Promise.all([
-        missionControlApi.listAgents(),
-        missionControlApi.listTasks(),
-        missionControlApi.listMessages({ limit: 200 }),
-        missionControlApi.getStats(),
-      ]);
-      setAgents(agentsRes);
-      setTasks(tasksRes);
-      setMessages(messagesRes);
-      setStats(statsRes);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message || "Failed to load analytics");
+      const result = await analyticsDashboardApi.getDashboard({
+        brand_id: currentBrand?.id,
+        period,
+      });
+      setData(result);
+    } catch {
+      setError("Failed to load analytics");
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  // Load real analytics from agent_ledger + agent_deliverables
-  useEffect(() => {
-    agentBridgeApi.getAnalyticsSummary(currentBrand?.id)
-      .then(setRealData)
-      .catch(() => {});
-  }, [currentBrand?.id]);
+  }, [currentBrand?.id, period]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  /* ── Computed metrics ─────────────────────────────────── */
-
-  const agentMetrics = useMemo(() => {
-    return agents.map((agent) => {
-      const agentTasks = tasks.filter((t) => t.assignee_id === agent.id);
-      const completed = agentTasks.filter((t) => t.status === "done" || t.status === "archived");
-      const active = agentTasks.filter((t) => t.status === "in_progress" || t.status === "assigned");
-      const agentMsgs = messages.filter(
-        (m) => m.from_agent_id === agent.id || m.to_agent_id === agent.id
-      );
-
-      // Average completion time (in hours) for completed tasks
-      let avgCompletionHours = 0;
-      const completedWithTime = completed.filter((t) => t.completed_at);
-      if (completedWithTime.length > 0) {
-        const totalHours = completedWithTime.reduce((acc, t) => {
-          const start = new Date(t.created_at).getTime();
-          const end = new Date(t.completed_at!).getTime();
-          return acc + (end - start) / 3600000;
-        }, 0);
-        avgCompletionHours = totalHours / completedWithTime.length;
-      }
-
-      return {
-        agent,
-        totalTasks: agentTasks.length,
-        completed: completed.length,
-        active: active.length,
-        messageCount: agentMsgs.length,
-        avgCompletionHours,
-        completionRate: agentTasks.length > 0 ? (completed.length / agentTasks.length) * 100 : 0,
-      };
-    });
-  }, [agents, tasks, messages]);
-
-  const maxTasks = useMemo(
-    () => Math.max(...agentMetrics.map((m) => m.totalTasks), 1),
-    [agentMetrics]
-  );
-
-  const maxMessages = useMemo(
-    () => Math.max(...agentMetrics.map((m) => m.messageCount), 1),
-    [agentMetrics]
-  );
-
-  const statusBreakdown = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const t of tasks) {
-      counts[t.status] = (counts[t.status] || 0) + 1;
-    }
-    return counts;
-  }, [tasks]);
-
-  const messagesByType = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const m of messages) {
-      counts[m.message_type] = (counts[m.message_type] || 0) + 1;
-    }
-    return counts;
-  }, [messages]);
-
-  /* ── Loading / Error ──────────────────────────────────── */
-
   if (loading) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Loading analytics...</p>
+      <div className="min-h-screen bg-[#09090B] p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white/[0.03] rounded-xl h-48 animate-pulse" />
+          ))}
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !data) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-sm">
-          <div className="text-4xl mb-3">⚠️</div>
-          <h2 className="text-lg font-semibold text-foreground mb-2">Load Error</h2>
-          <p className="text-sm text-muted-foreground mb-4">{error}</p>
-          <button onClick={loadData} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition">
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-zinc-400 mb-3">{error || "No data available"}</p>
+          <button onClick={loadData} className="px-4 py-2 bg-violet-600 text-white text-sm rounded-lg">
             Retry
           </button>
         </div>
@@ -181,387 +141,279 @@ export default function AnalyticsPage() {
     );
   }
 
+  const { content_roi, pipeline, revenue, engagement, leads, cost } = data;
+  const funnelMax = Math.max(...Object.values(revenue.proposal_funnel), 1);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#09090B]">
       {/* Header */}
-      <div className="h-14 border-b border-border bg-card flex items-center justify-between px-5">
-        <div className="flex items-center gap-2">
-          <span className="text-amber-400 text-lg">◇</span>
-          <h1 className="text-sm font-bold text-foreground tracking-wider uppercase">Agent Analytics</h1>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-[10px] text-green-400 font-bold">ONLINE</span>
+      <div className="border-b border-white/[0.05] bg-white/[0.02]">
+        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div>
+            <h1 className="text-zinc-100 text-xl font-bold">Analytics & ROI</h1>
+            <p className="text-zinc-600 text-xs mt-0.5">
+              {data.period_start} — {data.period_end}
+            </p>
+          </div>
+          <div className="flex gap-1 bg-white/[0.03] rounded-lg p-0.5">
+            {PERIODS.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  period === p
+                    ? "bg-violet-600 text-white"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Sub-navigation */}
-      <div className="h-10 border-b border-border bg-card/50 flex items-center px-5 gap-1 overflow-x-auto">
-        {MC_SUB_NAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
-              item.href === "/mission-control/analytics"
-                ? "bg-primary/15 text-primary border border-primary/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent"
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
+      <div className="max-w-6xl mx-auto px-6 py-6 space-y-8">
+        {/* ── Section 1: Content ROI ─────────────────────── */}
+        <section>
+          <SectionHeader title="Content ROI" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <StatCard label="Posts / Day" value={content_roi.posts_per_day} />
+            <StatCard label="Approval Rate" value={`${content_roi.approval_rate}%`} accent="text-emerald-400" />
+            <StatCard label="Avg QA Score" value={content_roi.avg_qa_score} />
+            <StatCard label="Total Generated" value={content_roi.total_generated} accent="text-zinc-200" />
+          </div>
+          {content_roi.daily_breakdown.length > 0 && (
+            <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4">
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={content_roi.daily_breakdown}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.grid} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: CHART_THEME.text }} tickFormatter={(v: string) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 10, fill: CHART_THEME.text }} />
+                  <Tooltip contentStyle={customTooltipStyle} />
+                  <Area type="monotone" dataKey="generated" stroke={CHART_THEME.violet} fill={CHART_THEME.violet} fillOpacity={0.15} name="Generated" />
+                  <Area type="monotone" dataKey="approved" stroke={CHART_THEME.emerald} fill={CHART_THEME.emerald} fillOpacity={0.1} name="Approved" />
+                  <Area type="monotone" dataKey="rejected" stroke={CHART_THEME.red} fill={CHART_THEME.red} fillOpacity={0.1} name="Rejected" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </section>
 
-      <div className="p-5 space-y-5 max-w-7xl mx-auto">
-        {/* ── Real pipeline analytics (from agent_ledger + agent_deliverables) ── */}
-        {realData && (
-          <section className="bg-card border border-border rounded-xl p-4 space-y-3">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              Content Pipeline — Real Data
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <div className="bg-muted/20 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-foreground">{realData.posts.total_generated}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">Posts Generated</div>
+        {/* ── Section 2: Pipeline + Cost ─────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <section>
+            <SectionHeader title="Pipeline Performance" />
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <StatCard label="Success Rate" value={`${pipeline.success_rate}%`} accent="text-emerald-400" />
+              <StatCard label="Avg Duration" value={`${(pipeline.avg_duration_ms / 1000).toFixed(1)}s`} />
+              <StatCard label="Total Runs" value={pipeline.total_runs} accent="text-zinc-200" />
+            </div>
+            {Object.keys(pipeline.phase_breakdown).length > 0 && (
+              <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4">
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={Object.entries(pipeline.phase_breakdown).map(([phase, stats]) => ({
+                    phase: phase.replace("pipeline_", ""),
+                    completed: stats.count - stats.fail_count,
+                    failed: stats.fail_count,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.grid} />
+                    <XAxis dataKey="phase" tick={{ fontSize: 10, fill: CHART_THEME.text }} />
+                    <YAxis tick={{ fontSize: 10, fill: CHART_THEME.text }} />
+                    <Tooltip contentStyle={customTooltipStyle} />
+                    <Bar dataKey="completed" fill={CHART_THEME.violet} name="Completed" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="failed" fill={CHART_THEME.red} name="Failed" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-              <div className="bg-green-500/10 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-green-400">{realData.posts.approved}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">Approved</div>
+            )}
+          </section>
+
+          <section>
+            <SectionHeader title="Cost Tracking" />
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <StatCard label="Monthly Spend" value={`$${cost.estimated_cost}`} accent="text-amber-400" />
+              <StatCard label="Cost / Content" value={`$${cost.cost_per_content}`} />
+              <StatCard label="Budget Used" value={`${cost.budget_utilization}%`} accent={cost.budget_utilization > 80 ? "text-red-400" : "text-emerald-400"} />
+            </div>
+            <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-zinc-500 text-xs">Budget: ${cost.monthly_budget}</span>
+                <span className="text-zinc-400 text-xs font-mono">${cost.estimated_cost} / ${cost.monthly_budget}</span>
               </div>
-              <div className="bg-red-500/10 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-red-400">{realData.posts.rejected}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">Rejected</div>
+              <div className="h-3 bg-white/[0.05] rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    cost.budget_utilization > 80 ? "bg-red-500" : "bg-violet-500"
+                  }`}
+                  style={{ width: `${Math.min(cost.budget_utilization, 100)}%` }}
+                />
               </div>
-              <div className="bg-blue-500/10 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-blue-400">{realData.posts.approval_rate}%</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">Approval Rate</div>
-              </div>
-              <div className="bg-amber-500/10 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-amber-400">{realData.posts.avg_qa_score}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">Avg QA Score</div>
+              <div className="text-zinc-600 text-[10px] mt-1.5">
+                {cost.total_tokens.toLocaleString()} tokens used
               </div>
             </div>
-            {/* Rejection reasons breakdown */}
-            {Object.keys(realData.rejection_reasons).length > 0 && (
-              <div className="border-t border-border/50 pt-3">
-                <p className="text-[10px] text-muted-foreground font-medium mb-2">Rejection Reasons</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(realData.rejection_reasons).map(([tag, count]) => (
-                    <span key={tag} className="px-2 py-1 text-[10px] rounded bg-red-500/10 border border-red-500/20 text-red-400">
-                      {tag}: {count}
-                    </span>
-                  ))}
+          </section>
+        </div>
+
+        {/* ── Section 3: Engagement ──────────────────────── */}
+        <section>
+          <SectionHeader title="Engagement Trends" />
+          {engagement.total_views === 0 && engagement.top_posts.length === 0 ? (
+            <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-8 text-center">
+              <p className="text-zinc-500 text-sm">No published post metrics yet</p>
+              <p className="text-zinc-600 text-xs mt-1">Engagement data appears after posts are published and metrics are synced</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <StatCard label="Avg Engagement" value={`${(engagement.avg_engagement_rate * 100).toFixed(2)}%`} accent="text-blue-400" />
+                <StatCard label="Total Views" value={engagement.total_views.toLocaleString()} />
+                <StatCard label="Total Likes" value={engagement.total_likes.toLocaleString()} />
+                <StatCard label="Total Comments" value={engagement.total_comments.toLocaleString()} />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {engagement.hook_type_performance.length > 0 && (
+                  <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4">
+                    <div className="text-zinc-400 text-xs font-medium mb-3">Hook Type Performance</div>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={engagement.hook_type_performance.slice(0, 6)} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.grid} />
+                        <XAxis type="number" tick={{ fontSize: 10, fill: CHART_THEME.text }} />
+                        <YAxis dataKey="hook_type" type="category" tick={{ fontSize: 10, fill: CHART_THEME.text }} width={80} />
+                        <Tooltip contentStyle={customTooltipStyle} />
+                        <Bar dataKey="avg_engagement" fill={CHART_THEME.blue} name="Avg Engagement" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {engagement.best_posting_days.length > 0 && (
+                  <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4">
+                    <div className="text-zinc-400 text-xs font-medium mb-3">Best Posting Days</div>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={engagement.best_posting_days}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.grid} />
+                        <XAxis dataKey="day_of_week" tick={{ fontSize: 10, fill: CHART_THEME.text }} />
+                        <YAxis tick={{ fontSize: 10, fill: CHART_THEME.text }} />
+                        <Tooltip contentStyle={customTooltipStyle} />
+                        <Bar dataKey="avg_engagement" fill={CHART_THEME.emerald} name="Avg Engagement" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+
+              {engagement.top_posts.length > 0 && (
+                <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4 mt-4">
+                  <div className="text-zinc-400 text-xs font-medium mb-3">Top 5 Posts by Engagement</div>
+                  <div className="space-y-2">
+                    {engagement.top_posts.map((post, i) => (
+                      <div key={i} className="flex items-center gap-3 py-1.5">
+                        <span className="text-violet-400 font-bold text-sm w-5">#{i + 1}</span>
+                        <span className="text-zinc-300 text-xs flex-1 truncate">{post.title}</span>
+                        <span className="text-zinc-600 text-[10px]">{post.platform}</span>
+                        <span className="text-emerald-400 text-xs font-mono">
+                          {(post.engagement_rate * 100).toFixed(2)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-            {/* Agent task breakdown */}
-            <div className="border-t border-border/50 pt-3">
-              <p className="text-[10px] text-muted-foreground font-medium mb-2">
-                Agent Tasks — {realData.agents.tasks_completed} completed · {realData.agents.tasks_failed} failed
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(realData.agents.by_agent).map(([agent, count]) => (
-                  <span key={agent} className="px-2 py-1 text-[10px] rounded bg-muted/30 border border-border text-muted-foreground">
-                    {agent}: {count}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ── Summary cards ────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SummaryCard label="Total Agents" value={stats?.agents_total ?? 0} icon="🤖" />
-          <SummaryCard label="Total Tasks" value={stats?.tasks_total ?? 0} icon="📋" />
-          <SummaryCard label="Completed Today" value={stats?.tasks_completed_today ?? 0} icon="✅" accent="text-green-400" />
-          <SummaryCard label="Messages Today" value={stats?.messages_today ?? 0} icon="💬" accent="text-primary" />
-        </div>
-
-        {/* ── Agent performance table ─────────────────────── */}
-        <section className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              Agent Performance
-            </h2>
-            <span className="text-[10px] text-muted-foreground font-mono">{agents.length} agents</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left px-5 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Agent</th>
-                  <th className="text-left px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Status</th>
-                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Tasks</th>
-                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Completed</th>
-                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Active</th>
-                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Completion %</th>
-                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Avg Time</th>
-                  <th className="text-center px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider">Messages</th>
-                  <th className="text-left px-3 py-2.5 text-muted-foreground font-semibold uppercase tracking-wider w-32">Task Load</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agentMetrics.map((m) => {
-                  const statusStyle = STATUS_COLORS[m.agent.status] || STATUS_COLORS.idle;
-                  const roleStyle = ROLE_TYPE_BADGES[m.agent.role_type] || ROLE_TYPE_BADGES.specialist;
-                  return (
-                    <tr key={m.agent.id} className="border-b border-border/50 hover:bg-accent/30 transition">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-lg">{m.agent.avatar_emoji}</span>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-medium text-foreground">{m.agent.name}</span>
-                              <span className={`text-[8px] px-1 py-0.5 rounded border font-bold ${roleStyle.color}`}>
-                                {roleStyle.label}
-                              </span>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground">{m.agent.role}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusStyle.bg}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
-                          {statusStyle.label}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 text-center text-foreground font-mono">{m.totalTasks}</td>
-                      <td className="px-3 py-3 text-center text-green-400 font-mono">{m.completed}</td>
-                      <td className="px-3 py-3 text-center text-primary font-mono">{m.active}</td>
-                      <td className="px-3 py-3 text-center">
-                        <span className={`font-mono font-bold ${
-                          m.completionRate >= 80 ? "text-green-400" :
-                          m.completionRate >= 50 ? "text-amber-400" :
-                          "text-muted-foreground"
-                        }`}>
-                          {m.completionRate.toFixed(0)}%
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 text-center text-foreground font-mono">
-                        {m.avgCompletionHours > 0
-                          ? m.avgCompletionHours < 1
-                            ? `${Math.round(m.avgCompletionHours * 60)}m`
-                            : `${m.avgCompletionHours.toFixed(1)}h`
-                          : "—"}
-                      </td>
-                      <td className="px-3 py-3 text-center text-foreground font-mono">{m.messageCount}</td>
-                      <td className="px-3 py-3">
-                        <MiniBar value={m.totalTasks} max={maxTasks} color="bg-primary" />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+              )}
+            </>
+          )}
         </section>
 
-        {/* ── Two-column layout: Task Breakdown + Message Types ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Task Status Breakdown */}
-          <section className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-border">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                Task Status Breakdown
-              </h2>
-            </div>
-            <div className="p-5 space-y-3">
-              {[
-                { key: "backlog", label: "Inbox / Backlog", color: "bg-muted-foreground" },
-                { key: "assigned", label: "Assigned", color: "bg-amber-500" },
-                { key: "in_progress", label: "In Progress", color: "bg-primary" },
-                { key: "review", label: "Review", color: "bg-purple-500" },
-                { key: "ready", label: "Ready", color: "bg-emerald-500" },
-                { key: "done", label: "Done", color: "bg-green-500" },
-              ].map((s) => {
-                const count = statusBreakdown[s.key] || 0;
-                return (
-                  <div key={s.key} className="flex items-center gap-3">
-                    <span className={`w-2 h-2 rounded-full ${s.color} flex-shrink-0`} />
-                    <span className="text-xs text-muted-foreground w-24 flex-shrink-0">{s.label}</span>
-                    <div className="flex-1">
-                      <MiniBar value={count} max={Math.max(tasks.length, 1)} color={s.color} />
-                    </div>
-                    <span className="text-xs text-foreground font-mono w-8 text-right">{count}</span>
-                  </div>
-                );
-              })}
-            </div>
+        {/* ── Section 4: Revenue + Leads ─────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <section>
+            <SectionHeader title="Revenue Attribution" />
+            {revenue.total_proposals_sent === 0 ? (
+              <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-8 text-center">
+                <p className="text-zinc-500 text-sm">No proposals sent yet</p>
+                <p className="text-zinc-600 text-xs mt-1">Generate client proposals to track revenue</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <StatCard label="Total Won" value={`$${revenue.total_closed_won.toLocaleString()}`} accent="text-emerald-400" />
+                  <StatCard label="Win Rate" value={`${revenue.win_rate}%`} />
+                  <StatCard label="Proposals Sent" value={revenue.total_proposals_sent} accent="text-zinc-200" />
+                </div>
+                <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4 space-y-2">
+                  <div className="text-zinc-400 text-xs font-medium mb-3">Proposal Funnel</div>
+                  <FunnelBar label="Draft" value={revenue.proposal_funnel.draft || 0} max={funnelMax} color="bg-zinc-600" />
+                  <FunnelBar label="Sent" value={revenue.proposal_funnel.sent || 0} max={funnelMax} color="bg-blue-500" />
+                  <FunnelBar label="Accepted" value={revenue.proposal_funnel.accepted || 0} max={funnelMax} color="bg-violet-500" />
+                  <FunnelBar label="Rejected" value={revenue.proposal_funnel.rejected || 0} max={funnelMax} color="bg-red-500" />
+                  <FunnelBar label="Won" value={revenue.proposal_funnel.closed_won || 0} max={funnelMax} color="bg-emerald-500" />
+                  <FunnelBar label="Lost" value={revenue.proposal_funnel.closed_lost || 0} max={funnelMax} color="bg-zinc-700" />
+                </div>
+              </>
+            )}
           </section>
 
-          {/* Message Types Breakdown */}
-          <section className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-border">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-chart-2" />
-                Communication Breakdown
-              </h2>
-            </div>
-            <div className="p-5 space-y-3">
-              {[
-                { key: "chat", label: "Chat", icon: "💬", color: "bg-primary" },
-                { key: "delegation", label: "Delegations", icon: "📋", color: "bg-amber-500" },
-                { key: "status", label: "Status Updates", icon: "📡", color: "bg-green-500" },
-                { key: "deliverable", label: "Deliverables", icon: "📦", color: "bg-purple-500" },
-                { key: "escalation", label: "Escalations", icon: "🚨", color: "bg-red-500" },
-                { key: "broadcast", label: "Broadcasts", icon: "📢", color: "bg-cyan-500" },
-              ].map((mt) => {
-                const count = messagesByType[mt.key] || 0;
-                return (
-                  <div key={mt.key} className="flex items-center gap-3">
-                    <span className="text-sm flex-shrink-0">{mt.icon}</span>
-                    <span className="text-xs text-muted-foreground w-24 flex-shrink-0">{mt.label}</span>
-                    <div className="flex-1">
-                      <MiniBar value={count} max={Math.max(messages.length, 1)} color={mt.color} />
-                    </div>
-                    <span className="text-xs text-foreground font-mono w-8 text-right">{count}</span>
+          <section>
+            <SectionHeader title="Lead Funnel" />
+            {leads.total_leads === 0 ? (
+              <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-8 text-center">
+                <p className="text-zinc-500 text-sm">No leads yet</p>
+                <p className="text-zinc-600 text-xs mt-1">Import or generate leads in the Grow room</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <StatCard label="Total Leads" value={leads.total_leads} accent="text-zinc-200" />
+                  <StatCard label="Conversion" value={`${leads.conversion_rate}%`} accent="text-emerald-400" />
+                  <StatCard label={`New (${data.period})`} value={leads.new_leads_period} accent="text-blue-400" />
+                </div>
+                <div className="bg-white/[0.03] backdrop-blur-sm ring-1 ring-white/[0.05] rounded-xl p-4">
+                  <div className="text-zinc-400 text-xs font-medium mb-3">Status Distribution</div>
+                  <div className="space-y-2">
+                    {Object.entries(leads.status_distribution).map(([status, count]) => (
+                      <FunnelBar
+                        key={status}
+                        label={status}
+                        value={count}
+                        max={leads.total_leads}
+                        color={
+                          status === "customer" ? "bg-emerald-500" :
+                          status === "hot" ? "bg-red-500" :
+                          status === "warm" ? "bg-amber-500" :
+                          status === "cold" ? "bg-blue-500" :
+                          "bg-zinc-600"
+                        }
+                      />
+                    ))}
                   </div>
-                );
-              })}
-            </div>
+                  {Object.keys(leads.bant_distribution).length > 0 && (
+                    <>
+                      <div className="text-zinc-400 text-xs font-medium mt-4 mb-3">BANT Score Distribution</div>
+                      <div className="space-y-2">
+                        {Object.entries(leads.bant_distribution).map(([score, count]) => (
+                          <FunnelBar
+                            key={score}
+                            label={`BANT ${score}/4`}
+                            value={count}
+                            max={leads.total_leads}
+                            color={
+                              Number(score) >= 3 ? "bg-emerald-500" :
+                              Number(score) >= 2 ? "bg-amber-500" :
+                              "bg-zinc-600"
+                            }
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </section>
         </div>
-
-        {/* ── Agent activity heatmap (messages per agent) ── */}
-        <section className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-border">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              Agent Communication Matrix
-            </h2>
-          </div>
-          <div className="p-5 overflow-x-auto">
-            <table className="text-xs">
-              <thead>
-                <tr>
-                  <th className="px-2 py-1.5 text-muted-foreground font-semibold text-left">From \ To</th>
-                  {agents.map((a) => (
-                    <th key={a.id} className="px-2 py-1.5 text-muted-foreground font-semibold text-center whitespace-nowrap">
-                      {a.avatar_emoji} {a.name.slice(0, 6)}
-                    </th>
-                  ))}
-                  <th className="px-2 py-1.5 text-muted-foreground font-semibold text-center">📢 All</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agents.map((fromAgent) => (
-                  <tr key={fromAgent.id} className="border-t border-border/30">
-                    <td className="px-2 py-1.5 text-foreground font-medium whitespace-nowrap">
-                      {fromAgent.avatar_emoji} {fromAgent.name}
-                    </td>
-                    {agents.map((toAgent) => {
-                      const count = messages.filter(
-                        (m) => m.from_agent_id === fromAgent.id && m.to_agent_id === toAgent.id
-                      ).length;
-                      return (
-                        <td key={toAgent.id} className="px-2 py-1.5 text-center">
-                          {count > 0 ? (
-                            <span className={`inline-flex items-center justify-center w-7 h-6 rounded text-[10px] font-bold ${
-                              count >= 10 ? "bg-primary/30 text-primary" :
-                              count >= 5 ? "bg-primary/20 text-primary" :
-                              "bg-accent text-muted-foreground"
-                            }`}>
-                              {count}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground/50">·</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td className="px-2 py-1.5 text-center">
-                      {(() => {
-                        const bc = messages.filter(
-                          (m) => m.from_agent_id === fromAgent.id && m.message_type === "broadcast"
-                        ).length;
-                        return bc > 0 ? (
-                          <span className="inline-flex items-center justify-center w-7 h-6 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400">
-                            {bc}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/50">·</span>
-                        );
-                      })()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* ── Recent completed tasks ──────────────────────── */}
-        <section className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-border">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Recently Completed Tasks
-            </h2>
-          </div>
-          <div className="divide-y divide-border/50">
-            {tasks
-              .filter((t) => t.status === "done" && t.completed_at)
-              .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime())
-              .slice(0, 10)
-              .map((t) => {
-                const assignee = agents.find((a) => a.id === t.assignee_id);
-                return (
-                  <div key={t.id} className="px-5 py-3 flex items-center gap-3 hover:bg-accent/20 transition">
-                    <span className="text-sm">{assignee?.avatar_emoji || "❓"}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{t.title}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {assignee?.name || "Unassigned"} · Completed {timeAgo(t.completed_at!)}
-                      </p>
-                    </div>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                      t.priority === "P0" ? "bg-red-500/20 text-red-400" :
-                      t.priority === "P1" ? "bg-amber-500/20 text-amber-400" :
-                      "bg-muted text-muted-foreground"
-                    }`}>
-                      {t.priority}
-                    </span>
-                  </div>
-                );
-              })}
-            {tasks.filter((t) => t.status === "done").length === 0 && (
-              <div className="px-5 py-8 text-center text-xs text-muted-foreground">
-                No completed tasks yet. Tasks will appear here as agents finish their work.
-              </div>
-            )}
-          </div>
-        </section>
       </div>
-    </div>
-  );
-}
-
-/* ── Summary Card ──────────────────────────────────────── */
-
-function SummaryCard({
-  label,
-  value,
-  icon,
-  accent,
-}: {
-  label: string;
-  value: number;
-  icon: string;
-  accent?: string;
-}) {
-  return (
-    <div className="bg-card border border-border rounded-xl px-4 py-3">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{label}</span>
-        <span className="text-sm">{icon}</span>
-      </div>
-      <div className={`text-2xl font-bold ${accent || "text-card-foreground"} font-mono`}>{value}</div>
     </div>
   );
 }

@@ -130,7 +130,8 @@ class ApproveRequest(BaseModel):
 
 
 class StatusUpdateRequest(BaseModel):
-    status: str  # approved | executing | done | failed
+    status: str  # approved | executing | done | failed | partial
+    item_results: Optional[List[Dict[str, str]]] = None  # [{topic, status}]
 
 
 # ── IDOR helper ───────────────────────────────────────────────────────────
@@ -335,13 +336,13 @@ async def plan_status(
     plan = result.data[0]
     status = plan.get("status", "unknown")
 
-    # Zombie detection: executing for >10 min without update → treat as failed
+    # Zombie detection: executing for >30 min without update → treat as failed
     if status == "executing":
         last_updated = plan.get("last_updated_at")
         if last_updated:
             try:
                 updated_dt = datetime.fromisoformat(last_updated.replace("Z", "+00:00"))
-                if datetime.now(timezone.utc) - updated_dt > timedelta(minutes=10):
+                if datetime.now(timezone.utc) - updated_dt > timedelta(minutes=30):
                     status = "failed"
                     # Persist zombie → failed so future polls don't re-check
                     try:
@@ -355,9 +356,13 @@ async def plan_status(
                 pass
 
     items = plan.get("items", [])
+    items_done = sum(1 for i in items if i.get("status") == "done")
+    items_failed = sum(1 for i in items if i.get("status") == "failed")
     return {
         "status": status,
         "item_count": len(items),
+        "items_done": items_done,
+        "items_failed": items_failed,
         "brand_id": plan.get("brand_id"),
     }
 
@@ -375,6 +380,17 @@ async def get_approved_plans(
     """
     try:
         sb = get_admin_client()
+
+        # Auto-fail stale executing plans (>30 min without update)
+        stale_cutoff = (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
+        try:
+            sb.table("content_plans").update({
+                "status": "failed",
+                "last_updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("status", "executing").lt("last_updated_at", stale_cutoff).execute()
+        except Exception as stale_exc:
+            logger.warning("stale plan cleanup failed: %s", stale_exc)
+
         result = (
             sb.table("content_plans")
             .select("*")
@@ -401,16 +417,50 @@ async def update_plan_status(
     if not _UUID_RE.match(plan_id):
         raise HTTPException(400, "Invalid plan_id")
 
-    valid_statuses = {"approved", "executing", "done", "failed"}
+    valid_statuses = {"approved", "executing", "done", "failed", "partial"}
     if body.status not in valid_statuses:
         raise HTTPException(400, f"Invalid status. Must be one of: {valid_statuses}")
 
     try:
         sb = get_admin_client()
-        sb.table("content_plans").update({
+
+        # Idempotency guard: only allow executing if plan is currently approved
+        if body.status == "executing":
+            current = (
+                sb.table("content_plans")
+                .select("status")
+                .eq("id", plan_id)
+                .limit(1)
+                .execute()
+            )
+            if current.data and current.data[0].get("status") != "approved":
+                return {"ok": False, "reason": "Plan is not in approved state"}
+
+        update_data: Dict[str, Any] = {
             "status": body.status,
             "last_updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", plan_id).execute()
+        }
+
+        # Merge per-item results into the items JSONB
+        if body.item_results:
+            plan_row = (
+                sb.table("content_plans")
+                .select("items")
+                .eq("id", plan_id)
+                .limit(1)
+                .execute()
+            )
+            if plan_row.data:
+                existing_items = plan_row.data[0].get("items", [])
+                # Build lookup of results by topic
+                result_map = {r["topic"]: r["status"] for r in body.item_results}
+                for item in existing_items:
+                    topic = item.get("topic", "")
+                    if topic in result_map:
+                        item["status"] = result_map[topic]
+                update_data["items"] = existing_items
+
+        sb.table("content_plans").update(update_data).eq("id", plan_id).execute()
         return {"ok": True, "plan_id": plan_id, "status": body.status}
     except Exception as exc:
         logger.warning("update_plan_status failed plan=%s: %s", plan_id, exc)

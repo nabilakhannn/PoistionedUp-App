@@ -176,7 +176,12 @@ export default function ClientsPage() {
                   >
                     {/* Client name */}
                     <div>
-                      <div className="text-sm font-semibold text-foreground">{brand.name}</div>
+                      <Link
+                        href={`/mission-control/clients/${brand.id}`}
+                        className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                      >
+                        {brand.name}
+                      </Link>
                       {brand.niche && (
                         <div className="text-xs text-muted-foreground truncate max-w-[180px]">
                           {brand.niche}

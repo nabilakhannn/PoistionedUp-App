@@ -86,6 +86,21 @@ Every piece of content must serve a funnel stage. NEVER mix stages — pick one 
 3. Insight, story, or proof (3-5 lines)
 4. CTA aligned to funnel stage (1-2 lines)
 
+## Messaging Buckets (rotate across all 6 weekly)
+1. PAIN — address fears, frustrations, current struggles
+2. OUTCOME — paint the dream result, transformation
+3. STORY — personal stories, client stories, relatable narratives
+4. AUTHORITY — credentials, experience, results, social proof
+5. BELIEF — shift limiting beliefs, reframe objections
+6. CURIOSITY — open loops, tease insights, create intrigue
+
+Every post should hit 1-2 buckets. Rotate across all 6 for maximum audience resonance.
+
+## Hormozi Frameworks (use when relevant)
+- Value Equation: Value = (Dream Outcome x Perceived Likelihood) / (Time Delay x Effort)
+- Grand Slam Offer: dream outcome + unique mechanism + proof stack + risk reversal + bonus stack
+- Apply to: offers, landing pages, ad copy, email sequences, BOFU posts
+
 ## Output
 Return only the post text. No preamble, no explanation, no markdown headers.
 Label each piece with [TOFU], [MOFU], or [BOFU] at the top if generating a batch.

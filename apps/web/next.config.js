@@ -14,6 +14,20 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Slice 108: Route cleanup — old routes → new routes
+      { source: "/mission-control", destination: "/dashboard", permanent: true },
+      { source: "/mission-control/analytics", destination: "/content/results", permanent: true },
+      { source: "/mission-control/settings", destination: "/brand?tab=settings", permanent: true },
+      { source: "/mission-control/orchestrator", destination: "/brand?tab=team", permanent: true },
+      { source: "/marketing", destination: "/content", permanent: true },
+      { source: "/sales", destination: "/growth", permanent: true },
+      { source: "/intelligence", destination: "/jumbo", permanent: true },
+      { source: "/studio/agents", destination: "/brand?tab=team", permanent: true },
+      { source: "/studio/hooks", destination: "/content/hooks", permanent: true },
+    ];
+  },
 };
 
 module.exports = nextConfig;

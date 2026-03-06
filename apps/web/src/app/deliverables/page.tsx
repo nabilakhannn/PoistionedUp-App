@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useBrand } from "@/lib/brand-context";
-import { clientDeliverablesApi, type ClientDeliverable } from "@/lib/api/client-deliverables";
+import {
+  clientDeliverablesApi,
+  type ClientDeliverable,
+  type ProposalStatus,
+} from "@/lib/api/client-deliverables";
 
 const TYPE_ICONS: Record<string, string> = {
   proposal: "📄",
@@ -36,20 +40,57 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
+  draft: { label: "Draft", bg: "bg-slate-700/30", text: "text-slate-400" },
+  sent: { label: "Sent", bg: "bg-blue-500/10", text: "text-blue-400" },
+  accepted: { label: "Accepted", bg: "bg-green-500/10", text: "text-green-400" },
+  rejected: { label: "Rejected", bg: "bg-red-500/10", text: "text-red-400" },
+  closed_won: { label: "Won", bg: "bg-emerald-500/10", text: "text-emerald-400" },
+  closed_lost: { label: "Lost", bg: "bg-zinc-500/10", text: "text-zinc-500" },
+};
+
+const STATUS_OPTIONS: ProposalStatus[] = [
+  "draft", "sent", "accepted", "rejected", "closed_won", "closed_lost",
+];
+
 function DeliverableCard({
   deliverable,
   onCopyShare,
+  onStatusChange,
+  onRegenerate,
   copied,
+  regeneratingId,
 }: {
   deliverable: ClientDeliverable;
   onCopyShare: (id: string, token: string) => void;
+  onStatusChange: (id: string, status: ProposalStatus, dealValue?: number) => void;
+  onRegenerate: (id: string) => void;
   copied: string | null;
+  regeneratingId: string | null;
 }) {
+  const [showDealInput, setShowDealInput] = useState(false);
+  const [dealAmount, setDealAmount] = useState("");
   const icon = TYPE_ICONS[deliverable.deliverable_type] || "📦";
   const label = TYPE_LABELS[deliverable.deliverable_type] || deliverable.deliverable_type;
   const shareUrl = deliverable.share_token
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/share/${deliverable.share_token}`
     : null;
+
+  function handleStatusSelect(newStatus: ProposalStatus) {
+    if (newStatus === "closed_won") {
+      setShowDealInput(true);
+    } else {
+      setShowDealInput(false);
+      onStatusChange(deliverable.id, newStatus);
+    }
+  }
+
+  function handleDealSubmit() {
+    const val = parseFloat(dealAmount);
+    onStatusChange(deliverable.id, "closed_won", val > 0 ? val : undefined);
+    setShowDealInput(false);
+    setDealAmount("");
+  }
 
   return (
     <div className="bg-[#0d1117] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-white/20 transition-colors">
@@ -63,14 +104,36 @@ function DeliverableCard({
               <span className="text-xs text-slate-500">{label}</span>
               <span className="text-slate-700">·</span>
               <span className="text-xs text-slate-500">{timeAgo(deliverable.created_at)}</span>
+              {deliverable.deal_value && (
+                <>
+                  <span className="text-slate-700">·</span>
+                  <span className="text-xs text-emerald-400 font-medium">${deliverable.deal_value.toLocaleString()}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
-        {deliverable.version && (
-          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-900/30 text-indigo-400 border border-indigo-800/40">
-            v{deliverable.version}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Proposal status dropdown */}
+          {deliverable.client_brand && (
+            <select
+              value={deliverable.proposal_status || "draft"}
+              onChange={(e) => handleStatusSelect(e.target.value as ProposalStatus)}
+              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border-0 cursor-pointer appearance-none ${
+                STATUS_CONFIG[deliverable.proposal_status || "draft"]?.bg || "bg-slate-700/30"
+              } ${STATUS_CONFIG[deliverable.proposal_status || "draft"]?.text || "text-slate-400"}`}
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
+              ))}
+            </select>
+          )}
+          {deliverable.version && (
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-900/30 text-indigo-400 border border-indigo-800/40">
+              v{deliverable.version}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Preview snippet */}
@@ -117,7 +180,46 @@ function DeliverableCard({
             Download
           </button>
         )}
+
+        <button
+          onClick={() => onRegenerate(deliverable.id)}
+          disabled={regeneratingId === deliverable.id}
+          className="px-3 py-1.5 border border-white/10 hover:border-white/20 text-slate-400 text-xs rounded-lg font-medium transition-colors disabled:opacity-50"
+        >
+          {regeneratingId === deliverable.id ? "Regenerating..." : "Regenerate"}
+        </button>
       </div>
+
+      {/* Deal value input — appears when closed_won selected */}
+      {showDealInput && (
+        <div className="flex items-center gap-2 pt-1 border-t border-white/5">
+          <span className="text-xs text-slate-500">Deal value:</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-slate-400">$</span>
+            <input
+              type="number"
+              value={dealAmount}
+              onChange={(e) => setDealAmount(e.target.value)}
+              placeholder="0"
+              className="w-24 px-2 py-1 bg-slate-800 border border-white/10 rounded-lg text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50"
+              onKeyDown={(e) => e.key === "Enter" && handleDealSubmit()}
+              autoFocus
+            />
+          </div>
+          <button
+            onClick={handleDealSubmit}
+            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg font-medium transition-colors"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => { setShowDealInput(false); setDealAmount(""); }}
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -128,6 +230,7 @@ export default function DeliverablesPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [copied, setCopied] = useState<string | null>(null);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentBrand?.id) return;
@@ -145,6 +248,32 @@ export default function DeliverablesPage() {
       setCopied(id);
       setTimeout(() => setCopied(null), 2000);
     });
+  }
+
+  async function handleStatusChange(id: string, status: ProposalStatus, dealValue?: number) {
+    try {
+      await clientDeliverablesApi.updateStatus(id, status, dealValue);
+      setDeliverables((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, proposal_status: status, deal_value: dealValue ?? d.deal_value } : d)),
+      );
+    } catch {
+      // silent — status badge reverts on next load
+    }
+  }
+
+  async function handleRegenerate(id: string) {
+    if (!currentBrand?.id) return;
+    setRegeneratingId(id);
+    try {
+      await clientDeliverablesApi.regenerate(id);
+      // Reload the list to show new version
+      const data = await clientDeliverablesApi.list(currentBrand.id);
+      setDeliverables(data);
+    } catch {
+      // silent
+    } finally {
+      setRegeneratingId(null);
+    }
   }
 
   const filtered =
@@ -234,7 +363,10 @@ export default function DeliverablesPage() {
                 key={d.id}
                 deliverable={d}
                 onCopyShare={handleCopyShare}
+                onStatusChange={handleStatusChange}
+                onRegenerate={handleRegenerate}
                 copied={copied}
+                regeneratingId={regeneratingId}
               />
             ))}
           </div>

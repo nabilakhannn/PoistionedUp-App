@@ -10,26 +10,18 @@ import { pipelineSettingsApi } from "@/lib/api/pipeline-settings";
 
 /* ── Icon components ─────────────────────────────────── */
 
-function CommandIcon({ className }: { className?: string }) {
+function DashboardIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a9 9 0 1 1-18 0V5.25" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25a2.25 2.25 0 0 1-2.25-2.25v-2.25Z" />
     </svg>
   );
 }
 
-function MarketingIcon({ className }: { className?: string }) {
+function ContentIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 1 8.835-2.535m0 0A23.74 23.74 0 0 1 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46" />
-    </svg>
-  );
-}
-
-function SalesIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
     </svg>
   );
 }
@@ -42,7 +34,15 @@ function BrandIcon({ className }: { className?: string }) {
   );
 }
 
-function IntelligenceIcon({ className }: { className?: string }) {
+function GrowthIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.28m5.94 2.28-2.28 5.941" />
+    </svg>
+  );
+}
+
+function JumboIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
@@ -94,43 +94,36 @@ function CloseIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Primary Rooms ───────────────────────────────────── */
+/* ── 4 Rooms + Jumbo ────────────────────────────────── */
 
 const PRIMARY_NAV = [
   {
-    href: "/mission-control",
-    label: "Today",
-    subtitle: "Approvals & briefing",
-    icon: CommandIcon,
-    match: (p: string) => p === "/mission-control" || (p.startsWith("/mission-control/") && !p.startsWith("/mission-control/settings")),
+    href: "/dashboard",
+    label: "Dashboard",
+    subtitle: "Approvals & activity",
+    icon: DashboardIcon,
+    match: (p: string) => p === "/dashboard" || p.startsWith("/dashboard/"),
   },
   {
-    href: "/brands",
+    href: "/content",
+    label: "Content",
+    subtitle: "Create & plan",
+    icon: ContentIcon,
+    match: (p: string) => p === "/content" || p.startsWith("/content/"),
+  },
+  {
+    href: "/brand",
     label: "Brand",
-    subtitle: "Brand intelligence",
+    subtitle: "Research & profile",
     icon: BrandIcon,
-    match: (p: string) => p.startsWith("/brands"),
+    match: (p: string) => p === "/brand" || p.startsWith("/brand/") || p.startsWith("/brands"),
   },
   {
-    href: "/marketing",
-    label: "Create",
-    subtitle: "Content & campaigns",
-    icon: MarketingIcon,
-    match: (p: string) => p.startsWith("/marketing"),
-  },
-  {
-    href: "/sales",
-    label: "Grow",
+    href: "/growth",
+    label: "Growth",
     subtitle: "Leads & outreach",
-    icon: SalesIcon,
-    match: (p: string) => p.startsWith("/sales"),
-  },
-  {
-    href: "/intelligence",
-    label: "Jumbo",
-    subtitle: "Chat & notes",
-    icon: IntelligenceIcon,
-    match: (p: string) => p.startsWith("/intelligence") || p.startsWith("/studio"),
+    icon: GrowthIcon,
+    match: (p: string) => p === "/growth" || p.startsWith("/growth/"),
   },
 ];
 
@@ -160,12 +153,12 @@ export function NavBar() {
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
-  // Poll approval count every 60s so the badge stays current
+  // Poll approval count every 60s
   useEffect(() => {
     const fetchCount = () => {
       pipelineSettingsApi.getApprovalsCount()
         .then((r) => setApprovalCount(r.count))
-        .catch(() => {/* silent — badge just stays at last value */});
+        .catch(() => {/* silent */});
     };
     fetchCount();
     const id = setInterval(fetchCount, 60_000);
@@ -201,11 +194,11 @@ export function NavBar() {
     <>
       {/* Logo */}
       <div className="px-4 pt-6 pb-4">
-        <Link href="/mission-control" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">P</span>
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
+            <span className="text-white font-bold text-sm">P</span>
           </div>
-          <span className="font-semibold text-card-foreground text-lg tracking-tight">PositionedUp</span>
+          <span className="font-semibold text-zinc-100 text-lg tracking-tight">PositionedUp</span>
         </Link>
       </div>
 
@@ -214,45 +207,45 @@ export function NavBar() {
         <div ref={dropdownRef} className="px-3 mb-4 relative">
           <button
             onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-sidebar-accent/50 hover:bg-sidebar-accent text-sm font-medium text-sidebar-foreground transition"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] hover:bg-white/[0.06] text-sm font-medium text-zinc-300 transition-colors duration-200"
           >
-            <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
             <span className="flex-1 text-left truncate">
               {currentBrand ? currentBrand.name : "Select brand"}
             </span>
-            <ChevronIcon className="w-3.5 h-3.5 text-muted-foreground" open={brandDropdownOpen} />
+            <ChevronIcon className="w-3.5 h-3.5 text-zinc-500" open={brandDropdownOpen} />
           </button>
 
           {brandDropdownOpen && (
-            <div className="absolute left-3 right-3 top-full mt-1 bg-popover border border-border rounded-lg shadow-xl z-50 py-1">
+            <div className="absolute left-3 right-3 top-full mt-1 bg-zinc-900 ring-1 ring-white/[0.08] rounded-xl shadow-2xl z-50 py-1 animate-fade-in">
               {brands.map((brand) => (
                 <button
                   key={brand.id}
                   onClick={() => handleBrandSwitch(brand.id)}
-                  className={`w-full text-left px-3 py-2 text-sm transition ${
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors duration-150 ${
                     currentBrand?.id === brand.id
-                      ? "bg-primary/20 text-primary font-medium"
-                      : "text-popover-foreground hover:bg-sidebar-accent"
+                      ? "bg-violet-500/15 text-violet-300 font-medium"
+                      : "text-zinc-300 hover:bg-white/[0.04]"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate">{brand.name}</span>
                     {currentBrand?.id === brand.id && (
-                      <svg className="w-4 h-4 text-primary flex-shrink-0 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4 text-violet-400 flex-shrink-0 ml-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     )}
                   </div>
                   {brand.description && (
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{brand.description}</p>
+                    <p className="text-xs text-zinc-500 truncate mt-0.5">{brand.description}</p>
                   )}
                 </button>
               ))}
-              <div className="border-t border-border mt-1 pt-1">
+              <div className="border-t border-white/[0.06] mt-1 pt-1">
                 <Link
                   href="/brands/new"
                   onClick={() => setBrandDropdownOpen(false)}
-                  className="block px-3 py-2 text-sm text-primary hover:bg-sidebar-accent transition"
+                  className="block px-3 py-2 text-sm text-violet-400 hover:bg-white/[0.04] transition-colors duration-150"
                 >
                   + New Brand
                 </Link>
@@ -263,52 +256,72 @@ export function NavBar() {
       )}
 
       {/* Primary Rooms */}
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        <p className="px-3 mb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Rooms
-        </p>
+      <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
         {PRIMARY_NAV.map((item) => {
           const Icon = item.icon;
           const active = item.match(pathname || "");
-          const isTodayBadge = item.href === "/mission-control" && approvalCount > 0;
+          const isDashboardBadge = item.href === "/dashboard" && approvalCount > 0;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              data-testid={`nav-${item.label.toLowerCase()}`}
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                 active
-                  ? "bg-primary/15 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent border border-transparent"
+                  ? "bg-white/[0.06] ring-1 ring-white/[0.08] text-zinc-100"
+                  : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]"
               }`}
             >
-              <Icon className={`w-[18px] h-[18px] flex-shrink-0 mt-0.5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-violet-400" : "text-zinc-600 group-hover:text-zinc-400"}`} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-medium">{item.label}</span>
-                  {isTodayBadge && (
-                    <span className="text-[9px] font-bold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 leading-none">
+                  {isDashboardBadge && (
+                    <span className="text-[10px] font-semibold bg-violet-500 text-white rounded-full px-1.5 py-0.5 leading-none">
                       {approvalCount}
                     </span>
                   )}
                 </div>
-                <span className={`text-[10px] leading-none ${active ? "text-primary/70" : "text-muted-foreground/70"}`}>
+                <span className={`text-[11px] leading-tight ${active ? "text-zinc-500" : "text-zinc-600"}`}>
                   {item.subtitle}
                 </span>
               </div>
             </Link>
           );
         })}
+
+        {/* Jumbo — special accent link */}
+        <div className="pt-2">
+          <Link
+            href="/jumbo"
+            data-testid="nav-jumbo"
+            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+              pathname?.startsWith("/jumbo") || pathname?.startsWith("/intelligence")
+                ? "bg-gradient-to-r from-violet-500/10 to-blue-500/10 ring-1 ring-violet-500/20 text-zinc-100"
+                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]"
+            }`}
+          >
+            <JumboIcon className={`w-[18px] h-[18px] flex-shrink-0 ${
+              pathname?.startsWith("/jumbo") || pathname?.startsWith("/intelligence") ? "text-violet-400" : "text-zinc-600 group-hover:text-violet-400"
+            }`} />
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-medium">Jumbo</span>
+              <span className={`block text-[11px] leading-tight ${
+                pathname?.startsWith("/jumbo") || pathname?.startsWith("/intelligence") ? "text-zinc-500" : "text-zinc-600"
+              }`}>Chat & notes</span>
+            </div>
+          </Link>
+        </div>
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 pb-4 mt-auto border-t border-sidebar-border pt-3 space-y-0.5">
-        {/* Settings */}
+      <div className="px-3 pb-4 mt-auto border-t border-white/[0.06] pt-3 space-y-0.5">
         <Link
-          href="/mission-control/settings"
-          className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            pathname?.startsWith("/mission-control/settings")
-              ? "text-primary"
-              : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+          href="/brand?tab=settings"
+          className={`flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${
+            pathname === "/brand" && typeof window !== "undefined" && window.location.search.includes("tab=settings")
+              ? "text-violet-400"
+              : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]"
           }`}
         >
           <SettingsIcon className="w-[18px] h-[18px]" />
@@ -316,11 +329,11 @@ export function NavBar() {
         </Link>
         <div className="flex items-center gap-3 px-3 py-2">
           <NotificationBell />
-          <span className="text-sm text-muted-foreground">Notifications</span>
+          <span className="text-sm text-zinc-500">Notifications</span>
         </div>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm font-medium text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors duration-200"
         >
           <LogOutIcon className="w-[18px] h-[18px]" />
           Sign out
@@ -332,21 +345,21 @@ export function NavBar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-60 bg-sidebar border-r border-sidebar-border z-40">
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-60 bg-[#09090B]/80 backdrop-blur-md border-r border-white/[0.06] z-40">
         {sidebarContent}
       </aside>
 
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-4 z-40">
-        <Link href="/mission-control" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xs">P</span>
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#09090B]/90 backdrop-blur-md border-b border-white/[0.06] flex items-center justify-between px-4 z-40">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
+            <span className="text-white font-bold text-xs">P</span>
           </div>
-          <span className="font-semibold text-card-foreground text-base">PositionedUp</span>
+          <span className="font-semibold text-zinc-100 text-base">PositionedUp</span>
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <CloseIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
@@ -356,8 +369,8 @@ export function NavBar() {
       {/* Mobile drawer */}
       {mobileOpen && (
         <>
-          <div className="md:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setMobileOpen(false)} />
-          <aside className="md:hidden fixed inset-y-0 left-0 w-64 bg-sidebar border-r border-sidebar-border z-50 flex flex-col overflow-y-auto">
+          <div className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setMobileOpen(false)} />
+          <aside className="md:hidden fixed inset-y-0 left-0 w-64 bg-[#09090B] border-r border-white/[0.06] z-50 flex flex-col overflow-y-auto animate-slide-up">
             {sidebarContent}
           </aside>
         </>

@@ -13,16 +13,16 @@ export default function NotFound() {
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link
-            href="/brands"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition"
+            href="/dashboard"
+            className="glass-button-primary text-sm"
           >
-            Go to Brands
+            Go to Dashboard
           </Link>
           <Link
-            href="/mission-control"
-            className="px-4 py-2 border border-zinc-700 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-800 transition"
+            href="/brand"
+            className="glass-button text-sm"
           >
-            Go to Today
+            Go to Brand
           </Link>
         </div>
       </div>

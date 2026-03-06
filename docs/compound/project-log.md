@@ -4943,3 +4943,119 @@ See full details: `docs/compound/patterns/slice-105-nav-clarity.md`
 | `docs/compound/patterns/slice-106-plan-with-jumbo.md` | NEW — slice pattern doc |
 
 See full details: `docs/compound/patterns/slice-106-plan-with-jumbo.md`
+
+---
+
+## Slice 109 — Agent Marketplace + Manus AI Engine + Story Bank
+**Date:** 2026-03-05
+**Gate:** 82/82 pytest, 0 TS errors
+
+### What
+Built a ClientAscension-style agent marketplace with 24 workflows across 5 categories (Ads/Funnels, Content Marketing, Lead Gen, Email Marketing, Strategy). Each workflow auto-injects brand dossier, story bank, hooks, and competitor intel. Story Bank extends experience_journal with AI extraction. Manus AI available as optional BYOK connector for 5 research-heavy workflows. Jumbo upgraded to world-class strategist identity with Hormozi/Messaging Buckets frameworks.
+
+### Key Decisions
+- Built-in AI is primary engine for all workflows; Manus is optional BYOK ($5-10/generation vs ~free)
+- Story Bank extends existing experience_journal table (no new table duplication)
+- Marketplace router at `/marketplace/*` separate from existing `/workflows/*` pipeline
+- VSL Funnel Generator: 7 sequential steps with step-by-step wizard UI
+- 10 system framework docs auto-seeded on first registry GET
+
+### Files (22 new, 11 modified)
+
+| File | Purpose |
+|------|---------|
+| `migrations/044_story_bank.sql` | ALTER experience_journal + new source types |
+| `migrations/045_manus_tasks.sql` | Manus task lifecycle table + RLS |
+| `migrations/046_workflow_runs.sql` | Workflow execution history + RLS |
+| `services/story_extractor.py` | gpt-4o-mini extraction engine |
+| `services/manus_ai.py` | ManusAIClient + context compression |
+| `services/workflow_engine.py` | Registry (24 workflows) + execution + enhancement injection |
+| `routers/stories.py` | 5 Story Bank endpoints |
+| `routers/manus_ai.py` | 3 Manus endpoints + webhook |
+| `routers/marketplace.py` | Registry + run + history + status |
+| `lib/api/stories.ts` | Story Bank API client |
+| `lib/api/manus-ai.ts` | Manus API client |
+| `lib/api/marketplace.ts` | Marketplace API client |
+| `content/stories/page.tsx` | Story Bank browse UI |
+| `content/agents/page.tsx` | Marketplace hub |
+| `content/agents/[slug]/page.tsx` | Workflow execution page |
+| `components/dynamic-form-builder.tsx` | JSON schema form renderer |
+| `components/generation-history.tsx` | Past runs history |
+| `tests/test_slice109_marketplace.py` | 82 tests |
+| `docs/compound/patterns/slice-109-agent-marketplace.md` | Pattern doc |
+
+See full details: `docs/compound/patterns/slice-109-agent-marketplace.md`
+
+---
+
+## Slice 110 — UX Polish Sprint (Agent Marketplace)
+
+**Date:** 2026-03-05 · **Type:** Polish / UX · **Depends on:** Slice 109
+
+### What We Did
+
+Fixed 8 high-impact UX rough edges across 5 frontend files. No backend changes.
+
+- **Loading skeletons** — replaced plain "Loading..." text with animated skeleton cards/items in agents hub, workflow execution page, generation history, and Story Bank
+- **Error recovery** — added Retry + dismiss buttons to all error banners (was silent catch or dismiss-only)
+- **Copy feedback** — "Copied!" / "Copied All!" toast for 2s after clipboard write on workflow output
+- **Form validation** — empty required fields now show red border + "Required" label on submit attempt
+- **Multi-step clarity** — step outline visible before first generation starts
+- **Button consistency** — Continue button uses `glass-button-primary` (was raw Tailwind)
+- **Mobile grid** — workflow cards 2-col at 768px (was 640px)
+- **Empty filtered state** — "No workflows in this category" message when filter yields 0
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| `npx tsc --noEmit` | 0 errors |
+| `pytest test_slice109_marketplace.py` | 82/82 |
+| `playwright test slice109-marketplace.spec.ts` | 29/29 |
+
+### Files (5 modified)
+
+| File | Purpose |
+|------|---------|
+| `content/agents/page.tsx` | Skeleton, error retry, mobile grid, empty filtered state |
+| `content/agents/[slug]/page.tsx` | Skeleton, copy feedback, button, multi-step, error retry |
+| `components/generation-history.tsx` | Skeleton, error recovery |
+| `components/dynamic-form-builder.tsx` | Form validation feedback |
+| `content/stories/page.tsx` | Skeleton, error retry |
+
+See full details: `docs/compound/patterns/slice-110-ux-polish.md`
+
+---
+
+## Slice 111 — Pipeline Hardening + Client Portal Expansion (2026-03-05)
+
+**Part A — Pipeline Hardening:**
+- **A1 Retry:** `_retry_phase()` in `pipeline_runner.py` — 3 retries with 30s/120s/300s exponential backoff, transient errors only (5xx, timeout, connection)
+- **A2 Partial Failure:** `"partial"` status for content plans when some items fail, per-item results tracked in JSONB, zombie threshold 10→30 min, idempotency guard
+- **A3 Timeout:** `_with_timeout(5s)` decorator using `threading.Thread` on 8 context getters in `jumbo_pipeline.py`
+- **A4 Health:** `GET /pipeline/health` endpoint (JWT auth) — 24h success/fail counts, avg duration, current status
+- **A5 Budget:** `check_monthly_budget` returns `"budget_check_failed:..."` instead of silent `None`, pipeline proceeds with warning
+
+**Part B — Client Portal Expansion:**
+- **B1 Status:** `proposal_status` column (migration 047), `PATCH /deliverables/{id}/status` + `POST /deliverables/{id}/regenerate`, status dropdown + regenerate button on deliverables page
+- **B2 Detail:** Client detail page at `/mission-control/clients/[brandId]` (sessions, action items, deliverables), client names link to detail
+
+**Files:** 11 modified, 3 created, 1 migration | **Tests:** 29/29 pass, 0 TS errors
+
+See full details: `docs/compound/patterns/slice-111-hardening.md`
+
+---
+
+## Slice 112 — Analytics & ROI Dashboard (2026-03-05)
+
+**Unified analytics dashboard with real data from 5 tables + Recharts charts.**
+
+- **Backend:** 6 pure aggregation functions (content ROI, pipeline perf, revenue attribution, engagement trends, lead funnel, cost tracking) + `GET /analytics/dashboard` endpoint with 5 parallel Supabase queries via ThreadPoolExecutor
+- **Migration 048:** `deal_value DECIMAL(12,2)` column on `agent_deliverables` for revenue tracking
+- **Deal Value:** Extended `PATCH /deliverables/{id}/status` to accept `deal_value`, added input UI on deliverables page when `closed_won` selected
+- **Frontend:** Full Recharts rewrite of analytics page — AreaChart (content trend), BarChart (pipeline phases), horizontal BarChart (hook performance), funnel bars (revenue + leads), budget progress bar, period selector (7d/30d/90d)
+- **Design:** Glass Modern system, Recharts dark theme (violet stroke, zinc grid)
+
+**Files:** 5 created, 5 modified, 1 migration | **Tests:** 33/33 pass, 0 TS errors
+
+See full details: `docs/compound/patterns/slice-112-analytics-roi-dashboard.md`

@@ -14,8 +14,10 @@ only handles data retrieval, prompt assembly, and result persistence.
 
 from __future__ import annotations
 
+import functools
 import logging
 import re
+import threading
 import uuid as _uuid
 from typing import Optional
 
@@ -32,9 +34,53 @@ def _is_valid_uuid(value: str) -> bool:
     return bool(_UUID_RE.match(value))
 
 
+# ── Timeout decorator ─────────────────────────────────────────────────────
+
+
+def _with_timeout(timeout_seconds: float = 5.0, default_return=None):
+    """Decorator: wraps a function with a thread-based timeout.
+
+    If the function takes longer than timeout_seconds, returns default_return
+    and logs a warning.  Prevents slow Supabase queries from blocking the
+    pipeline phase (Vercel has a ~60s limit).
+
+    The Supabase Python client is HTTP-based (httpx) and stateless per
+    request, so it is safe to call from a daemon thread.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            result = [default_return]
+            exception = [None]
+
+            def target():
+                try:
+                    result[0] = func(*args, **kwargs)
+                except Exception as exc:
+                    exception[0] = exc
+
+            thread = threading.Thread(target=target, daemon=True)
+            thread.start()
+            thread.join(timeout=timeout_seconds)
+
+            if thread.is_alive():
+                logger.warning(
+                    "%s timed out after %.1fs — returning default",
+                    func.__name__, timeout_seconds,
+                )
+                return default_return
+
+            if exception[0]:
+                raise exception[0]
+            return result[0]
+        return wrapper
+    return decorator
+
+
 # ── Context getters ────────────────────────────────────────────────────────
 
 
+@_with_timeout(5.0, "[analytics_context temporarily unavailable]")
 def get_analytics_context(brand_id: str) -> str:
     """Return top-performing post examples for this brand.
 
@@ -78,6 +124,7 @@ def get_analytics_context(brand_id: str) -> str:
         return "[analytics_context temporarily unavailable]"
 
 
+@_with_timeout(5.0, "[competitor_context temporarily unavailable]")
 def get_competitor_context(brand_id: str) -> str:
     """Return tracked competitor names, threat levels, and niches.
 
@@ -122,6 +169,7 @@ def get_competitor_context(brand_id: str) -> str:
         return "[competitor_context temporarily unavailable]"
 
 
+@_with_timeout(5.0, "[trend_memory temporarily unavailable]")
 def get_trend_memory(brand_id: str) -> str:
     """Return the most recent trend analyzer research report for THIS brand.
 
@@ -164,6 +212,7 @@ def get_trend_memory(brand_id: str) -> str:
         return "[trend_memory temporarily unavailable]"
 
 
+@_with_timeout(5.0, "")
 def get_rejection_history(user_id: str, brand_id: str) -> str:
     """Return recent rejection tags from agent_memory (voice_feedback type).
 
@@ -200,6 +249,7 @@ def get_rejection_history(user_id: str, brand_id: str) -> str:
         return ""
 
 
+@_with_timeout(5.0, None)
 def get_brand_context(brand_id: str) -> Optional[dict]:
     """Fetch deep brand intelligence dossier as a dict for prompt injection.
 
@@ -238,20 +288,29 @@ def get_brand_context(brand_id: str) -> Optional[dict]:
             "metaphors": profile.get("metaphors", []),
             "content_pillars": profile.get("content_pillars", []),
         }
-        # Pull latest 3 journal entries for grounding
+        # Pull latest 3 journal entries for grounding (Slice 109: fixed field names)
         try:
             j = (
                 sb.table("experience_journal")
-                .select("summary, type")
+                .select("raw_content, source_type, extracted_stories")
                 .eq("brand_id", brand_id)
                 .order("created_at", desc=True)
                 .limit(3)
                 .execute()
             )
             ctx["emotional_journal_summary"] = [
-                f"[{r.get('type','note')}] {str(r.get('summary',''))[:200]}"
+                f"[{r.get('source_type','note')}] {str(r.get('raw_content',''))[:200]}"
                 for r in (j.data or [])
             ]
+            # Include extracted stories if available
+            all_stories = []
+            for r in (j.data or []):
+                stories = r.get("extracted_stories") or []
+                for s in stories:
+                    if isinstance(s, dict) and s.get("usable_hook"):
+                        all_stories.append(s["usable_hook"])
+            if all_stories:
+                ctx["story_hooks"] = all_stories[:5]
         except Exception:
             ctx["emotional_journal_summary"] = []
         return ctx
@@ -260,6 +319,39 @@ def get_brand_context(brand_id: str) -> Optional[dict]:
         return None
 
 
+def get_story_context(brand_id: str, user_id: str, topic: str = "") -> str:
+    """Fetch relevant extracted stories for prompt injection.
+
+    Returns a formatted string with up to 3 relevant stories.
+    Returns empty string if no stories available (graceful degradation).
+    """
+    try:
+        from app.services.story_extractor import search_stories_by_theme
+        stories = search_stories_by_theme(
+            user_id=user_id,
+            brand_id=brand_id,
+            topic=topic,
+            limit=3,
+        )
+        if not stories:
+            return ""
+
+        lines = ["Here are real stories and insights from your personal material:\n"]
+        for i, s in enumerate(stories, 1):
+            lines.append(f"Story {i}: {s.get('summary', '')}")
+            if s.get("key_quote"):
+                lines.append(f"  Quote: \"{s['key_quote']}\"")
+            if s.get("usable_hook"):
+                lines.append(f"  Hook: {s['usable_hook']}")
+            lines.append("")
+
+        return "\n".join(lines)
+    except Exception as exc:
+        logger.warning("get_story_context failed brand=%s: %s", brand_id, exc)
+        return ""
+
+
+@_with_timeout(5.0, "")
 def get_hooks_for_brand(brand_id: str) -> str:
     """Fetch user's hook library and format for prompt injection.
 
@@ -363,6 +455,7 @@ def get_marketing_insights(brand_id: str) -> str:
         return "[marketing_insights temporarily unavailable]"
 
 
+@_with_timeout(5.0, "")
 def get_knowledge_docs(user_id: str, brand_id: str, agent_id: Optional[str] = None) -> str:
     """Return knowledge documents (SOPs + user docs) for an agent.
 
@@ -425,6 +518,7 @@ def get_knowledge_docs(user_id: str, brand_id: str, agent_id: Optional[str] = No
         return ""
 
 
+@_with_timeout(5.0, ("", []))
 def get_relevant_experiences(
     user_id: str,
     brand_id: str,
@@ -692,7 +786,7 @@ def check_monthly_budget(user_id: str) -> Optional[str]:
 
     except Exception as exc:
         logger.warning("check_monthly_budget failed user=%s: %s", user_id, exc)
-        return None  # Silent fail — don't block pipeline on budget check errors
+        return "budget_check_failed:Unable to verify monthly budget — pipeline will proceed with caution."
 
 
 # ── Prompt builders ────────────────────────────────────────────────────────

@@ -25,12 +25,13 @@ import hmac
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
+from app.auth import CurrentUser, get_current_user
 from app.config import settings
 from app.deps import get_admin_client
 from app.services.jumbo_pipeline import (
@@ -176,7 +177,10 @@ async def pipeline_research(
     # Budget gate — check monthly spend before starting expensive LLM run
     budget_error = check_monthly_budget(req.user_id)
     if budget_error:
-        raise HTTPException(429, budget_error)
+        if isinstance(budget_error, str) and budget_error.startswith("budget_check_failed:"):
+            logger.warning("Budget check failed for user=%s — proceeding anyway", req.user_id)
+        else:
+            raise HTTPException(429, budget_error)
 
     analytics_ctx = get_analytics_context(req.brand_id)
     competitor_ctx = get_competitor_context(req.brand_id)
@@ -478,3 +482,81 @@ async def cron_publish(_auth: None = Depends(_require_cron_auth)):
     except Exception as exc:
         logger.error("cron_publish failed: %s", exc)
         raise HTTPException(500, f"Publish cron failed: {str(exc)[:200]}")
+
+
+# ── Pipeline Health (JWT auth — user-facing) ─────────────────────────────
+
+
+class PipelineHealthResponse(BaseModel):
+    last_run_at: Optional[str] = None
+    next_run_at: Optional[str] = None
+    pipeline_enabled: bool = True
+    success_count_24h: int = 0
+    failed_count_24h: int = 0
+    avg_duration_ms: int = 0
+    current_status: str = "idle"  # idle | running | error
+
+
+@router.get("/pipeline/health", response_model=PipelineHealthResponse)
+async def pipeline_health(
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Pipeline health dashboard data for the current user.
+
+    Returns 24h run stats, last/next run times, and current status.
+    JWT-authenticated (user-facing), not pipeline-key authenticated.
+    """
+    try:
+        sb = get_admin_client()
+
+        # Fetch pipeline settings for this user
+        settings_row = (
+            sb.table("pipeline_settings")
+            .select("enabled, last_run_at, next_run_at, run_now")
+            .eq("user_id", user.id)
+            .limit(1)
+            .execute()
+        )
+        s = settings_row.data[0] if settings_row.data else {}
+
+        # Count pipeline runs in the last 24h
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        runs = (
+            sb.table("sdk_agent_runs")
+            .select("status, duration_ms")
+            .eq("user_id", user.id)
+            .in_("task_type", ["pipeline_research", "pipeline_write", "pipeline_qa"])
+            .gte("created_at", cutoff)
+            .execute()
+        )
+
+        rows = runs.data or []
+        success_count = sum(1 for r in rows if r.get("status") == "completed")
+        failed_count = sum(1 for r in rows if r.get("status") in ("failed", "error"))
+        durations = [r["duration_ms"] for r in rows if r.get("duration_ms")]
+        avg_duration = int(sum(durations) / len(durations)) if durations else 0
+
+        # Determine current status
+        enabled = s.get("enabled", True)
+        if not enabled:
+            current_status = "idle"
+        elif s.get("run_now"):
+            current_status = "running"
+        elif failed_count > success_count and len(rows) > 3:
+            current_status = "error"
+        else:
+            current_status = "idle"
+
+        return PipelineHealthResponse(
+            last_run_at=s.get("last_run_at"),
+            next_run_at=s.get("next_run_at"),
+            pipeline_enabled=enabled,
+            success_count_24h=success_count,
+            failed_count_24h=failed_count,
+            avg_duration_ms=avg_duration,
+            current_status=current_status,
+        )
+
+    except Exception as exc:
+        logger.warning("pipeline_health failed user=%s: %s", user.id, exc)
+        return PipelineHealthResponse()

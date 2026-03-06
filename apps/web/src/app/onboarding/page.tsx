@@ -108,7 +108,7 @@ export default function OnboardingPage() {
     if (typeof window !== "undefined") {
       localStorage.setItem("onboarding_done", "1");
     }
-    router.push("/mission-control");
+    router.push("/brand?tab=research");
   };
 
   return (
@@ -495,7 +495,7 @@ export default function OnboardingPage() {
               onClick={handleFinish}
               className="w-full py-3 rounded-lg bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition"
             >
-              Open Mission Control →
+              Start Brand Research →
             </button>
           </div>
         )}
