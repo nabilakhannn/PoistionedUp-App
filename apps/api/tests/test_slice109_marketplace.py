@@ -366,10 +366,11 @@ class TestMarketplaceFrontend:
         path = os.path.join(WEB, "src", "components", "generation-history.tsx")
         assert os.path.isfile(path)
 
-    def test_content_page_has_agents_card(self):
-        src = open(os.path.join(WEB, "src", "app", "content", "page.tsx")).read()
-        assert "AI Agents" in src
-        assert "/content/agents" in src
+    def test_workflow_card_component_exists(self):
+        # Slice 110: AI Agents card removed from Content nav (Dashboard is canonical home).
+        # WorkflowCard component replaces inline card JSX everywhere.
+        path = os.path.join(WEB, "src", "components", "workflow-card.tsx")
+        assert os.path.isfile(path), "workflow-card.tsx should exist"
 
 
 # ── Phase 5: Jumbo Strategist ──────────────────────────────────────

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useBrand } from "@/lib/brand-context";
 
@@ -14,7 +15,6 @@ const CONTENT_CARDS = [
   { href: "/content/hooks", icon: "bolt", label: "Hooks", desc: "Hook library" },
   { href: "/content/tools", icon: "wrench", label: "Tools", desc: "Ads, images, LP" },
   { href: "/content/stories", icon: "book-open", label: "Story Bank", desc: "Your material" },
-  { href: "/content/agents", icon: "cpu-chip", label: "AI Agents", desc: "Workflow marketplace" },
 ] as const;
 
 /* Minimal heroicons-outline paths (24x24) */
@@ -29,11 +29,15 @@ const ICON_PATHS: Record<string, string> = {
   bolt: "m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z",
   wrench: "M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085",
   "book-open": "M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25",
-  "cpu-chip": "M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z",
 };
 
 export default function ContentPage() {
   const { currentBrand } = useBrand();
+
+  // 0H: Mark that user has visited the Content room (for GettingStartedChecklist step 6)
+  useEffect(() => {
+    localStorage.setItem("visited_content_room", "true");
+  }, []);
 
   if (!currentBrand) {
     return (

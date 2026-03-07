@@ -171,4 +171,8 @@ export const leadsApi = {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   },
+
+  /** Convert a lead to a client brand */
+  convertToClient: (leadId: string): Promise<{ brand_id: string; already_converted: boolean; brand_name?: string }> =>
+    apiFetch(`/leads/${encodeURIComponent(leadId)}/convert-to-client`, { method: "POST" }),
 };

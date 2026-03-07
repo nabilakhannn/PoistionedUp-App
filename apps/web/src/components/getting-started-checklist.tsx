@@ -38,6 +38,7 @@ export function GettingStartedChecklist({
   if (dismissed) return null;
 
   const hasApproved = deliverables.some((d) => d.status === "approved");
+  const hasVisitedContent = typeof window !== "undefined" && localStorage.getItem("visited_content_room") === "true";
 
   const steps: Step[] = [
     { label: "Created account", done: true, href: "#", cta: "" },
@@ -45,7 +46,7 @@ export function GettingStartedChecklist({
     { label: "Build your brand voice", done: Object.keys(currentBrand?.completeness ?? {}).length > 0, href: currentBrand ? `/brands/${currentBrand.id}` : "/brands", cta: "Open brand" },
     { label: "Generate your first post", done: deliverables.length > 0, href: "/mission-control", cta: "Run pipeline" },
     { label: "Review & approve a post", done: hasApproved, href: "/mission-control", cta: "Review posts" },
-    { label: "Explore Create room", done: hasApproved, href: "/marketing", cta: "Go to Create" },
+    { label: "Explore Create room", done: hasVisitedContent, href: "/content", cta: "Go to Create" },
   ];
 
   const completedCount = steps.filter((s) => s.done).length;

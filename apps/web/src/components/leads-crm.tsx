@@ -60,6 +60,8 @@ function LeadDetailPanel({
   const [generatingOutreach, setGeneratingOutreach] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [converting, setConverting] = useState(false);
+  const [convertedBrandId, setConvertedBrandId] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -364,9 +366,9 @@ function LeadDetailPanel({
                 <div className="space-y-2">
                   {lead.sequence.map((msg, idx) => (
                     <div key={idx} className="rounded-lg border border-border p-3 space-y-1">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between flex-wrap gap-1">
                         <span className="text-[10px] font-semibold text-foreground">{msg.label}</span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[10px] text-muted-foreground capitalize">{msg.channel}</span>
                           <button
                             onClick={() => copyToClipboard(msg.message, `seq-${idx}`)}
@@ -374,6 +376,26 @@ function LeadDetailPanel({
                           >
                             {copiedKey === `seq-${idx}` ? "Copied!" : "Copy"}
                           </button>
+                          {msg.channel === "linkedin" && (
+                            <a
+                              href="https://www.linkedin.com/messaging/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                              title="Open LinkedIn Messaging"
+                            >
+                              LinkedIn →
+                            </a>
+                          )}
+                          {(msg.channel === "email" || msg.channel !== "linkedin") && lead.email && (
+                            <a
+                              href={`mailto:${encodeURIComponent(lead.email)}?subject=Following%20up&body=${encodeURIComponent(msg.message)}`}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                              title="Open in Gmail / Mail"
+                            >
+                              Gmail →
+                            </a>
+                          )}
                         </div>
                       </div>
                       <p className="text-[10px] text-muted-foreground whitespace-pre-wrap line-clamp-3">
@@ -400,6 +422,36 @@ function LeadDetailPanel({
           </>
         )}
       </div>
+
+      {/* Convert to Client — shows for hot/customer leads */}
+      {(lead.status === "hot" || lead.status === "customer") && (
+        <div className="p-4 border-t border-border shrink-0">
+          {convertedBrandId ? (
+            <p className="text-xs text-green-400 text-center">
+              ✓ Converted — client brand created
+            </p>
+          ) : (
+            <button
+              onClick={async () => {
+                setConverting(true);
+                try {
+                  const res = await leadsApi.convertToClient(lead.id);
+                  setConvertedBrandId(res.brand_id);
+                  onUpdated({ ...lead, status: "customer" });
+                } catch {
+                  // ignore — user can retry
+                } finally {
+                  setConverting(false);
+                }
+              }}
+              disabled={converting}
+              className="w-full text-xs py-2.5 rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25 text-emerald-400 hover:bg-emerald-500/25 font-medium transition-colors disabled:opacity-50"
+            >
+              {converting ? "Converting..." : "Convert to Client →"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

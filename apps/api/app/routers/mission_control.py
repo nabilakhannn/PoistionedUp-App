@@ -306,6 +306,7 @@ async def create_message(body: MessageCreate, user: CurrentUser = Depends(get_cu
 async def list_deliverables(
     task_id: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    brand_id: Optional[str] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     sb = get_admin_client()
@@ -314,6 +315,8 @@ async def list_deliverables(
         q = q.eq("task_id", task_id)
     if status:
         q = q.eq("status", status)
+    if brand_id:
+        q = q.eq("brand_id", brand_id)
     result = q.order("created_at", desc=True).execute()
     return result.data or []
 
@@ -329,20 +332,67 @@ async def create_deliverable(body: DeliverableCreate, user: CurrentUser = Depend
     return result.data[0]
 
 
+_PROPOSAL_STATUSES = frozenset({"draft", "sent", "accepted", "rejected", "closed_won", "closed_lost"})
+_APPROVAL_STATUSES = frozenset({"review", "approved", "rejected", "failed_qa", "published"})
+_PLATFORM_MAP = {
+    "linkedin": "linkedin",
+    "twitter": "twitter",
+    "instagram": "instagram",
+    "all": None,  # handled separately → 3 rows
+}
+
+
 @router.patch("/deliverables/{deliverable_id}")
 async def update_deliverable_status(
     deliverable_id: str,
     status: str = Query(...),
     feedback: Optional[str] = Query(None),
+    platform: Optional[str] = Query(None),
+    deal_value: Optional[float] = Query(None),
     user: CurrentUser = Depends(get_current_user),
 ):
     sb = get_admin_client()
-    updates = {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
+
+    # Decide which field to update based on value type
+    if status in _PROPOSAL_STATUSES:
+        updates: dict = {"proposal_status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
+        if deal_value is not None:
+            updates["deal_value"] = deal_value
+    else:
+        updates = {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
+
     if feedback:
         updates["feedback"] = feedback
+
     result = sb.table("agent_deliverables").update(updates).eq("user_id", user.id).eq("id", deliverable_id).execute()
     if not result.data:
         raise HTTPException(404, "Deliverable not found")
+
+    # 0A: When approved with a platform → create scheduled_items entry so post enters publishing queue
+    if status == "approved" and platform:
+        deliverable = result.data[0]
+        content = deliverable.get("content") or ""
+        title = deliverable.get("title") or "Approved post"
+        platforms_to_schedule = ["linkedin", "twitter", "instagram"] if platform == "all" else [platform]
+        content_type_map = {
+            "linkedin": "linkedin_post",
+            "twitter": "twitter_post",
+            "instagram": "instagram_post",
+        }
+        for plt in platforms_to_schedule:
+            try:
+                sb.table("scheduled_items").insert({
+                    "user_id": user.id,
+                    "title": title[:200],
+                    "platform": plt,
+                    "content_type": content_type_map.get(plt, "social_post"),
+                    "body_preview": content[:200],
+                    "content_json": {"content": content, "deliverable_id": deliverable_id},
+                    "status": "draft",
+                }).execute()
+            except Exception as exc:
+                logger.warning("Failed to create scheduled_item for deliverable=%s platform=%s: %s", deliverable_id, plt, exc)
+
     return result.data[0]
 
 

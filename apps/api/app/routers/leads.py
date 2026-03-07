@@ -740,3 +740,66 @@ async def leads_pulse(
     except Exception as exc:
         logger.warning("leads_pulse query failed brand=%s: %s", brand_id, exc)
         return {"new_leads": 0, "unreviewed": 0, "active_sequences": 0}
+
+
+@router.post("/leads/{lead_id}/convert-to-client")
+async def convert_lead_to_client(
+    lead_id: str,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Convert a hot/customer lead into a client brand.
+
+    Creates a new personal_brands entry with is_client_brand=True.
+    Copies lead name, company, and website into the brand profile.
+    Updates lead status to 'customer'.
+    A01 IDOR: verifies lead.user_id == auth user.
+    """
+    if not _UUID_RE.match(lead_id):
+        raise HTTPException(400, "Invalid lead_id")
+
+    sb = get_admin_client()
+
+    # Fetch lead — IDOR check
+    lead_result = sb.table("leads").select("*").eq("id", lead_id).eq("user_id", user.id).maybe_single().execute()
+    if not lead_result.data:
+        raise HTTPException(404, "Lead not found")
+
+    lead = lead_result.data
+
+    # Prevent duplicate conversion
+    existing_check = (
+        sb.table("personal_brands")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("is_client_brand", True)
+        .ilike("name", f"%{lead.get('company') or lead.get('full_name', '')}%")
+        .execute()
+    )
+    if existing_check.data:
+        return {"brand_id": existing_check.data[0]["id"], "already_converted": True}
+
+    # Build client brand name: "CompanyName (Client)" or "Full Name (Client)"
+    company = _SAFE_NAME_RE.sub("", lead.get("company") or lead.get("full_name") or "New Client")
+    brand_name = f"{company.strip()} (Client)"
+
+    import uuid as _uuid_m
+    brand_id = str(_uuid_m.uuid4())
+
+    sb.table("personal_brands").insert({
+        "id": brand_id,
+        "user_id": user.id,
+        "name": brand_name[:100],
+        "website": lead.get("linkedin_url") or "",
+        "is_client_brand": True,
+        "profile_json": {
+            "client_converted_from_lead": lead_id,
+            "lead_full_name": lead.get("full_name"),
+            "lead_company": lead.get("company"),
+            "lead_title": lead.get("title"),
+        },
+    }).execute()
+
+    # Mark lead as customer
+    sb.table("leads").update({"status": "customer"}).eq("id", lead_id).execute()
+
+    return {"brand_id": brand_id, "already_converted": False, "brand_name": brand_name}

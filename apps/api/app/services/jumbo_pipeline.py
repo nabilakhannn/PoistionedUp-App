@@ -980,6 +980,7 @@ def save_deliverable(
     qa_score: int,
     title: Optional[str] = None,
     source: str = "autonomous",
+    brand_id: Optional[str] = None,
 ) -> str:
     """Save draft to agent_deliverables. Returns deliverable_id (empty string on error).
 
@@ -994,7 +995,7 @@ def save_deliverable(
         from app.deps import get_admin_client
         sb = get_admin_client()
 
-        sb.table("agent_deliverables").insert({
+        row: dict = {
             "id": deliverable_id,
             "user_id": user_id,
             "title": post_title[:200],
@@ -1004,7 +1005,10 @@ def save_deliverable(
             "status": status,
             "qa_score": qa_score,
             "source": source,
-        }).execute()
+        }
+        if brand_id:
+            row["brand_id"] = brand_id
+        sb.table("agent_deliverables").insert(row).execute()
 
         logger.info(
             "Saved deliverable id=%s user=%s qa=%d status=%s",

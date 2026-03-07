@@ -7,12 +7,15 @@ Separate from existing workflows.py (content pipeline workflows).
 from __future__ import annotations
 
 import re
+import uuid as _uuid_mod
 from typing import Optional
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.auth import CurrentUser, get_current_user
+from app.deps import get_admin_client
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
@@ -129,3 +132,63 @@ async def get_history(
         offset=offset,
     )
     return {"runs": runs, "total": len(runs)}
+
+
+@router.post("/runs/{run_id}/save-to-inbox")
+async def save_run_to_inbox(
+    run_id: str,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Save a completed workflow run to the agent_deliverables approval inbox.
+
+    A01 IDOR: verifies workflow_runs.user_id == auth user before creating deliverable.
+    Idempotent: if deliverable_id already set on the run, returns existing deliverable.
+    """
+    if not _UUID.match(run_id):
+        raise HTTPException(status_code=400, detail="Invalid run_id")
+
+    sb = get_admin_client()
+
+    # Fetch the run — enforces IDOR via user_id
+    run_result = sb.table("workflow_runs").select("*").eq("id", run_id).eq("user_id", user.id).execute()
+    if not run_result.data:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    run = run_result.data[0]
+
+    # Idempotency: already saved
+    if run.get("deliverable_id"):
+        deliverable = sb.table("agent_deliverables").select("*").eq("id", run["deliverable_id"]).execute()
+        if deliverable.data:
+            return {"deliverable_id": run["deliverable_id"], "already_saved": True}
+
+    content = run.get("output") or ""
+    if not content.strip():
+        raise HTTPException(status_code=422, detail="Run has no output to save")
+
+    # Build title from workflow slug
+    slug = run.get("workflow_slug", "workflow")
+    title = slug.replace("-", " ").title() + " — Workflow Output"
+
+    deliverable_id = str(_uuid_mod.uuid4())
+    row: dict = {
+        "id": deliverable_id,
+        "user_id": user.id,
+        "title": title[:200],
+        "content": content[:100_000],
+        "deliverable_type": "content",
+        "created_by_agent_id": "marketplace",
+        "status": "review",
+        "source": "marketplace",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if run.get("brand_id"):
+        row["brand_id"] = run["brand_id"]
+
+    sb.table("agent_deliverables").insert(row).execute()
+
+    # Link back from run → deliverable
+    sb.table("workflow_runs").update({"deliverable_id": deliverable_id}).eq("id", run_id).execute()
+
+    return {"deliverable_id": deliverable_id, "already_saved": False}

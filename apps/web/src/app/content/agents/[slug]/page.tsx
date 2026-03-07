@@ -30,6 +30,8 @@ export default function WorkflowExecutionPage() {
   const [formInputs, setFormInputs] = useState<Record<string, string>>({});
   const [copiedSingle, setCopiedSingle] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [savedToInbox, setSavedToInbox] = useState(false);
+  const [savingToInbox, setSavingToInbox] = useState(false);
 
   const loadWorkflow = useCallback(async () => {
     setLoading(true);
@@ -434,6 +436,26 @@ export default function WorkflowExecutionPage() {
                     >
                       {copiedSingle ? "Copied!" : "Copy"}
                     </button>
+                    {result.run_id && (
+                      <button
+                        onClick={async () => {
+                          if (savedToInbox || savingToInbox) return;
+                          setSavingToInbox(true);
+                          try {
+                            await marketplaceApi.saveToInbox(result.run_id);
+                            setSavedToInbox(true);
+                          } catch {
+                            // ignore — user can retry
+                          } finally {
+                            setSavingToInbox(false);
+                          }
+                        }}
+                        disabled={savingToInbox || savedToInbox}
+                        className="text-[10px] px-2 py-1 rounded border border-violet-500/30 text-violet-400 hover:text-violet-200 hover:border-violet-500/50 transition disabled:opacity-60"
+                      >
+                        {savedToInbox ? "Saved to Inbox ✓" : savingToInbox ? "Saving..." : "Save to Inbox"}
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="text-sm text-zinc-200 whitespace-pre-wrap max-h-[600px] overflow-y-auto leading-relaxed">
@@ -451,22 +473,44 @@ export default function WorkflowExecutionPage() {
                 <p className="text-xs text-zinc-500 mt-1">
                   Your full {workflow.name} is ready above.
                 </p>
-                <button
-                  onClick={() => {
-                    const full = stepOutputs
-                      .map(
-                        (o, i) =>
-                          `## Step ${i + 1}: ${workflow.steps[i]?.name}\n\n${o}`,
-                      )
-                      .join("\n\n---\n\n");
-                    navigator.clipboard.writeText(full);
-                    setCopiedAll(true);
-                    setTimeout(() => setCopiedAll(false), 2000);
-                  }}
-                  className="mt-3 px-4 py-2 glass-button-primary text-xs"
-                >
-                  {copiedAll ? "Copied All!" : "Copy All Steps"}
-                </button>
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  <button
+                    onClick={() => {
+                      const full = stepOutputs
+                        .map(
+                          (o, i) =>
+                            `## Step ${i + 1}: ${workflow.steps[i]?.name}\n\n${o}`,
+                        )
+                        .join("\n\n---\n\n");
+                      navigator.clipboard.writeText(full);
+                      setCopiedAll(true);
+                      setTimeout(() => setCopiedAll(false), 2000);
+                    }}
+                    className="px-4 py-2 glass-button-primary text-xs"
+                  >
+                    {copiedAll ? "Copied All!" : "Copy All Steps"}
+                  </button>
+                  {result?.run_id && (
+                    <button
+                      onClick={async () => {
+                        if (savedToInbox || savingToInbox) return;
+                        setSavingToInbox(true);
+                        try {
+                          await marketplaceApi.saveToInbox(result.run_id);
+                          setSavedToInbox(true);
+                        } catch {
+                          // ignore
+                        } finally {
+                          setSavingToInbox(false);
+                        }
+                      }}
+                      disabled={savingToInbox || savedToInbox}
+                      className="px-4 py-2 text-xs rounded-xl ring-1 ring-violet-500/25 text-violet-400 hover:ring-violet-500/40 transition disabled:opacity-60"
+                    >
+                      {savedToInbox ? "Saved to Inbox ✓" : savingToInbox ? "Saving..." : "Save to Inbox →"}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

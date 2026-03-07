@@ -19,7 +19,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from app.auth import CurrentUser, get_current_user
@@ -153,21 +153,26 @@ async def update_pipeline_settings(
 
 
 @router.get("/pipeline/approvals/count")
-async def get_approvals_count(user: CurrentUser = Depends(get_current_user)):
+async def get_approvals_count(
+    brand_id: Optional[str] = Query(None),
+    user: CurrentUser = Depends(get_current_user),
+):
     """Return count of agent deliverables waiting for approval (status='review').
 
-    Used by the NavBar to show the Approvals badge on Today without
-    polling the full deliverables list.
+    Optionally filtered by brand_id so the NavBar badge shows only the
+    current brand's pending posts (not a combined count across all brands).
     """
     try:
         sb = get_admin_client()
-        result = (
+        q = (
             sb.table("agent_deliverables")
             .select("id", count="exact")
             .eq("user_id", user.id)
             .eq("status", "review")
-            .execute()
         )
+        if brand_id:
+            q = q.eq("brand_id", brand_id)
+        result = q.execute()
         return {"count": result.count or 0}
     except Exception as exc:
         logger.warning("get_approvals_count failed for user=%s: %s", user.id, exc)

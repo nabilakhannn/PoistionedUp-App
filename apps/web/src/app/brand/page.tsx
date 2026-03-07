@@ -5,27 +5,31 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useBrand } from "@/lib/brand-context";
 import { BrandResearchTab } from "./tabs/research";
-import { BrandProfileTab } from "./tabs/profile";
 import { BrandTeamTab } from "./tabs/team";
 import { BrandSettingsTab } from "./tabs/settings/index";
 
-type Tab = "research" | "profile" | "team" | "settings";
+type Tab = "research" | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "research", label: "Research" },
-  { id: "profile", label: "Profile" },
-  { id: "team", label: "Team" },
   { id: "settings", label: "Settings" },
 ];
+
+// Map legacy tab names to new structure
+const TAB_REDIRECT: Record<string, Tab> = {
+  profile: "research",
+  team: "settings",
+};
 
 export default function BrandPage() {
   const { currentBrand } = useBrand();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>("profile");
+  const [tab, setTab] = useState<Tab>("research");
 
   useEffect(() => {
-    const t = searchParams.get("tab") as Tab | null;
-    if (t && TABS.some((x) => x.id === t)) setTab(t);
+    const raw = searchParams.get("tab") ?? "";
+    const mapped = TAB_REDIRECT[raw] ?? raw;
+    if (TABS.some((x) => x.id === mapped)) setTab(mapped as Tab);
   }, [searchParams]);
 
   if (!currentBrand) {
@@ -75,9 +79,12 @@ export default function BrandPage() {
 
         {/* Tab content */}
         {tab === "research" && <BrandResearchTab brandId={currentBrand.id} />}
-        {tab === "profile" && <BrandProfileTab brandId={currentBrand.id} />}
-        {tab === "team" && <BrandTeamTab brandId={currentBrand.id} />}
-        {tab === "settings" && <BrandSettingsTab brandId={currentBrand.id} />}
+        {tab === "settings" && (
+          <div className="space-y-6">
+            <BrandSettingsTab brandId={currentBrand.id} />
+            <BrandTeamTab brandId={currentBrand.id} />
+          </div>
+        )}
       </div>
     </div>
   );

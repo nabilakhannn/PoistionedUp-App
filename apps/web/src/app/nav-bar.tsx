@@ -94,6 +94,25 @@ function CloseIcon({ className }: { className?: string }) {
   );
 }
 
+function DocumentTextIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    </svg>
+  );
+}
+
+function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[9px] font-semibold uppercase tracking-widest text-zinc-700 px-3 pb-1 mt-5 select-none">
+        {label}
+      </p>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
 /* ── 4 Rooms + Jumbo ────────────────────────────────── */
 
 const PRIMARY_NAV = [
@@ -125,6 +144,13 @@ const PRIMARY_NAV = [
     icon: GrowthIcon,
     match: (p: string) => p === "/growth" || p.startsWith("/growth/"),
   },
+  {
+    href: "/deliverables",
+    label: "Deliverables",
+    subtitle: "Client outputs",
+    icon: DocumentTextIcon,
+    match: (p: string) => p.startsWith("/deliverables"),
+  },
 ];
 
 /* ── NavBar ──────────────────────────────────────────── */
@@ -153,17 +179,17 @@ export function NavBar() {
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
-  // Poll approval count every 60s
+  // Poll approval count every 60s — scoped to current brand
   useEffect(() => {
     const fetchCount = () => {
-      pipelineSettingsApi.getApprovalsCount()
+      pipelineSettingsApi.getApprovalsCount(currentBrand?.id)
         .then((r) => setApprovalCount(r.count))
         .catch(() => {/* silent */});
     };
     fetchCount();
     const id = setInterval(fetchCount, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [currentBrand?.id]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -256,62 +282,81 @@ export function NavBar() {
       )}
 
       {/* Primary Rooms */}
-      <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-        {PRIMARY_NAV.map((item) => {
-          const Icon = item.icon;
-          const active = item.match(pathname || "");
-          const isDashboardBadge = item.href === "/dashboard" && approvalCount > 0;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              data-testid={`nav-${item.label.toLowerCase()}`}
-              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                active
-                  ? "bg-white/[0.06] ring-1 ring-white/[0.08] text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]"
-              }`}
-            >
-              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-violet-400" : "text-zinc-600 group-hover:text-zinc-400"}`} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-medium">{item.label}</span>
-                  {isDashboardBadge && (
-                    <span className="text-[10px] font-semibold bg-violet-500 text-white rounded-full px-1.5 py-0.5 leading-none">
-                      {approvalCount}
-                    </span>
-                  )}
+      <nav className="flex-1 px-3 overflow-y-auto">
+        {(() => {
+          const renderItem = (item: typeof PRIMARY_NAV[number]) => {
+            const Icon = item.icon;
+            const active = item.match(pathname || "");
+            const isDashboardBadge = item.href === "/dashboard" && approvalCount > 0;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-testid={`nav-${item.label.toLowerCase()}`}
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                  active
+                    ? "bg-white/[0.06] ring-1 ring-white/[0.08] text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]"
+                }`}
+              >
+                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-violet-400" : "text-zinc-600 group-hover:text-zinc-400"}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium">{item.label}</span>
+                    {isDashboardBadge && (
+                      <span className="text-[10px] font-semibold bg-violet-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                        {approvalCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-[11px] leading-tight ${active ? "text-zinc-500" : "text-zinc-600"}`}>
+                    {item.subtitle}
+                  </span>
                 </div>
-                <span className={`text-[11px] leading-tight ${active ? "text-zinc-500" : "text-zinc-600"}`}>
-                  {item.subtitle}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+              </Link>
+            );
+          };
 
-        {/* Jumbo — special accent link */}
-        <div className="pt-2">
-          <Link
-            href="/jumbo"
-            data-testid="nav-jumbo"
-            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-              pathname?.startsWith("/jumbo") || pathname?.startsWith("/intelligence")
-                ? "bg-gradient-to-r from-violet-500/10 to-blue-500/10 ring-1 ring-violet-500/20 text-zinc-100"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]"
-            }`}
-          >
-            <JumboIcon className={`w-[18px] h-[18px] flex-shrink-0 ${
-              pathname?.startsWith("/jumbo") || pathname?.startsWith("/intelligence") ? "text-violet-400" : "text-zinc-600 group-hover:text-violet-400"
-            }`} />
-            <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium">Jumbo</span>
-              <span className={`block text-[11px] leading-tight ${
-                pathname?.startsWith("/jumbo") || pathname?.startsWith("/intelligence") ? "text-zinc-500" : "text-zinc-600"
-              }`}>Chat & notes</span>
-            </div>
-          </Link>
-        </div>
+          const nav = PRIMARY_NAV;
+          const isJumboActive = pathname?.startsWith("/jumbo") || pathname?.startsWith("/intelligence");
+
+          return (
+            <>
+              <NavSection label="Main">
+                {renderItem(nav.find((n) => n.href === "/dashboard")!)}
+              </NavSection>
+
+              <NavSection label="Studio">
+                {renderItem(nav.find((n) => n.href === "/content")!)}
+                {renderItem(nav.find((n) => n.href === "/brand")!)}
+                {renderItem(nav.find((n) => n.href === "/growth")!)}
+              </NavSection>
+
+              <NavSection label="Library">
+                {renderItem(nav.find((n) => n.href === "/deliverables")!)}
+                <Link
+                  href="/jumbo"
+                  data-testid="nav-jumbo"
+                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                    isJumboActive
+                      ? "bg-gradient-to-r from-violet-500/10 to-blue-500/10 ring-1 ring-violet-500/20 text-zinc-100"
+                      : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]"
+                  }`}
+                >
+                  <JumboIcon className={`w-[18px] h-[18px] flex-shrink-0 ${
+                    isJumboActive ? "text-violet-400" : "text-zinc-600 group-hover:text-violet-400"
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium">Jumbo</span>
+                    <span className={`block text-[11px] leading-tight ${isJumboActive ? "text-zinc-500" : "text-zinc-600"}`}>
+                      Chat & notes
+                    </span>
+                  </div>
+                </Link>
+              </NavSection>
+            </>
+          );
+        })()}
       </nav>
 
       {/* Bottom */}

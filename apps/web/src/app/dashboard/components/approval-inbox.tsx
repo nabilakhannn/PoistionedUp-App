@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Deliverable } from "@/lib/api/mission-control";
 import { AgentNotification } from "@/lib/api/notifications";
@@ -16,6 +17,13 @@ function timeAgo(dateStr: string): string {
 
 const REJECT_TAGS = ["Wrong voice", "Bad hook", "Needs research", "Off-topic"] as const;
 type RejectTag = (typeof REJECT_TAGS)[number];
+
+const PLATFORMS = [
+  { key: "linkedin", label: "LinkedIn", color: "bg-blue-500/10 ring-blue-500/20 text-blue-300" },
+  { key: "twitter", label: "Twitter", color: "bg-sky-500/10 ring-sky-500/20 text-sky-300" },
+  { key: "instagram", label: "Instagram", color: "bg-pink-500/10 ring-pink-500/20 text-pink-300" },
+  { key: "all", label: "All 3", color: "bg-violet-500/10 ring-violet-500/20 text-violet-300" },
+] as const;
 
 export function ApprovalInbox({
   deliverables,
@@ -37,11 +45,12 @@ export function ApprovalInbox({
   rejectTarget: string | null;
   actionLoading: string | null;
   onToggleExpand: (id: string) => void;
-  onApprove: (id: string, content: string) => void;
+  onApprove: (id: string, content: string, platform: string) => void;
   onReject: (id: string, tag: RejectTag, content: string) => void;
   onSetRejectTarget: (id: string | null) => void;
   onMarkRead: (id: string) => void;
 }) {
+  const [platformPickerFor, setPlatformPickerFor] = useState<string | null>(null);
   const totalCount = deliverables.length + notifications.length;
 
   return (
@@ -101,6 +110,29 @@ export function ApprovalInbox({
                         Cancel
                       </button>
                     </div>
+                  ) : platformPickerFor === d.id ? (
+                    <div className="flex flex-wrap gap-1 shrink-0">
+                      <span className="text-[10px] text-zinc-500 self-center">Post to:</span>
+                      {PLATFORMS.map((plt) => (
+                        <button
+                          key={plt.key}
+                          onClick={() => {
+                            setPlatformPickerFor(null);
+                            onApprove(d.id, d.content ?? "", plt.key);
+                          }}
+                          disabled={actionLoading === d.id}
+                          className={`px-2 py-1 text-[10px] rounded-lg ring-1 font-medium transition-colors ${plt.color}`}
+                        >
+                          {plt.label}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setPlatformPickerFor(null)}
+                        className="px-2 py-1 text-[10px] rounded-lg ring-1 ring-white/[0.08] text-zinc-500 hover:text-zinc-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Link
@@ -117,7 +149,7 @@ export function ApprovalInbox({
                         Reject
                       </button>
                       <button
-                        onClick={() => onApprove(d.id, d.content ?? "")}
+                        onClick={() => setPlatformPickerFor(d.id)}
                         disabled={actionLoading === d.id}
                         className="text-[11px] px-3 py-1.5 rounded-xl bg-emerald-500/15 ring-1 ring-emerald-500/25 text-emerald-400 hover:bg-emerald-500/25 font-medium transition-colors"
                       >

@@ -32,8 +32,10 @@ export const pipelineSettingsApi = {
   runNow: (): Promise<PipelineSettings> =>
     apiFetch("/pipeline/run-now", { method: "POST" }),
 
-  getApprovalsCount: (): Promise<{ count: number }> =>
-    apiFetch("/pipeline/approvals/count"),
+  getApprovalsCount: (brandId?: string): Promise<{ count: number }> => {
+    const qs = brandId ? `?brand_id=${encodeURIComponent(brandId)}` : "";
+    return apiFetch(`/pipeline/approvals/count${qs}`);
+  },
 
   getHealth: (): Promise<PipelineHealth> =>
     apiFetch("/pipeline/health"),

@@ -5059,3 +5059,30 @@ See full details: `docs/compound/patterns/slice-111-hardening.md`
 **Files:** 5 created, 5 modified, 1 migration | **Tests:** 33/33 pass, 0 TS errors
 
 See full details: `docs/compound/patterns/slice-112-analytics-roi-dashboard.md`
+
+---
+
+## Slice 110 — AI Agents Dashboard + Phase 0 Core Fixes (2026-03-06)
+
+**15 gaps closed across 2 phases. Dashboard rebuilt as ClientAscension-style AI marketplace hub.**
+
+**Phase 0 — 8 core fixes:**
+- **Brand isolation**: `brand_id` column added to `agent_deliverables` (migration 049), `list_deliverables()` filters by brand_id, approval badge counts only current brand
+- **Platform picker on approval**: inline LinkedIn/Twitter/Instagram/All 3 picker before scheduling; approved posts now create `scheduled_items` rows
+- **deal_value + proposal_status**: backend correctly routes status updates to right column, deal_value saved to DB
+- **Outreach actionable**: "Open LinkedIn →" + "Open Gmail →" per sequence message in Growth room
+- **Lead → Client**: `POST /leads/{id}/convert-to-client` endpoint + "Convert to Client →" button on hot leads
+- **Save to Inbox**: `POST /marketplace/runs/{run_id}/save-to-inbox` + "Save to Inbox" button on workflow output page
+- **GettingStartedChecklist step 6**: fixed duplicate condition bug, now uses `localStorage.visited_content_room` flag set on Content page mount
+
+**Phase 1 — 7 UX files:**
+- **New `workflow-card.tsx`**: ClientAscension-style cards (gradient icon box, category label, bold title, ACTIVE/COMING SOON badge, usage count)
+- **Dashboard rewrite**: AI Agents Hub with 2-col layout — left shows 5 category sections (all 24 workflows as WorkflowCards + Jumbo prompt bar + quick chips), right sidebar (pending approvals + pipeline toggle + This Week stats)
+- **`content/agents/page.tsx`**: upgraded to WorkflowCard + usage count + Jumbo prompt bar; duplicate AI Agents card removed from Content nav
+- **`nav-bar.tsx`**: MAIN/STUDIO/LIBRARY section headers + Deliverables added to LIBRARY
+- **Brand Room**: simplified to 2 tabs (Research + Settings); Profile tab merged into Research (dossier displayed below mode cards); Team merged into Settings
+- **`brand/tabs/research.tsx`**: 4th card (ICP Research → /growth?tab=icp) + renders BrandIntelligenceReport below mode cards
+
+**Files:** 15 modified, 3 created, 1 migration | **Tests:** 0 TS errors
+
+See full details: `docs/compound/patterns/slice-110-ai-agents-dashboard.md`

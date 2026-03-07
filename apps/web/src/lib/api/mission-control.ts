@@ -146,10 +146,11 @@ export const missionControlApi = {
     }),
 
   // Deliverables
-  listDeliverables: (params?: { task_id?: string; status?: string }) => {
+  listDeliverables: (params?: { task_id?: string; status?: string; brand_id?: string }) => {
     const sp = new URLSearchParams();
     if (params?.task_id) sp.set("task_id", params.task_id);
     if (params?.status) sp.set("status", params.status);
+    if (params?.brand_id) sp.set("brand_id", params.brand_id);
     const qs = sp.toString();
     return apiFetch<Deliverable[]>(`/mission-control/deliverables${qs ? `?${qs}` : ""}`);
   },
@@ -158,9 +159,11 @@ export const missionControlApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  updateDeliverable: (deliverableId: string, status: string, feedback?: string) => {
+  updateDeliverable: (deliverableId: string, status: string, feedback?: string, platform?: string, dealValue?: number) => {
     const sp = new URLSearchParams({ status });
     if (feedback) sp.set("feedback", feedback);
+    if (platform) sp.set("platform", platform);
+    if (dealValue !== undefined) sp.set("deal_value", String(dealValue));
     return apiFetch(`/mission-control/deliverables/${deliverableId}?${sp.toString()}`, {
       method: "PATCH",
     });

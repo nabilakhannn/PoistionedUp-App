@@ -109,4 +109,9 @@ export const marketplaceApi = {
     if (workflowSlug) params.set("workflow_slug", workflowSlug);
     return apiFetch(`/marketplace/history?${params}`);
   },
+
+  /** Save a completed workflow run to the approval inbox */
+  async saveToInbox(runId: string): Promise<{ deliverable_id: string; already_saved: boolean }> {
+    return apiFetch(`/marketplace/runs/${runId}/save-to-inbox`, { method: "POST" });
+  },
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useBrand } from "@/lib/brand-context";
 import {
@@ -8,6 +9,14 @@ import {
   RegistryResponse,
   WorkflowInfo,
 } from "@/lib/api/marketplace";
+import { WorkflowCard } from "@/components/workflow-card";
+
+const QUICK_CHIPS = [
+  { label: "30 Hooks",         href: "/content/hooks" },
+  { label: "Nurture Sequence", href: "/content/agents/email-sequence-writer" },
+  { label: "Offer Outline",    href: "/content/agents/offer-creation" },
+  { label: "Content Calendar", href: "/content/agents/content-calendar-gen" },
+] as const;
 
 const CATEGORY_ICONS: Record<string, string> = {
   rocket: "M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.58-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z",
@@ -22,27 +31,42 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function AgentMarketplacePage() {
+  const router = useRouter();
   const { currentBrand } = useBrand();
   const [registry, setRegistry] = useState<RegistryResponse | null>(null);
+  const [usageMap, setUsageMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [error, setError] = useState("");
+  const [promptValue, setPromptValue] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await marketplaceApi.getRegistry();
       setRegistry(data);
+      if (currentBrand?.id) {
+        const histRes = await marketplaceApi.getHistory(currentBrand.id, undefined, 200)
+          .catch(() => ({ runs: [], total: 0 }));
+        const map: Record<string, number> = {};
+        histRes.runs.forEach((r) => { map[r.workflow_slug] = (map[r.workflow_slug] ?? 0) + 1; });
+        setUsageMap(map);
+      }
     } catch {
       setError("Failed to load workflows");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentBrand?.id]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const handlePrompt = () => {
+    const q = promptValue.trim();
+    if (q) router.push(`/intelligence?q=${encodeURIComponent(q)}`);
+  };
 
   if (!currentBrand) {
     return (
@@ -134,6 +158,36 @@ export default function AgentMarketplacePage() {
           </div>
         ) : (
           <>
+            {/* Jumbo Prompt Bar */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  value={promptValue}
+                  onChange={(e) => setPromptValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handlePrompt(); }}
+                  placeholder="What would you like to build today?"
+                  className="flex-1 rounded-xl bg-white/[0.04] border border-white/[0.08] px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                />
+                <button
+                  onClick={handlePrompt}
+                  className="glass-button px-4 py-2.5 rounded-xl text-sm text-zinc-300 hover:text-violet-400"
+                >
+                  →
+                </button>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {QUICK_CHIPS.map((chip) => (
+                  <Link
+                    key={chip.label}
+                    href={chip.href}
+                    className="px-3 py-1.5 rounded-lg text-xs glass-button text-zinc-400 hover:text-zinc-200"
+                  >
+                    {chip.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             {/* Category tabs */}
             <div className="flex gap-2 flex-wrap">
               <button
@@ -202,87 +256,14 @@ export default function AgentMarketplacePage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {workflows.map((w) => {
-                      const isComingSoon = w.status === "coming_soon";
-                      return (
-                        <div key={w.slug} className="relative">
-                          {isComingSoon ? (
-                            <div className="glass-card opacity-60 cursor-not-allowed p-4 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-medium text-zinc-300">
-                                  {w.name}
-                                </h3>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-500">
-                                  Coming Soon
-                                </span>
-                              </div>
-                              <p className="text-xs text-zinc-500 line-clamp-2">
-                                {w.description}
-                              </p>
-                              <div className="flex gap-1 flex-wrap">
-                                {w.tags.map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-600"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            <Link
-                              href={`/content/agents/${w.slug}`}
-                              className="glass-card-hover block p-4 space-y-2 group"
-                            >
-                              <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-medium text-zinc-200 group-hover:text-zinc-100">
-                                  {w.name}
-                                </h3>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">
-                                  Active
-                                </span>
-                              </div>
-                              <p className="text-xs text-zinc-500 line-clamp-2">
-                                {w.description}
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <div className="flex gap-1 flex-wrap flex-1">
-                                  {w.tags.map((tag) => (
-                                    <span
-                                      key={tag}
-                                      className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-500"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                                {w.multi_step && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400">
-                                    {w.steps.length} steps
-                                  </span>
-                                )}
-                                {w.engine === "manus_beneficial" && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">
-                                    Manus
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex gap-1 flex-wrap">
-                                {w.enhancements.map((e) => (
-                                  <span
-                                    key={e}
-                                    className="text-[9px] text-zinc-600"
-                                  >
-                                    +{e.replace("_", " ")}
-                                  </span>
-                                ))}
-                              </div>
-                            </Link>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {workflows.map((w) => (
+                      <WorkflowCard
+                        key={w.slug}
+                        workflow={w}
+                        usageCount={usageMap[w.slug] ?? 0}
+                        href={`/content/agents/${w.slug}`}
+                      />
+                    ))}
                   </div>
                 </div>
               );
