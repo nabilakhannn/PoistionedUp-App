@@ -21,7 +21,12 @@ build/
 # IDE
 .vscode/
 .idea/
-.cursor/
+# .cursor: ignore all except versioned skills (see .cursor/skills/linkedin-growth-coach/README.md)
+.cursor/*
+!.cursor/skills/
+.cursor/skills/*
+!.cursor/skills/linkedin-growth-coach/
+!.cursor/skills/linkedin-growth-coach/**
 *.swp
 *.swo
 .DS_Store
