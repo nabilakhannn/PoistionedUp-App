@@ -1,0 +1,3126 @@
+WEBVTT
+
+1
+00:09:22.000 --> 00:09:26.250
+Nitya Outskill Team: Okay, hello, hello everybody. Can you all hear me and see me as well?
+
+2
+00:09:27.490 --> 00:09:32.549
+Nitya Outskill Team: Yes, okay. So, welcome to another exciting session.
+
+3
+00:09:32.550 --> 00:09:57.510
+Nitya Outskill Team: for today. So, I hope you all are excited. We do have a very special mentor today, right? I hope you all are, have learned stuff from Akhil, Harshit, Dilip, and all of that, but today we have somebody new, right? Somebody who has built products himself, who, loves coding, who's a very passionate coder, and he's worked with very big brands. One of the popular brands that you can
+
+4
+00:09:57.510 --> 00:10:01.729
+Nitya Outskill Team: of is Microsoft, and he's a very passionate teacher as well.
+
+5
+00:10:01.730 --> 00:10:14.429
+Nitya Outskill Team: Right? So, you guys, if you remember, we… I think we have completed about 4 sessions on Clot Code, to be specific, which was done by Dilip, which you all absolutely loved, and even during office hours, there was such
+
+6
+00:10:14.430 --> 00:10:36.590
+Nitya Outskill Team: you know, insightful things which were coming up from you guys. So, before I get started on what we're going to cover today, I just want to understand how many of you have already started playing around with Claude, and how many of you are convinced that all the hype that's happening on LinkedIn and YouTube and all of that around Claude actually makes sense.
+
+7
+00:10:37.520 --> 00:10:49.990
+Nitya Outskill Team: Do you guys actually agree with the fact? I think that Claude is one of the most popular tools out there, and it's very, very powerful, right? It can beat so many new tools that's coming up, right? They're already upping their game. Yeah.
+
+8
+00:10:50.540 --> 00:11:09.549
+Nitya Outskill Team: Great. Okay, cool. So, can some of you give an example of one of the most advanced use cases that you have used Claude for? Right? Which is just beyond just prompting things, like something which you've really got your hands dirty on, something that you've applied, whatever you have learned in those four sessions.
+
+9
+00:11:10.180 --> 00:11:12.370
+Nitya Outskill Team: Can one of you just give me an example?
+
+10
+00:11:12.710 --> 00:11:14.310
+Nitya Outskill Team: Claude skills, yeah.
+
+11
+00:11:17.290 --> 00:11:21.430
+Nitya Outskill Team: Okay, you've already started building agents, that's great. Okay.
+
+12
+00:11:21.700 --> 00:11:23.969
+Nitya Outskill Team: Meta and Google Ads, great.
+
+13
+00:11:24.090 --> 00:11:37.209
+Nitya Outskill Team: Yeah, so today's session is basically going to be around Claude agents, and our mentor for today is Mr. Abhirat. Abhirat, if you can hear us, maybe you can tell us a hi? Yeah.
+
+14
+00:11:37.210 --> 00:11:38.899
+Abhirath Batra: Hi.
+
+15
+00:11:39.070 --> 00:11:49.440
+Abhirath Batra: Hi, thanks, thanks a lot for that very generous introduction, Nitya. So, hi everybody. I'm Abhirat Bhattra. Thanks a lot, Nimit. So, I've been,
+
+16
+00:11:49.950 --> 00:12:02.999
+Abhirath Batra: working with Microsoft for the past, what, 6 years, and I've, started doing my own thing, building my own products since this January. And, AI has obviously been a really big part of
+
+17
+00:12:03.000 --> 00:12:11.840
+Abhirath Batra: the past two, three years, both at Microsoft, and now after that, it's just… everything's AI. And, you know, because with a big company, you can,
+
+18
+00:12:12.340 --> 00:12:15.889
+Abhirath Batra: Talk to other teams, take help from your teammates.
+
+19
+00:12:16.060 --> 00:12:22.569
+Abhirath Batra: But, when you're out on your own, I think that's your experience as well, that, AI is…
+
+20
+00:12:23.020 --> 00:12:26.049
+Abhirath Batra: As big a lever as it gets, and…
+
+21
+00:12:26.580 --> 00:12:38.670
+Abhirath Batra: So, today's session, we want to, take a different direction with agents, and, before we get started, I wanted to understand,
+
+22
+00:12:38.810 --> 00:12:42.000
+Abhirath Batra: Because we've already done agents
+
+23
+00:12:42.050 --> 00:12:54.019
+Abhirath Batra: through cloud code, and we've done, automation through N8M. I'm very interested to know what… or curious to know what all different things have folks in this, cohort
+
+24
+00:12:54.020 --> 00:13:02.519
+Abhirath Batra: Built or dirty their hands with, so that, we can start to, take the session as a bridge from over there.
+
+25
+00:13:05.730 --> 00:13:09.639
+Abhirath Batra: Anyone who could, share something interesting that they've built?
+
+26
+00:13:09.820 --> 00:13:14.690
+Abhirath Batra: Or… I've already gotten into production or something like that.
+
+27
+00:13:16.160 --> 00:13:19.989
+Nitya Outskill Team: Yeah, you guys can raise your hand. Maybe we can give a few of you.
+
+28
+00:13:19.990 --> 00:13:23.109
+Abhirath Batra: Yeah, yeah, we should unmute a few folks, that'll be great.
+
+29
+00:13:23.280 --> 00:13:23.960
+Nitya Outskill Team: Yeah.
+
+30
+00:13:25.600 --> 00:13:29.549
+Nitya Outskill Team: Okay. Proposal's always ready.
+
+31
+00:13:36.620 --> 00:13:37.490
+Nitya Outskill Team: Yes.
+
+32
+00:13:39.880 --> 00:13:42.189
+Abhirath Batra: You're on mute, in case you're talking.
+
+33
+00:13:54.900 --> 00:13:57.080
+Nitya Outskill Team: We can't hear you, we can't hear you properly.
+
+34
+00:13:58.860 --> 00:14:00.420
+Praful Thakkar: Okay, can you hear me now?
+
+35
+00:14:00.420 --> 00:14:01.520
+Nitya Outskill Team: Yes, yes, yes.
+
+36
+00:14:01.690 --> 00:14:10.320
+Praful Thakkar: All right, okay, okay. So, thanks to Outskill, thanks to everybody over here who's been, you know, passionate in learning everything.
+
+37
+00:14:10.750 --> 00:14:13.630
+Praful Thakkar: And, I'm also learning from everyone.
+
+38
+00:14:14.000 --> 00:14:17.220
+Praful Thakkar: I just, in fact, released my
+
+39
+00:14:18.060 --> 00:14:28.989
+Praful Thakkar: first venture… actually, you know, I did quite a few things earlier, related to real estate, but I just wanted to create a product, and harshit, in fact, gave the clue way back,
+
+40
+00:14:29.350 --> 00:14:36.830
+Praful Thakkar: For, you know, how to build, you know… that project was… that class was related to how to create the
+
+41
+00:14:37.070 --> 00:14:40.130
+Praful Thakkar: YouTube thumbnails, using,
+
+42
+00:14:40.260 --> 00:14:59.630
+Praful Thakkar: Claude, and I think I just put that link in my, in the chat over here, so that is the first product which I have completed, and I would prefer that. If all of you can, you know, please take a look at it, and let me know what do you think of it.
+
+43
+00:14:59.770 --> 00:15:03.339
+Praful Thakkar: To begin… to make it life easy for everyone.
+
+44
+00:15:03.820 --> 00:15:07.389
+Praful Thakkar: I have… Generous,
+
+45
+00:15:07.890 --> 00:15:13.259
+Praful Thakkar: Freebies on that, so anybody who comes in, we will, try to I have,
+
+46
+00:15:13.430 --> 00:15:22.870
+Praful Thakkar: 10 credits free for that. The website is www.Thambifix.com, and yes, there's so many, so many
+
+47
+00:15:23.000 --> 00:15:25.800
+Praful Thakkar: YouTube thumbnail makers over there.
+
+48
+00:15:25.880 --> 00:15:34.319
+Praful Thakkar: And trust me, I've gone through everything. Some of them have some good, good thing, but most of the thing, they try to drag after some time.
+
+49
+00:15:34.340 --> 00:15:48.720
+Praful Thakkar: And in fact, they offer, perhaps, a price as low as about, you know, 30, 40 cents per thumbnail, which I'm surprised how they can even afford it, because there's a lot that goes into it. So, I have, I have,
+
+50
+00:15:49.270 --> 00:15:56.409
+Praful Thakkar: shared the link, and I think I… let everybody else also go.
+
+51
+00:15:56.560 --> 00:16:02.470
+Praful Thakkar: with their own creation, in fact, all of them, in fact. I'm inspired by everyone over here.
+
+52
+00:16:02.860 --> 00:16:03.880
+Praful Thakkar: Okay, so…
+
+53
+00:16:03.880 --> 00:16:04.450
+Abhirath Batra: That's…
+
+54
+00:16:04.450 --> 00:16:06.210
+Praful Thakkar: Mine, yeah, right?
+
+55
+00:16:06.520 --> 00:16:08.270
+Abhirath Batra: That was really nice. Thank you so much, Rafael.
+
+56
+00:16:08.590 --> 00:16:09.970
+Praful Thakkar: Yeah.
+
+57
+00:16:12.070 --> 00:16:13.779
+Abhirath Batra: Anybody else?
+
+58
+00:16:14.350 --> 00:16:15.430
+Praful Thakkar: Maduji.
+
+59
+00:16:19.860 --> 00:16:20.570
+Abhirath Batra: Hello.
+
+60
+00:16:22.880 --> 00:16:24.340
+Madhu Nandyala: Hello, can you hear me, no?
+
+61
+00:16:24.340 --> 00:16:25.930
+Abhirath Batra: Yes, yes, you know what I mean?
+
+62
+00:16:25.930 --> 00:16:29.190
+Madhu Nandyala: Oh, yeah, I'm… Okay.
+
+63
+00:16:29.550 --> 00:16:33.290
+Madhu Nandyala: No, I just built an app,
+
+64
+00:16:33.740 --> 00:16:41.020
+Madhu Nandyala: which actually, you know, works mainly for professional services industries. Like, I picked up about 4 or 5 of them.
+
+65
+00:16:41.200 --> 00:16:45.200
+Madhu Nandyala: Like, estate agents or solicitors and, financial advisors.
+
+66
+00:16:45.530 --> 00:16:58.569
+Madhu Nandyala: If they put their website name, it assesses the strength of their website. Like, typically, what customers look on their website, and what are the deciding factors for a customer
+
+67
+00:16:58.590 --> 00:17:06.029
+Madhu Nandyala: before going into or finding an alternative company on that. So, I built that an app, I think, last week.
+
+68
+00:17:06.700 --> 00:17:23.850
+Madhu Nandyala: which I think it took just under two days for me, you know, who am I completely coming from a different background, a different non-coding background. So, I think I shared that link in the group as well. But yeah, that's… if you want to really want a business, and you're hungry for a business, and you're,
+
+69
+00:17:23.859 --> 00:17:32.559
+Madhu Nandyala: prospects are missing, what exactly they are looking at the website. That gives a good, starting point for someone to improve their website.
+
+70
+00:17:33.740 --> 00:17:36.629
+Madhu Nandyala: I did it completely on the cloud code, VS Code.
+
+71
+00:17:37.350 --> 00:17:48.560
+Abhirath Batra: That's pretty amazing. Awesome. I hear Lonnie here saying that if we're trying to figure out where to start, we'd like to create autonomous agents. Yeah, I think that's the direction we're going in today. And,
+
+72
+00:17:49.030 --> 00:17:51.180
+Abhirath Batra: And I'm curious if,
+
+73
+00:17:51.180 --> 00:18:16.079
+Abhirath Batra: since everybody has tried building agents with the stuff that we've already done here, I'm curious if you've felt the, if you've felt any specific limitations with the tools that you've already used. So, in the chat, can someone share if they found any limitations using Claude Code to build their agents, or, NATEN to build their agents? Is there any particular
+
+74
+00:18:16.080 --> 00:18:25.099
+Abhirath Batra: thing, you felt, oh, now we're hitting a block. There is this capability that I'm thinking of, is not trivial to implement here.
+
+75
+00:18:42.280 --> 00:18:44.429
+Abhirath Batra: Okay, Mr. Killer, sure.
+
+76
+00:18:46.280 --> 00:18:55.459
+Abhirath Batra: Okay, Lipsa, sure. Yeah, yeah, we'll go through everything from the start. That's… For sure.
+
+77
+00:18:55.880 --> 00:18:58.899
+Abhirath Batra: It uses a **** of a tokens and moves sideways, fair enough.
+
+78
+00:19:00.460 --> 00:19:05.800
+Abhirath Batra: Custom workflow builds with similar architecture, and whiteboard versus cloud code and the same backend features.
+
+79
+00:19:07.020 --> 00:19:20.070
+Abhirath Batra: Sometimes it just doesn't get what we want to. Okay, I understand the limitations that you're thinking of. So, this class is particularly to do with using the Cloud Agent SDK.
+
+80
+00:19:20.860 --> 00:19:37.960
+Abhirath Batra: And, yeah, the tokens definitely exhaust a lot sooner. This is within the community, this is the one criticism that Anthropic does face, that, they do have the most expensive, inference cost for per tokens, and,
+
+81
+00:19:38.300 --> 00:19:53.109
+Abhirath Batra: Yeah, so we do run out of them very soon, and, you know, professionals end up using the max plans to not hit this block, but yes, this is a very, you know, everybody agrees that this is the problem right now. So.
+
+82
+00:19:53.710 --> 00:19:57.349
+Abhirath Batra: What we want to start with is… let me just share my screen now, I think.
+
+83
+00:19:57.760 --> 00:20:00.300
+Abhirath Batra: Now's the time to get started.
+
+84
+00:20:01.400 --> 00:20:04.039
+Abhirath Batra: Zoom is unhappy with me today for some reason.
+
+85
+00:20:05.480 --> 00:20:09.469
+Abhirath Batra: Yeah, max plan is pretty expensive, that's true. So, so the,
+
+86
+00:20:09.870 --> 00:20:34.809
+Abhirath Batra: the logic that folks are using right now is that, it's like having a $200 employee on your payroll, that's the… if that's the value it's adding to your work and to your team. But yes, it may not make sense right off the bat, but I think once, workflows start to mature, first the $100 plan and then the $200 plan start to make sense.
+
+87
+00:20:34.810 --> 00:20:35.680
+Abhirath Batra: eventually.
+
+88
+00:20:38.100 --> 00:20:39.089
+Abhirath Batra: All right.
+
+89
+00:20:41.030 --> 00:20:44.080
+Abhirath Batra: I hope my screen is visible.
+
+90
+00:20:45.050 --> 00:20:46.800
+Abhirath Batra: Yeah, it looks like it is.
+
+91
+00:20:47.220 --> 00:20:51.560
+Abhirath Batra: I'm just gonna get the chuck… off as well.
+
+92
+00:20:53.790 --> 00:20:54.660
+Abhirath Batra: Slack.
+
+93
+00:20:54.880 --> 00:20:55.640
+Abhirath Batra: Talking.
+
+94
+00:20:59.210 --> 00:21:00.230
+Abhirath Batra: All right.
+
+95
+00:21:01.440 --> 00:21:03.339
+Abhirath Batra: So,
+
+96
+00:21:04.180 --> 00:21:16.490
+Abhirath Batra: as I said, we've built Agentic systems basically in two ways, right? We've done the very simple kind of automation, which we have done essentially with NATEN, right? So our…
+
+97
+00:21:17.890 --> 00:21:19.829
+Abhirath Batra: first thing has been N8, and…
+
+98
+00:21:19.960 --> 00:21:23.370
+Abhirath Batra: And this could also have been Zapier, doesn't matter.
+
+99
+00:21:23.830 --> 00:21:34.399
+Abhirath Batra: And the… these tools are great because they're low-code, no code, but, the entire automation decision tree out here
+
+100
+00:21:34.640 --> 00:21:43.949
+Abhirath Batra: with, you know, even though it's based on a trigger, and you, get to insert intelligence by using nodes that call LLMs.
+
+101
+00:21:44.040 --> 00:22:03.370
+Abhirath Batra: The entire decision tree and the business logic, we have to come up with it, and it follows that very rigidly. It's very algorithmic in nature, right? So, that's one kind of automation that we've been doing. The other kind of automation that we've done so far is, we used Claude code
+
+102
+00:22:03.900 --> 00:22:05.020
+Abhirath Batra: Agents.
+
+103
+00:22:06.790 --> 00:22:13.309
+Abhirath Batra: And what was happening here was that Claude Code itself was an agent, And it was spinning up
+
+104
+00:22:13.480 --> 00:22:26.119
+Abhirath Batra: agents inside of it. I remember, it was Delip's, class where we built, a requ… I think, request handling agent or something like that, which
+
+105
+00:22:26.570 --> 00:22:30.609
+Abhirath Batra: we talk to inside the Cloud Code environment itself.
+
+106
+00:22:31.210 --> 00:22:33.190
+Abhirath Batra: Right? So…
+
+107
+00:22:34.870 --> 00:22:41.169
+Abhirath Batra: these… both of these approaches can do a lot for us, but I think they have two primary,
+
+108
+00:22:41.400 --> 00:22:45.720
+Abhirath Batra: limitations that we are trying to address by going into the SDK direction.
+
+109
+00:22:46.050 --> 00:22:51.300
+Abhirath Batra: So, the first limitation is that M10…
+
+110
+00:22:52.380 --> 00:23:07.969
+Abhirath Batra: as we decide… as we discussed, requires us to come up with the business logic, that's one thing. Two, imagine that you have a customer or a client who's like, hey, or even a friend who wants you to implement a particular workflow for them.
+
+111
+00:23:08.240 --> 00:23:22.549
+Abhirath Batra: So you have to go out there to NATM and, spin it up again, right? You have to design the whole thing, you know, maybe the best case scenario is that you download the configuration here, and you, excuse me, upload it to their setup.
+
+112
+00:23:22.730 --> 00:23:34.869
+Abhirath Batra: And it works, but even then, NA10 has this particular limitation that it works for you, but it… if you have to spin up multiple instances of the same automation, you kind of have to do a bit of copy and paste.
+
+113
+00:23:34.870 --> 00:23:44.359
+Abhirath Batra: Right? And then Claude agents allow… Cloud Code agents allow us to go a little more freehanded in the sense that we are able to
+
+114
+00:23:44.770 --> 00:23:51.749
+Abhirath Batra: create agents that… where logic is not what we are providing. We are providing steps
+
+115
+00:23:51.750 --> 00:24:05.149
+Abhirath Batra: in a more, instructional, verbal, natural language way, and the agent figures out how to do those things inside of it, right? So, for example, we remember that we asked it to use tools.
+
+116
+00:24:05.860 --> 00:24:14.290
+Abhirath Batra: And we gave it some skills, which were just scripts, right? And based on these two things, and natural language instructions.
+
+117
+00:24:14.910 --> 00:24:31.430
+Abhirath Batra: it was able to do a bunch of things, but then this approach, again, does not scale, right? You have to talk to each agent. A couple of people were saying that they were interested in looking at things like OpenClaw, so you can only do what you can with that one box of an interface.
+
+118
+00:24:31.680 --> 00:24:51.510
+Abhirath Batra: Right? And again, if you were to go and implement this for your friend, you can probably share a skills file, you can probably share a bit of your folders, but again, they would have to sit down, type it out all again, hey, build an agent, use… do this and do that, and you'd have to, you know, set it up from scratch.
+
+119
+00:24:51.510 --> 00:25:11.240
+Abhirath Batra: And I think a very fair intuition to have at that point would be that this is not how enterprises were building and selling agents and selling their own workflows, or deploying workflows, more AI-agentic workflows on scale. That's not how enterprises are doing that.
+
+120
+00:25:11.250 --> 00:25:15.610
+Abhirath Batra: Right? Are we… are we on the same page? Am I making sense?
+
+121
+00:25:19.660 --> 00:25:26.590
+Abhirath Batra: Awesome. So, so… Given that.
+
+122
+00:25:26.970 --> 00:25:42.989
+Abhirath Batra: we have these two limitations, we want to now take the big boy approach, which is engineering and development. So, ultimately, the computer is a program running machine, and the most amount of flexibility that
+
+123
+00:25:43.140 --> 00:25:45.759
+Abhirath Batra: You can have is going to come by
+
+124
+00:25:46.180 --> 00:25:54.099
+Abhirath Batra: building a little bit of actual programs. The good thing is, Cloud Code is there to help us do that. And so what Anthropic has done is.
+
+125
+00:25:54.960 --> 00:25:58.549
+Abhirath Batra: They've come up with what is called the Cloud Agent SDK.
+
+126
+00:25:58.700 --> 00:26:01.480
+Abhirath Batra: So let's first discuss what SDK means.
+
+127
+00:26:03.020 --> 00:26:03.900
+Abhirath Batra: Right?
+
+128
+00:26:04.440 --> 00:26:09.430
+Abhirath Batra: SDK is a software development kit.
+
+129
+00:26:12.150 --> 00:26:18.239
+Abhirath Batra: And a very accessible example, to think about SDKs is what,
+
+130
+00:26:19.120 --> 00:26:27.910
+Abhirath Batra: everybody must, be… I mean, everybody can probably imagine easily is, the Android SDK?
+
+131
+00:26:29.430 --> 00:26:31.239
+Abhirath Batra: and iOS SDK.
+
+132
+00:26:33.370 --> 00:26:36.139
+Abhirath Batra: So, what happens here is that
+
+133
+00:26:36.520 --> 00:26:42.869
+Abhirath Batra: Oh, should I speak louder? Is that… does everybody need that, or…
+
+134
+00:26:44.130 --> 00:26:45.260
+Abhirath Batra: I think it's fine.
+
+135
+00:26:45.570 --> 00:26:50.170
+Abhirath Batra: Okay, okay.
+
+136
+00:26:51.090 --> 00:26:55.970
+Abhirath Batra: I think there's mixed response around it. Is it better? This better?
+
+137
+00:26:56.980 --> 00:26:57.930
+Abhirath Batra: Okay.
+
+138
+00:26:58.240 --> 00:27:02.210
+Abhirath Batra: Cool, thank you. So, what…
+
+139
+00:27:03.010 --> 00:27:13.230
+Abhirath Batra: SDKs are what platforms provide. So, Android and iOS are, for example, mobile platforms, right? So, platforms
+
+140
+00:27:13.330 --> 00:27:29.249
+Abhirath Batra: give you a standardized way of talking with them. So, for example, the Android or iOS SDK gives a standardized set of programmatic tools to, let's say, write on the screen.
+
+141
+00:27:29.570 --> 00:27:38.880
+Abhirath Batra: Send a notification, collect payments, access the location, the camera, all the things that the platform of the mobile basically
+
+142
+00:27:39.050 --> 00:27:58.309
+Abhirath Batra: has. It has the camera, it has the screen to write on, it has, you know, location data coming in from the satellite. All of these things, by the way, one thing that Nitya did not cover in my introduction is that my handwriting is pretty ******* so if there's something that you'd like me to type out, please let me know. So,
+
+143
+00:27:59.070 --> 00:28:22.529
+Abhirath Batra: Yeah, so the platform basically gives a very standardized way of talking to it, which means that no matter which application you use on your iPhone or on your Android, the notifications look the same. When they access the camera, it's the same camera. When they access the location, it's the exact same location, right? And the SDK provides a standardized way for an app developer to ask for these permissions.
+
+144
+00:28:22.530 --> 00:28:37.689
+Abhirath Batra: access the files on the system in a safe and secure way, preserving the privacy. So what SDKs enable is platforms are able to set their policies, give a standardized way for a community and ecosystem of developers to come and talk with them.
+
+145
+00:28:37.940 --> 00:28:45.109
+Abhirath Batra: That is what an SDK is. And SDKs are typically used by software developers to,
+
+146
+00:28:45.460 --> 00:29:01.960
+Abhirath Batra: build in these ecosystems. The reason Android and iOS took off after the smartphone revolution is that it wasn't just the hardware that you could touch something. HTC also had hardware. But because they cracked a platform, a base, on top of which these
+
+147
+00:29:02.910 --> 00:29:07.459
+Abhirath Batra: Different verticalized applications could be built, and innovation could happen.
+
+148
+00:29:08.520 --> 00:29:15.830
+Abhirath Batra: So, each app does not implement that pop-up which comes and asks you permissions, and, you know, ultimately.
+
+149
+00:29:15.830 --> 00:29:33.089
+Abhirath Batra: Uber, for example, is able to, you know, leverage the location API of the Android and iOS system to match you with a driver, and Instagram is able to use the camera to allow you to click pictures and post them. They're using the same platform, but are doing dramatically different things. And so this exact thought process is what,
+
+150
+00:29:33.320 --> 00:29:38.720
+Abhirath Batra: Cloud Agent SDKs are supposed to… Cloud Agent SDK is supposed to allow you.
+
+151
+00:29:39.570 --> 00:29:41.530
+Abhirath Batra: Cloud Agent SDK.
+
+152
+00:29:43.110 --> 00:29:57.980
+Abhirath Batra: So, now, Anthropic is saying, here's my platform, where you have a few levers, right? Just like with the Android, you have these few levers of what you can take input with and how you can write output. Claude says, my levers are…
+
+153
+00:29:58.100 --> 00:30:00.439
+Abhirath Batra: Which model do you want to use?
+
+154
+00:30:03.100 --> 00:30:05.090
+Abhirath Batra: Do you want to use any tools?
+
+155
+00:30:08.000 --> 00:30:11.849
+Abhirath Batra: And… Just send me a bit of text.
+
+156
+00:30:13.080 --> 00:30:14.800
+Abhirath Batra: And receive a response.
+
+157
+00:30:16.360 --> 00:30:25.340
+Abhirath Batra: This is the very… I mean, I'm oversimplifying it, but this is the very simple contract that the platform of Anthropic offers via its SDK.
+
+158
+00:30:25.820 --> 00:30:28.119
+Abhirath Batra: Am I making sense? Are there any questions?
+
+159
+00:30:30.910 --> 00:30:35.710
+Abhirath Batra: Alright, Volker gives me two thumbs up, so I'm excited. Everybody else?
+
+160
+00:30:39.420 --> 00:30:40.570
+Abhirath Batra: Okay.
+
+161
+00:30:40.980 --> 00:30:45.089
+Abhirath Batra: Lots of thumbs up, so I'm going to continue. Cool. So,
+
+162
+00:30:47.120 --> 00:30:56.279
+Abhirath Batra: Now, why use this SDK, right? So, let's ask the more chicken and egg question, how are they… how are they building cloud code?
+
+163
+00:30:56.510 --> 00:31:05.899
+Abhirath Batra: So, from what they tell us, they've just written an app that uses their own SDK to talk to their LLM in the background.
+
+164
+00:31:06.090 --> 00:31:24.169
+Abhirath Batra: Right? And, so what we are now going is we are peeling the onion layer, and we're looking a little deep inside, we're looking at how the sausage is made, and the sausage is made basically with these things. You have a programmatic API on top of which you can wrap absolutely anything.
+
+165
+00:31:24.210 --> 00:31:29.430
+Abhirath Batra: On this, you can make your voice agent, You can make any app.
+
+166
+00:31:29.970 --> 00:31:35.190
+Abhirath Batra: You can make your autonomous agents. So, for example, somebody asked the question about open claw.
+
+167
+00:31:35.300 --> 00:31:37.920
+Abhirath Batra: excuse me, OpenClaw, uses
+
+168
+00:31:38.350 --> 00:31:45.739
+Abhirath Batra: the, Claude Agent SDK to talk to Claude, for example. So all these things,
+
+169
+00:31:45.740 --> 00:31:59.140
+Abhirath Batra: that you can build would prob… actually, I'm a little… I think I misspoke. OpenClaw may itself not be made using the agent SDK, because you can use any LLM to talk to it. It probably just talks using the API. I'm sorry about that.
+
+170
+00:31:59.140 --> 00:32:05.740
+Abhirath Batra: But yes, With this, you can basically create any kind of app.
+
+171
+00:32:05.820 --> 00:32:20.009
+Abhirath Batra: Now, you'd say, well, I could also create any kind of agent when I was logged into Cloud Code, and I could give it instructions. Sure, but now, with this SDK, we can write a program, or a bit of…
+
+172
+00:32:20.010 --> 00:32:44.880
+Abhirath Batra: And I'm calling it a program because I'm trying to emphasize on the fact that it's a more fundamental entity in the computing world. The AI agent that runs inside Claude Code is not a fundamental entity. It runs within the Cloud ecosystem, but the program itself is a more fundamental entity, and it will run anywhere. So that means you could write a software or a program
+
+173
+00:32:44.880 --> 00:32:56.779
+Abhirath Batra: That, uses the AI Cloud Agent SDK, and you can deploy it anywhere. It could run on your phone, or it could run on a server serving your customers, or something like that.
+
+174
+00:32:58.630 --> 00:33:00.880
+Abhirath Batra: Is everybody with me?
+
+175
+00:33:07.700 --> 00:33:15.359
+Abhirath Batra: If yes, then I think we can start to look at building a little bit of, this stuff.
+
+176
+00:33:15.500 --> 00:33:16.400
+Abhirath Batra: Right?
+
+177
+00:33:18.070 --> 00:33:23.300
+Abhirath Batra: Okay, I think… Everybody's with me. So,
+
+178
+00:33:23.640 --> 00:33:31.679
+Abhirath Batra: Today, we are going to build stuff with VS Code. I figured this would be the, easiest place to set this up. We have…
+
+179
+00:33:31.880 --> 00:33:34.389
+Abhirath Batra: the Cloud Code extension out here.
+
+180
+00:33:34.560 --> 00:33:36.230
+Abhirath Batra: You could install it.
+
+181
+00:33:37.670 --> 00:33:40.180
+Abhirath Batra: with extensions, Sorry.
+
+182
+00:33:40.630 --> 00:33:41.860
+Abhirath Batra: Extensions?
+
+183
+00:33:42.040 --> 00:33:46.799
+Abhirath Batra: Cloud Code extension, you can log into it, and it should appear over here.
+
+184
+00:33:47.340 --> 00:33:52.579
+Abhirath Batra: you can open it up, right? Everybody's familiar with,
+
+185
+00:33:53.400 --> 00:33:58.929
+Abhirath Batra: Mokul says already done. Yeah, sure. I'm hoping that we'll do something more than what we've already done.
+
+186
+00:33:59.410 --> 00:34:14.299
+Abhirath Batra: And Lipsa says you're not familiar with VS Code? Okay, so VS Code is, just an IDE, it's just a place where you edit and run your programs, and instead of using Claude Code in the terminal, like in the ellipse classes.
+
+187
+00:34:14.300 --> 00:34:20.980
+Abhirath Batra: we are using it as an extension in this ID itself, just so that we have everything on the same screen, right?
+
+188
+00:34:20.980 --> 00:34:31.780
+Abhirath Batra: Pretty straightforward. And so… Once we're logged in, we're going to… Open a fresh folder.
+
+189
+00:34:33.100 --> 00:34:37.679
+Abhirath Batra: Let's say today's… Agent is what? Catalyst agent.
+
+190
+00:34:38.120 --> 00:34:39.030
+Abhirath Batra: Right?
+
+191
+00:34:39.690 --> 00:34:44.029
+Abhirath Batra: And, yeah, we're just starting out here. I trust the authors, don't worry.
+
+192
+00:34:46.989 --> 00:34:49.900
+Abhirath Batra: Oh, no. Cloud Code wants me to log in again.
+
+193
+00:34:50.310 --> 00:34:52.550
+Abhirath Batra: Give me one second while I do that.
+
+194
+00:35:01.790 --> 00:35:04.799
+Abhirath Batra: I'll need your help here, Nitya.
+
+195
+00:35:07.160 --> 00:35:08.369
+Abhirath Batra: Are you around?
+
+196
+00:35:09.920 --> 00:35:11.069
+Nitya Outskill Team: Yes, I did.
+
+197
+00:35:11.850 --> 00:35:15.939
+Abhirath Batra: Yeah, once again, I need… the code.
+
+198
+00:35:15.940 --> 00:35:16.670
+Nitya Outskill Team: Sure, sure.
+
+199
+00:35:35.850 --> 00:35:37.660
+Nitya Outskill Team: Yeah, I just messaged you, Nicole.
+
+200
+00:35:38.800 --> 00:35:39.630
+Abhirath Batra: Absolutely.
+
+201
+00:36:03.930 --> 00:36:04.980
+Abhirath Batra: Alright.
+
+202
+00:36:07.740 --> 00:36:08.560
+Abhirath Batra: Boom.
+
+203
+00:36:09.790 --> 00:36:12.510
+Abhirath Batra: We should be logged in now.
+
+204
+00:36:13.040 --> 00:36:14.020
+Abhirath Batra: Alright.
+
+205
+00:36:15.050 --> 00:36:32.930
+Abhirath Batra: Sorry for the intermission, guys. Alright. So, we have a blank folder, and the first instinct is to just say, hey, write me an agent. And, you know, from all the feedback I've gotten from everybody, the… the…
+
+206
+00:36:33.140 --> 00:36:41.749
+Abhirath Batra: Bottom line seems to be that there is a little bit of a trick to get the agents to do, or to Claude to do, exactly what we want.
+
+207
+00:36:41.940 --> 00:36:44.820
+Abhirath Batra: And, I know that we've…
+
+208
+00:36:45.380 --> 00:36:53.449
+Abhirath Batra: I'll be following along in the partial terminal. Would you please articulate any different commands for this setup? No, Sylvia, it should be perfectly…
+
+209
+00:36:53.450 --> 00:37:10.730
+Abhirath Batra: fine, it's just that you would probably have to watch the things happen in a folder on the site, so if you create a blank folder and spin up Claude Code over there, you would just have to see everything happen over there. So it's just a matter of taste, it should not,
+
+210
+00:37:10.730 --> 00:37:21.650
+Abhirath Batra: you know, be any different for you. In fact, we'll use the terminal to spin up the agents ultimately, so you will converge to this approach, it shouldn't matter much.
+
+211
+00:37:22.180 --> 00:37:28.190
+Abhirath Batra: Anybody else who's, using a slightly different divergent setup?
+
+212
+00:37:28.470 --> 00:37:33.430
+Abhirath Batra: Please, please, drop it in the chat, we'll figure it out. It should all be fine.
+
+213
+00:37:34.250 --> 00:37:38.170
+Abhirath Batra: Alright, so, coming back to the problem, right, so now…
+
+214
+00:37:38.170 --> 00:37:54.730
+Abhirath Batra: We are entering this, regime where we are trying to engineer a system. We are saying that, hey, Claude, I know you can do agents, but I want to be a little more independent, I want to go a little deeper, and so there's NATN, there's Claude Code itself, and then there's
+
+215
+00:37:54.730 --> 00:38:02.840
+Abhirath Batra: you know, what we're doing. And yeah, sure, anti-gravity agent manager, I'm not… sure if,
+
+216
+00:38:03.540 --> 00:38:06.620
+Abhirath Batra: the agent SDK will map one-to-one.
+
+217
+00:38:06.770 --> 00:38:18.560
+Abhirath Batra: But broadly speaking, I would be surprised if the experience changes a lot. So, yeah, please, please, the broad idea is the same. What we're doing here is we're seeing how to do the engineering aspects of things.
+
+218
+00:38:19.590 --> 00:38:37.230
+Abhirath Batra: So, when we're trying to do this, it's important to constrain the LLM as much as possible, and what I mean by that is asking it to create an agent to serve as your customer support agent, for example. Let's assume that you have,
+
+219
+00:38:37.430 --> 00:38:44.830
+Abhirath Batra: tickets coming in for your product on Asana, or Notion, or any other CRM.
+
+220
+00:38:46.130 --> 00:39:09.920
+Abhirath Batra: And you want to write an AI automated agent that whenever it receives these things, it operates in a particular way. It maybe, you know, marks the ticket as in progress, sends out an email to somebody. If it's a very simple issue, like, hey, what's the status of my order? It checks the database and just sends back a reply. If you want to do all of this, yes, you could either spend all your time doing NATM,
+
+221
+00:39:09.930 --> 00:39:16.759
+Abhirath Batra: Figure out all the use cases, or just, you know, build a scale, tell that agent, hey, you are,
+
+222
+00:39:17.140 --> 00:39:30.440
+Abhirath Batra: your customer service agent, here's my inventory, here's how to talk to my database, figure it out. You know, use your best judgment, and if you think that a human should, you know, intervene in this particular case, just flag it to us.
+
+223
+00:39:30.770 --> 00:39:44.110
+Abhirath Batra: Now, doing that is likely to, result in the kinds of problems everybody has faced, which is that, it just doesn't do exactly what we think it should do.
+
+224
+00:39:44.600 --> 00:39:49.649
+Abhirath Batra: And so, the more useful approach is to be extremely verbose.
+
+225
+00:39:49.840 --> 00:39:52.799
+Abhirath Batra: In explaining to it what we really want.
+
+226
+00:39:53.360 --> 00:40:00.389
+Abhirath Batra: And so the reason to do that is that, I like to think about Excuse me.
+
+227
+00:40:00.900 --> 00:40:13.949
+Abhirath Batra: Ordering food at a restaurant. So, if I just order a steak, I just get a steak, and it's up to the chef, up to the kitchen, and whatever they're doing, to present to me what they think is a good steak.
+
+228
+00:40:14.040 --> 00:40:32.929
+Abhirath Batra: Whereas, I could ask for a medium-rare steak, which has been charred on the outside, and I want my, I don't want any juice on it, and I want whatever topping you were thinking about on the side, not on top, and, you know, I wanted cut thin slices.
+
+229
+00:40:32.930 --> 00:40:37.440
+Abhirath Batra: If I make those specific requests, I'm likelier to get what I want.
+
+230
+00:40:37.460 --> 00:40:42.059
+Abhirath Batra: if I do not articulate what I want to be LLM, I…
+
+231
+00:40:42.230 --> 00:40:51.299
+Abhirath Batra: I'm likely to be surprised by what it says. And so, bearing that in mind, the approach that we figured out works well for
+
+232
+00:40:51.810 --> 00:40:56.030
+Abhirath Batra: making Claude Code as an agent, create agents for us.
+
+233
+00:40:56.680 --> 00:41:01.960
+Abhirath Batra: agents that Exist within strict boundaries, and then operate.
+
+234
+00:41:02.650 --> 00:41:04.789
+Abhirath Batra: Is that we give them an operating system.
+
+235
+00:41:05.470 --> 00:41:11.400
+Abhirath Batra: Can you show us how to build a voice agent using Agent? That'll be tough.
+
+236
+00:41:12.200 --> 00:41:23.949
+Abhirath Batra: So, you need to have a very clear picture of what you want to build. Yes, if we don't have a clear picture, we are definitely in a lot of trouble. My point is that a lot of times, we may have a clear picture, but we may not communicate it necessarily.
+
+237
+00:41:24.190 --> 00:41:38.050
+Abhirath Batra: So, yes, both of these things are a problem to solve. And so, to begin with, for example, what I have done for this class is that we have sort of prepared a little bit of
+
+238
+00:41:40.000 --> 00:41:42.499
+Abhirath Batra: What we want from the agent.
+
+239
+00:41:44.940 --> 00:41:47.319
+Abhirath Batra: In a very, very specific way.
+
+240
+00:41:48.850 --> 00:42:08.150
+Abhirath Batra: So, if everybody remembers, when we work with the Claude Code agents, we create a Claude.md file, which it doesn't touch, but where we give a lot of instructions. So, don't worry about the contents of this file, these will be shared in the post-class material, but
+
+241
+00:42:08.410 --> 00:42:16.889
+Abhirath Batra: we are doing something very specific here, which is we are giving the AI agent an architecture to operate under.
+
+242
+00:42:17.350 --> 00:42:21.379
+Abhirath Batra: And now, the choice of this architecture is what I think.
+
+243
+00:42:21.620 --> 00:42:24.020
+Abhirath Batra: Is the best way of doing it.
+
+244
+00:42:24.150 --> 00:42:41.070
+Abhirath Batra: You and your use cases may have, you know, may have a completely different way of doing it. You may want to build on how this works, and take it in different directions, but I think this is a great starting point for building the kind of agents you're interested in building.
+
+245
+00:42:41.480 --> 00:42:49.749
+Abhirath Batra: So don't think of this as a skill, but more of as an operating system for how agents, that we are going to create today will operate.
+
+246
+00:42:50.580 --> 00:42:58.190
+Abhirath Batra: So, the first thing we're doing is, we are saying to the… do you, do we need to name this m.md file with capital letter?
+
+247
+00:42:58.390 --> 00:43:01.740
+Abhirath Batra: no, that's not gonna be a problem.
+
+248
+00:43:05.470 --> 00:43:13.560
+Abhirath Batra: Alright, so… As of right now, this agent,
+
+249
+00:43:13.960 --> 00:43:17.040
+Abhirath Batra: Is a first-class citizen on the
+
+250
+00:43:17.870 --> 00:43:24.599
+Abhirath Batra: folder that we're going to make it in, right? Which means that this is the playground it has access to.
+
+251
+00:43:24.980 --> 00:43:34.419
+Abhirath Batra: Later, we may add accesses to databases, to Notion, to Zapier, to Superbase, to this, that, whatever we like, but right now, it's, you know,
+
+252
+00:43:34.550 --> 00:43:42.340
+Abhirath Batra: it's home right out of… right off getting pawn is this folder. And so what we want to do is we want to give,
+
+253
+00:43:42.550 --> 00:43:52.999
+Abhirath Batra: it… we want to give it a structure within this folder itself. Any naming conventions we need to follow. See, one of the great things about working with AI is that,
+
+254
+00:43:54.500 --> 00:44:04.649
+Abhirath Batra: LLMs, as a technology are not super deterministic in their output. And I say that very carefully because
+
+255
+00:44:04.650 --> 00:44:23.010
+Abhirath Batra: You know, I'm not talking about the physics of determinism, I'm talking about, like, given an input, can you… will you always get the same output from an LLM? The answer is no. Which is why naming conventions and this and that, these things, given how… the explosion in the number of people building with these agents, I think those standards
+
+256
+00:44:23.460 --> 00:44:37.950
+Abhirath Batra: are less relevant. They become relevant if you're in the very ******** enterprise software space, building applications with Java and .NET. That's where it matters a little more. Here, you can take it easy with these things.
+
+257
+00:44:38.590 --> 00:44:47.170
+Abhirath Batra: Anyway, so, again, we're trying to give the agent some structure to play around with within this folder, and so the way we've done that is we've said, hey,
+
+258
+00:44:47.710 --> 00:44:50.559
+Abhirath Batra: First of all, you're going to create a folder.
+
+259
+00:44:51.700 --> 00:44:57.520
+Abhirath Batra: or Claude Code here, or your prompt. Oh, no, this is… I made this with a prompt.
+
+260
+00:44:58.450 --> 00:45:01.479
+Abhirath Batra: So this is separate, and yes, we can, you know.
+
+261
+00:45:02.310 --> 00:45:11.770
+Abhirath Batra: discuss how we created this, but I think you should probably get an… This is sort of a template, but yeah, broadly the idea is that this is a,
+
+262
+00:45:12.680 --> 00:45:29.020
+Abhirath Batra: This is a way to get the agents to be in a constrained boundary so that they don't act everywhere. Anyway, so one of, you know, we are going to build a couple of agents here. One to act as a customer service agent, and one to act as a…
+
+263
+00:45:29.020 --> 00:45:34.459
+Abhirath Batra: marketing content generator. And to do that, and assuming that
+
+264
+00:45:34.470 --> 00:45:43.009
+Abhirath Batra: you know, we might build more in the future, what is the bottom line? That's kind of what this cloud.md tries to address. So the first thing it tries to say is.
+
+265
+00:45:43.110 --> 00:45:45.430
+Abhirath Batra: Every agent will need a playbook.
+
+266
+00:45:45.670 --> 00:45:52.470
+Abhirath Batra: So imagine you have an employee that's a customer service agent, that customer service executive, that
+
+267
+00:45:52.470 --> 00:46:11.400
+Abhirath Batra: Employee themselves must have a playbook, right? Hey, if it's just an update, do this. If people are complaining about something, there's these two, three options that you can take. And if a customer wants a refund, this is what you do. If a customer is just giving feedback, this is what you do. So there's basically very standardized playbooks, right?
+
+268
+00:46:11.400 --> 00:46:22.230
+Abhirath Batra: The second thing is tools, which is okay. If you're going to send emails, one of the tools you're going to need is talking to Gmail. Maybe that's where your email resides.
+
+269
+00:46:22.230 --> 00:46:40.749
+Abhirath Batra: There's going to be tools like Talk to Asana, look at the tickets as they are right now, talk to Firecrawl, look at what other people are posting, or what kind of blogs my competitors are writing to get marketing done. Those
+
+270
+00:46:40.760 --> 00:46:44.829
+Abhirath Batra: All these different things that they will access are going to be part of tools.
+
+271
+00:46:45.030 --> 00:46:55.050
+Abhirath Batra: And then there is Ledger. And ledger is something, I like to use a lot with AI overall, is to ask AI to
+
+272
+00:46:55.200 --> 00:47:02.479
+Abhirath Batra: node turn everything it does. So, memory, logs, and state, which means that if
+
+273
+00:47:03.310 --> 00:47:08.550
+Abhirath Batra: it does an operation. It should know that it did that operation and not forget about it.
+
+274
+00:47:09.650 --> 00:47:13.400
+Abhirath Batra: Right? I'm gonna just take a second and look at the chat.
+
+275
+00:47:13.650 --> 00:47:15.759
+Abhirath Batra: I think there's a lot of activity.
+
+276
+00:47:17.510 --> 00:47:22.930
+Abhirath Batra: I'll see a prompt? I can share the prompt. Yes, I'll be sharing the cloud.md at the end of the class.
+
+277
+00:47:23.910 --> 00:47:25.820
+Abhirath Batra: Anti-gravity, yeah, sure.
+
+278
+00:47:27.770 --> 00:47:31.519
+Abhirath Batra: Explain ledger again, please. Yeah, that's fair. So,
+
+279
+00:47:31.870 --> 00:47:34.599
+Abhirath Batra: By ledger, I just mean, imagine,
+
+280
+00:47:35.660 --> 00:47:44.799
+Abhirath Batra: Imagine a logbook that every employee in your company has to maintain of every action they take, so that you can audit them.
+
+281
+00:47:44.870 --> 00:47:59.119
+Abhirath Batra: You can audit them to understand why they did what they did. You can audit it to just have a note of, hey, I did my job, the next person can refer to this log to see I did my part, now it's up to them.
+
+282
+00:47:59.120 --> 00:48:12.410
+Abhirath Batra: And, it could be a great debugging tool, because if you think that a particular employee did something that they shouldn't have done, you can refer to this log and see what they thought they did, and then, offer more,
+
+283
+00:48:12.850 --> 00:48:14.979
+Abhirath Batra: You know, offer feedback.
+
+284
+00:48:17.140 --> 00:48:20.389
+Abhirath Batra: Better view of the file location? Sure. Oh, you want the…
+
+285
+00:48:21.790 --> 00:48:24.329
+Abhirath Batra: Here you go. Looks better, Renika?
+
+286
+00:48:26.210 --> 00:48:34.570
+Abhirath Batra: Alright, thank you for that. Awesome. So yeah, we're looking… yeah, we're looking at the ledger. Sylvia, did the, explanation for ledger make sense?
+
+287
+00:48:35.890 --> 00:48:53.679
+Abhirath Batra: Awesome, great. And lastly, we give them a folder to drop artifacts. So, for example, if they're going to write some drafts, reports, summaries, whatever, anything that they want humans, any artifacts they want humans to read, they're going to be dropped in the artifacts folder.
+
+288
+00:48:54.830 --> 00:49:00.369
+Abhirath Batra: Does this broad… Structure makes sense, like, why we are doing this?
+
+289
+00:49:07.150 --> 00:49:14.510
+Abhirath Batra: Is the why clear? Because I understand that why these three things, why not other things, and do you think we should add anything?
+
+290
+00:49:15.270 --> 00:49:23.380
+Abhirath Batra: Yeah, so… so that it doesn't… it's not that it won't hallucinate, it'll hallucinate less. It'll, you know, have less…
+
+291
+00:49:23.600 --> 00:49:39.960
+Abhirath Batra: things where it has to… where it does not have explicit instructions from us. So whenever it'll try to do something, it'll… we have told it, always look into playbooks. When it says, you know, what tool should I use? We've told it, always look at executable capabilities out here, and so on and so forth.
+
+292
+00:49:40.820 --> 00:49:52.219
+Abhirath Batra: So, not only have we described these, we have gone into a little more detail to make it, to give it context. So, for example, we've said,
+
+293
+00:49:52.490 --> 00:49:54.139
+Abhirath Batra: You know, for the playbooks.
+
+294
+00:49:54.710 --> 00:50:04.850
+Abhirath Batra: These are the things this folder will contain, these are the rules that, you know, you may only propose edits to the playbook. You're not supposed to go around changing it.
+
+295
+00:50:05.140 --> 00:50:07.260
+Abhirath Batra: Well, because,
+
+296
+00:50:08.700 --> 00:50:20.540
+Abhirath Batra: the head of AI safety at Meta recently posted screenshots of her working with her OpenClaw agent, where she had given it a task
+
+297
+00:50:20.830 --> 00:50:37.459
+Abhirath Batra: And it went in this particular direction, where it started to delete all of her Gmail emails. And her continuously, you know, messaging it to stop wasn't working, so she literally had to go to the Mac Mini on which this agent was running it, unplug it, so that she could contain the damage.
+
+298
+00:50:37.950 --> 00:50:49.470
+Abhirath Batra: So what I'm trying to say is that LLMs are, pretty powerful if you connect them to everything, and if we do not introduce sufficient guardrails.
+
+299
+00:50:49.550 --> 00:51:03.710
+Abhirath Batra: they can go in all sorts of directions, especially if they're running for a long time. I know we've discussed this in the Cloud Code, sessions with Dilip as well, that, the output's quality can degrade, excuse me, over time if
+
+300
+00:51:03.930 --> 00:51:08.099
+Abhirath Batra: If you do not compact the, context, for example.
+
+301
+00:51:08.380 --> 00:51:10.780
+Abhirath Batra: Yeah, it's the beginnings of Skynet, for sure.
+
+302
+00:51:10.920 --> 00:51:18.090
+Abhirath Batra: So, yeah, this is the kind of instruction we're giving it for that reason, that you cannot sit down and edit the playbooks.
+
+303
+00:51:18.360 --> 00:51:28.499
+Abhirath Batra: Then next is tools, where you, you know, where we are saying that the agent should find tools, and it should be able to, you know, create and extend tools when it needs them.
+
+304
+00:51:29.670 --> 00:51:36.830
+Abhirath Batra: And lastly, memory contains persistent state, cached external system snapshots, and decision traces.
+
+305
+00:51:41.250 --> 00:51:47.890
+Abhirath Batra: So, out here, of course, it is allowed to write, and while writing things, it's only append.
+
+306
+00:51:48.250 --> 00:52:00.100
+Abhirath Batra: That is allowed for the agent. That means that if it wrote a log once, it's not allowed to write a log, or overwrite that log, so that it doesn't do sneaky stuff like make a mistake and then go correct its logs.
+
+307
+00:52:00.360 --> 00:52:19.910
+Abhirath Batra: We want our employees to, you know, be honest about things. And lastly, never store secrets. So these are the more smaller things that we have tried to add here, which is, how do you handle, the programmatic aspect of things?
+
+308
+00:52:23.020 --> 00:52:23.950
+Abhirath Batra: Then…
+
+309
+00:52:24.060 --> 00:52:36.600
+Abhirath Batra: The next thing we're doing is, we are saying, not only are we going to, have an agent, we are actually going to have multiple agents, and the multi-agent setup is going to be a master agent and sub-agent structure.
+
+310
+00:52:36.930 --> 00:52:44.920
+Abhirath Batra: The master agent is the one that will talk to the user. So, the way we'll set it up is, just like Claude Code spins up something on the…
+
+311
+00:52:45.170 --> 00:53:00.470
+Abhirath Batra: spins up something on the terminal. Similarly, our agent should… our master agent should come up like that, just like LotCore does on the terminal, and we should ask it things like, hey, what's up with the customer service requests? What's up with,
+
+312
+00:53:00.570 --> 00:53:15.800
+Abhirath Batra: the content that we're supposed to put out this week. Have you planned it out? And this master agent is supposed to take care of everything. We should not find out about sub-agents. It could just come and say, hey, sub-agent XYZ did XYZ, and we never need to, you know, directly interact with them.
+
+313
+00:53:17.000 --> 00:53:29.160
+Abhirath Batra: So, we've explicitly stated that. We've said the user-only enters with the master agent, the sub-agents return structured results to the master, the master merges these results and responds to the user. Again, we're trying to be as explicit as verbose as possible.
+
+314
+00:53:30.260 --> 00:53:40.340
+Abhirath Batra: And then we've given it a bit of a naming convention. We're saying, hey, if you're a sub-agent, you will also use these three folder structures, and you're going to,
+
+315
+00:53:40.840 --> 00:53:50.259
+Abhirath Batra: create subdirectories for yourself, so playbooks will have specific playbooks for this agent, Ledger will have specific, ledger for this agent, and
+
+316
+00:53:50.710 --> 00:53:54.990
+Abhirath Batra: Then you can have some shared files as well, because,
+
+317
+00:53:55.410 --> 00:54:03.169
+Abhirath Batra: You know, there's going to be all sorts of data that different agents need to see to do the… to do their specific tasks, even though the data is shared.
+
+318
+00:54:04.640 --> 00:54:10.610
+Abhirath Batra: Then, for the master agent, what is the execution loop? We're going to say that you're going to,
+
+319
+00:54:11.160 --> 00:54:17.649
+Abhirath Batra: Claude agent, what are we doing today, versus OpenClaw? Any feedback? OpenClaw is a different thing, actually.
+
+320
+00:54:17.830 --> 00:54:33.349
+Abhirath Batra: We are not at… by the way, we are specifically doing the agent SDK. We are asking the question, how do we build agents from scratch, from an engineering point of view, things that can go to production? OpenClaw is, even the creator says, is a toy. It's a toy for people,
+
+321
+00:54:33.850 --> 00:54:35.290
+Abhirath Batra: who can…
+
+322
+00:54:36.130 --> 00:54:44.390
+Abhirath Batra: Take the risk of a very potent thing that connects to a lot of things, do whatever it thinks is right.
+
+323
+00:54:44.710 --> 00:55:03.480
+Abhirath Batra: And, it's already an agent which can create sub-agents inside of it, just like Claude Code can do that. And the good thing that OpenClaw has done is basically you can give it access to basically anything. It'll talk to you through Telegram, through WhatsApp, through Slack, and, those integrations are there inside of it.
+
+324
+00:55:04.530 --> 00:55:24.570
+Abhirath Batra: Sylvia, yes, we can share it, or basically, I was going to share it at the end of the class, because it's a large file. On the chat, it'll be a little hard to follow along. But don't worry, you don't need to necessarily understand this file. The idea for the walkthrough is to, kind of, drive home the point that what is the depth
+
+325
+00:55:24.570 --> 00:55:30.649
+Abhirath Batra: Of, detail required to get the agent To be within its guardrails.
+
+326
+00:55:30.790 --> 00:55:41.919
+Abhirath Batra: So, in some sense, this is like the skills thing, but the skills things is more, you know, the skills.nd file that we created for CloudHood agents are, you know, very,
+
+327
+00:55:42.840 --> 00:56:00.019
+Abhirath Batra: I would say they're more open-ended. This one thing says, hey, these are all the things you can do. This says, this is how you will do everything you will do. So this is a more narrowing, focusing document, whereas skills is a more, you know, a cone that opens outwards. And yes, it'll be shared in the LMS, for sure.
+
+328
+00:56:02.380 --> 00:56:04.300
+Abhirath Batra: Yes, this is with Gartner, it's correct.
+
+329
+00:56:04.600 --> 00:56:14.699
+Abhirath Batra: So, we've given it a loop. We've said, go first, interpret, then select the playbook, then plan, delegate to a sub-agent if required, act using their tools,
+
+330
+00:56:14.830 --> 00:56:21.189
+Abhirath Batra: Record what you've done, generate artifacts, check yourself, and never reorder these steps.
+
+331
+00:56:22.480 --> 00:56:25.200
+Abhirath Batra: That's the instruction you want to give. So…
+
+332
+00:56:27.450 --> 00:56:32.079
+Abhirath Batra: And then we've given it a particular set of schemas of how to talk to the sub-agents.
+
+333
+00:56:32.310 --> 00:56:34.640
+Abhirath Batra: These things we don't need to get into right now.
+
+334
+00:56:34.920 --> 00:56:37.149
+Abhirath Batra: We've given it a few different memory types.
+
+335
+00:56:37.690 --> 00:56:39.900
+Abhirath Batra: Again, you don't need to get into it right now.
+
+336
+00:56:42.910 --> 00:56:44.609
+Abhirath Batra: And we've given it a few.
+
+337
+00:56:45.180 --> 00:56:51.630
+Abhirath Batra: more specific engineering-related instructions. Lastly, we've told it how to prevent prompt injection.
+
+338
+00:56:52.070 --> 00:57:02.369
+Abhirath Batra: I'll be honest, this works, but this is not the whole thing. And we'll discuss this multiple times during this session, that
+
+339
+00:57:02.520 --> 00:57:09.320
+Abhirath Batra: What we're doing right now is a demo of how one would create agents from scratch.
+
+340
+00:57:10.240 --> 00:57:14.309
+Abhirath Batra: This is not still ready to go to production.
+
+341
+00:57:14.460 --> 00:57:16.870
+Abhirath Batra: That means if you deploy this somewhere.
+
+342
+00:57:17.030 --> 00:57:32.209
+Abhirath Batra: you're very likely to run into problems, and we'll discuss the points at which we should say, oh, if I'm going to go more complicated than this, if you're going to go bigger than this, then it's better to hire developers to do these things for you.
+
+343
+00:57:34.240 --> 00:57:49.719
+Abhirath Batra: And lastly, we've given it some just more general principles also, that, you know, always follow the policies, don't care about what the customer is or external pressures are, accuracy is more important, fewer tools is better, records are better, and clear artifacts.
+
+344
+00:57:50.240 --> 00:57:56.380
+Abhirath Batra: Right? So, given this claw.md file, how easy is to hack the system using prompt injection? Hmm.
+
+345
+00:57:58.620 --> 00:58:01.770
+Abhirath Batra: maybe you can build one and try it. I think you'll enjoy that.
+
+346
+00:58:02.090 --> 00:58:03.120
+Abhirath Batra: activity.
+
+347
+00:58:05.470 --> 00:58:14.810
+Abhirath Batra: Okay, now that we have this Claude.md file, again, we'll be sharing this in the LMS, you can use this. We're going to ask Claude to tell, I think, one thing…
+
+348
+00:58:15.710 --> 00:58:18.830
+Abhirath Batra: In my mind, I think we can add here.
+
+349
+00:58:23.860 --> 00:58:26.130
+Abhirath Batra: Prompt injection, yeah, sure.
+
+350
+00:58:37.740 --> 00:58:44.619
+Abhirath Batra: Dhanjay, the right answer to that is a very specific, thing that's called a grounding API.
+
+351
+00:58:44.730 --> 00:58:46.529
+Abhirath Batra: And so,
+
+352
+00:58:46.570 --> 00:59:05.099
+Abhirath Batra: for example, Microsoft has what are called grounding SLMs. Those are small language models. And what they do is, so let's say you get an input, or you get an output from an LLM, you can then route it through this grounding API, and its job is to essentially ground the response. And,
+
+353
+00:59:05.300 --> 00:59:16.329
+Abhirath Batra: kind of assess if it is sensible or not. And these grounding APIs are where the magic of prevention of prompt injection and more severe attacks
+
+354
+00:59:16.330 --> 00:59:30.929
+Abhirath Batra: are trying to ensure that people are not trying to do some crazy things, like tell the LLM to pick up the email from somebody else and share with me. To prevent those things, you need to do things, more sophisticated things, like use grounding APIs.
+
+355
+00:59:31.060 --> 00:59:33.310
+Abhirath Batra: So, that is a more,
+
+356
+00:59:33.820 --> 00:59:37.130
+Abhirath Batra: Sort of… yeah, it's sort of like sanitization, but…
+
+357
+00:59:37.380 --> 00:59:43.999
+Abhirath Batra: significantly more complicated in the sense that you really need a language model. It's not the large language model, but it's a small language model.
+
+358
+00:59:44.410 --> 00:59:45.810
+Abhirath Batra: Did I answer your question?
+
+359
+00:59:50.370 --> 00:59:54.410
+Abhirath Batra: I hope so. Okay, anyway, I'm going to add a little…
+
+360
+00:59:54.510 --> 00:59:57.710
+Abhirath Batra: Or maybe we can make that edit later.
+
+361
+01:00:52.680 --> 01:00:54.589
+Abhirath Batra: Yeah, actually, we don't need this out here.
+
+362
+01:00:56.060 --> 01:00:57.320
+Abhirath Batra: This is excessive.
+
+363
+01:00:58.830 --> 01:00:59.870
+Abhirath Batra: Alright.
+
+364
+01:01:00.650 --> 01:01:08.300
+Abhirath Batra: So, I think this is something we'll add here. We'd say, hey, Claude, We're going to set up.
+
+365
+01:01:09.920 --> 01:01:11.520
+Abhirath Batra: agents for…
+
+366
+01:02:02.610 --> 01:02:13.239
+Abhirath Batra: Alright, so what we're doing is we are saying to it, hey, we're going to set up some agents, but, you read the cloud.md file and set up the structure required
+
+367
+01:02:13.690 --> 01:02:16.970
+Abhirath Batra: Once you're done, we can then start building the agents.
+
+368
+01:02:17.590 --> 01:02:20.729
+Abhirath Batra: And what we're going to do is, we're going to say edit automatically.
+
+369
+01:02:20.990 --> 01:02:24.140
+Abhirath Batra: In fact, we're going to go a little more *********
+
+370
+01:02:24.250 --> 01:02:30.059
+Abhirath Batra: And… wait a second… How should I…
+
+371
+01:02:33.070 --> 01:02:37.300
+Abhirath Batra: the settings here… Sorry.
+
+372
+01:02:44.370 --> 01:02:45.720
+Abhirath Batra: I don't use this often.
+
+373
+01:02:46.990 --> 01:02:49.340
+Abhirath Batra: Anyway, we can do that later.
+
+374
+01:02:50.760 --> 01:02:59.990
+Abhirath Batra: Alright, so… Now, what you're going to watch this do is, it's going to read our cloud.md file, And…
+
+375
+01:03:00.560 --> 01:03:04.649
+Abhirath Batra: Set up this entire folder structure that we asked it to do.
+
+376
+01:03:05.680 --> 01:03:08.040
+Abhirath Batra: Hopefully, without making many mistakes.
+
+377
+01:03:08.980 --> 01:03:23.339
+Abhirath Batra: So, as you can see, it has this, it's going to create… has its to-do list set up, it's going to create all these folders, create all these files, and get ready, right? In the meantime, what we're going to do is, we are going to think more deeply about the,
+
+378
+01:03:28.320 --> 01:03:30.720
+Abhirath Batra: About the agents that we're going to build.
+
+379
+01:04:00.200 --> 01:04:06.210
+Abhirath Batra: Don't… We're going to assume that we're dealing with a Coffee brand.
+
+380
+01:04:06.940 --> 01:04:08.879
+Abhirath Batra: called Bean Loop.
+
+381
+01:04:10.760 --> 01:04:11.590
+Abhirath Batra: Sorry.
+
+382
+01:04:13.410 --> 01:04:19.340
+Abhirath Batra: Turns out, it's not just my handwriting, it's my… Spellings too, huh?
+
+383
+01:04:19.930 --> 01:04:20.760
+Abhirath Batra: Wait.
+
+384
+01:04:21.060 --> 01:04:23.369
+Abhirath Batra: Oh, I went a little too far.
+
+385
+01:04:27.780 --> 01:04:29.090
+Abhirath Batra: Yeah, interesting.
+
+386
+01:04:34.860 --> 01:04:36.919
+Abhirath Batra: Oh, much better. All right.
+
+387
+01:04:39.480 --> 01:04:40.959
+Abhirath Batra: Let's clean that up.
+
+388
+01:04:58.080 --> 01:05:00.130
+Abhirath Batra: Okay, my iPad is not happy.
+
+389
+01:05:23.430 --> 01:05:26.170
+Abhirath Batra: Okay, I'm going to ignore this for a second.
+
+390
+01:05:26.800 --> 01:05:31.910
+Abhirath Batra: So, what we're trying to do is… Let me…
+
+391
+01:05:32.390 --> 01:05:35.840
+Abhirath Batra: see if I can just write to the sticky note, just make life easier.
+
+392
+01:05:37.920 --> 01:05:38.740
+Abhirath Batra: Okay.
+
+393
+01:05:43.490 --> 01:05:48.449
+Abhirath Batra: Great. So, we have a company called Bean Loop.
+
+394
+01:05:48.760 --> 01:05:52.209
+Abhirath Batra: Which is a coffee brand, and we want to…
+
+395
+01:05:55.370 --> 01:05:57.029
+Abhirath Batra: Do a couple of things here.
+
+396
+01:05:58.330 --> 01:06:04.200
+Abhirath Batra: it runs its CRM on, or its entire project structure on Asana.
+
+397
+01:06:09.420 --> 01:06:12.470
+Abhirath Batra: Oh, Balraj, I hope you're staying safe.
+
+398
+01:06:13.740 --> 01:06:15.649
+Abhirath Batra: That's… that's pretty scary.
+
+399
+01:06:20.550 --> 01:06:34.179
+Abhirath Batra: Okay, I'm gonna get back, for now. So, yeah, Beanloop, has its customer support tickets on Asana, it's internal, everything's set up in Asana, and it needs two things automated for now.
+
+400
+01:06:34.290 --> 01:06:38.330
+Abhirath Batra: One thing is a customer support agent.
+
+401
+01:06:38.660 --> 01:06:46.460
+Abhirath Batra: You know, we don't want to figure this out by ourselves. We want something to do it automatically. And another thing we want to do is…
+
+402
+01:06:46.890 --> 01:06:53.790
+Abhirath Batra: let's say, content… For marketing agent.
+
+403
+01:06:56.120 --> 01:07:02.130
+Abhirath Batra: As usual, we want to be very specific in our asks for these agents, so…
+
+404
+01:07:02.870 --> 01:07:07.340
+Abhirath Batra: we don't just say, what does the customer support agent do? It basically does…
+
+405
+01:07:07.850 --> 01:07:15.850
+Abhirath Batra: Looks at tickets in the, customer… response…
+
+406
+01:07:16.100 --> 01:07:21.000
+Abhirath Batra: or whatever it's called, Customer Incidents Project.
+
+407
+01:07:21.200 --> 01:07:23.290
+Abhirath Batra: Response to them.
+
+408
+01:07:24.090 --> 01:07:25.970
+Abhirath Batra: Based on playbook.
+
+409
+01:07:26.610 --> 01:07:34.759
+Abhirath Batra: Right, the content marketing agent, for now, we can say, comes up with,
+
+410
+01:07:34.930 --> 01:07:37.789
+Abhirath Batra: I don't know, Instagram post idea?
+
+411
+01:07:37.920 --> 01:07:40.029
+Abhirath Batra: For the week. Something like that.
+
+412
+01:07:42.110 --> 01:07:43.040
+Abhirath Batra: Alright.
+
+413
+01:07:45.740 --> 01:07:50.949
+Abhirath Batra: So, knowing this, we can then instruct Claude Code to build our agents.
+
+414
+01:07:53.120 --> 01:07:54.470
+Abhirath Batra: Let's see if it's done.
+
+415
+01:07:55.350 --> 01:07:57.790
+Abhirath Batra: Okay, looks like it is done.
+
+416
+01:07:58.310 --> 01:08:02.309
+Abhirath Batra: It has created all these different folders.
+
+417
+01:08:03.160 --> 01:08:12.540
+Abhirath Batra: that we expected it to create. For example, it has written a little bit of code in the tools folder, because it expects that we will add, tooling over there.
+
+418
+01:08:12.870 --> 01:08:22.600
+Abhirath Batra: And it has created a environment example file where it expects us to add Different types of keys.
+
+419
+01:08:24.960 --> 01:08:30.789
+Abhirath Batra: So… is… is… Everything clear up till here?
+
+420
+01:08:32.819 --> 01:08:36.840
+Abhirath Batra: Any questions? Why we're doing this? What are we doing?
+
+421
+01:08:37.729 --> 01:08:40.009
+Abhirath Batra: How is it different from what we did before?
+
+422
+01:08:45.649 --> 01:08:46.850
+Abhirath Batra: Clear, awesome.
+
+423
+01:08:47.660 --> 01:08:49.610
+Abhirath Batra: Okay,
+
+424
+01:08:55.050 --> 01:09:00.760
+Abhirath Batra: Alright, then I think then we should move on to creating the agents after this. So…
+
+425
+01:10:03.150 --> 01:10:09.859
+Abhirath Batra: So, one of the things that we want for our customer support agent to do is it should write the responses, the responses.
+
+426
+01:10:10.390 --> 01:10:13.180
+Abhirath Batra: As comments on the tickets?
+
+427
+01:10:14.600 --> 01:10:18.040
+Abhirath Batra: And move them to the in progress.
+
+428
+01:10:18.770 --> 01:10:19.620
+Abhirath Batra: More.
+
+429
+01:10:21.890 --> 01:10:27.970
+Abhirath Batra: And, the content… Marketing… Agent.
+
+430
+01:10:28.200 --> 01:10:30.109
+Abhirath Batra: We should call these sub-agents.
+
+431
+01:10:30.250 --> 01:10:31.820
+Abhirath Batra: So that it knows that.
+
+432
+01:10:33.010 --> 01:10:40.449
+Abhirath Batra: They're supposed to be… you know, they're supposed to be, sort of, responding to the master agent's requests.
+
+433
+01:11:16.030 --> 01:11:19.320
+Abhirath Batra: If we talk about price, this setup is too pricey per execution.
+
+434
+01:11:19.740 --> 01:11:26.660
+Abhirath Batra: The way to think about pricing about AI right now is that it is heavily, heavily subsidized.
+
+435
+01:11:26.810 --> 01:11:42.379
+Abhirath Batra: No matter what tool we use, whether it is the standard ChatGBT, whether it is an ATEM, no matter what we do, as long as an LLM call is being made, we can be very sure that it is venture capital subsidized the same way Uber was subsidized when it came out.
+
+436
+01:11:42.380 --> 01:11:54.689
+Abhirath Batra: So, if you remember, when it really came out in 2015, we were taking, 30 kilometer trips for just, what, 300 rupees? Or, you know, whatever, $10.
+
+437
+01:11:55.010 --> 01:11:58.269
+Abhirath Batra: And, it's never been the same.
+
+438
+01:11:58.660 --> 01:12:05.760
+Abhirath Batra: And yeah, that's… that's how I expect the pricing for AI agents to go. But the, there is…
+
+439
+01:12:05.950 --> 01:12:20.059
+Abhirath Batra: Another trend that is very important, which is that per token cost is declining. And that's declining not just because, they are putting up more inference capacity, but it's also because the underlying technology is getting better.
+
+440
+01:12:20.060 --> 01:12:30.480
+Abhirath Batra: Which is that there is a lot of algorithmic efficiency that can be added on the inference of LLMs, which is being deployed.
+
+441
+01:12:30.950 --> 01:12:33.170
+Abhirath Batra: Having said that, the…
+
+442
+01:12:33.360 --> 01:12:46.550
+Abhirath Batra: view that I personally have for the future of AI is that, for a lot, and by that I mean a lot of use cases that don't really require a, you know, a lot of intelligence.
+
+443
+01:12:46.550 --> 01:12:55.800
+Abhirath Batra: Open source models running on device, on-edge devices like mobiles and laptops are going to be the future, where this price should drop down.
+
+444
+01:12:56.170 --> 01:13:10.190
+Abhirath Batra: So, you can expect that this setup where we're using Claud code to create the agents will stay expensive, because it requires a lot of intelligence, but maybe the agent itself could be that of lower intelligence, which should be able to use on-device intelligence.
+
+445
+01:13:10.320 --> 01:13:12.680
+Abhirath Batra: Am I making sense, Satya?
+
+446
+01:13:15.120 --> 01:13:15.910
+Abhirath Batra: Awesome.
+
+447
+01:13:16.110 --> 01:13:21.389
+Abhirath Batra: Yeah, but that's a good point. I think, cost is going to be a big,
+
+448
+01:13:21.600 --> 01:13:40.800
+Abhirath Batra: you know, cost is going to be a big decision maker for businesses, and I think it'll come down to this. The play that OpenAI and Anthropics seemingly are making is that, they will provide intelligence that is as good as an employee. So you would think that if I'm going to hire a person for 60K
+
+449
+01:13:40.800 --> 01:13:56.420
+Abhirath Batra: to do my analytics work, or doing… being my, content creation guy, then maybe a 40,000 bill per annum for OpenAI, or for Gemini, or for Anthropic is also going to be worth it. That's the calculus they're going for.
+
+450
+01:13:59.330 --> 01:14:03.589
+Abhirath Batra: Early adopters pay more, Actually, no, right?
+
+451
+01:14:05.330 --> 01:14:24.520
+Abhirath Batra: Unfortunately, this is not a space where price decreases with usage increase, because that used to be the funder with SaaS, where the marginal cost for serving more users does not grow as fast, right? Like, once I've written a piece of code, and it's being served from a server, adding more users
+
+452
+01:14:24.520 --> 01:14:31.879
+Abhirath Batra: does not increase my cost immediately. Every 10,000 users, maybe I add one more tiny server, so my cost doesn't increase much.
+
+453
+01:14:31.950 --> 01:14:36.800
+Abhirath Batra: But with LLMs, inference cost is per token, so it scales linearly almost.
+
+454
+01:14:39.530 --> 01:14:43.810
+Abhirath Batra: How to figure out what is the second specialized agent is now needed.
+
+455
+01:14:45.290 --> 01:14:57.330
+Abhirath Batra: Yeah, I'll share that, the prompts, proposal. Okay, how to figure out how much intelligence is enough for tasks, exploring the version further, how to figure out when a second or specialized agent is needed, now needed?
+
+456
+01:14:57.620 --> 01:15:13.000
+Abhirath Batra: Yeah, I don't think these are solved, answers. There's, you know, rules of thumbs, like, folks like us who are building it for clients, we are trying to figure it out on the fly, that, okay, so, one rule is obviously that, you know, you don't want to give us, an agent, a lot of scope.
+
+457
+01:15:13.000 --> 01:15:36.599
+Abhirath Batra: Which is why we're, you know, trying to model them after employees. That too, after junior employees. We are not saying, you know, create an agent that is the VP of Marketing, because the VP of Marketing does 100 things, right? We are saying be a content marketing guy, just, you know, the base layer, which does one very specialized task, and that's what this can be good at. So, point number one, do I need an agent? Specialized agent? Yeah, if…
+
+458
+01:15:36.600 --> 01:15:41.869
+Abhirath Batra: If the scope of a single agent is exploding, it's, you know, going to start to make a lot of mistakes.
+
+459
+01:15:41.870 --> 01:15:48.770
+Abhirath Batra: Yeah, and it's a bit of fly-by-wire, yeah, that's fair. And yeah, I know, exactly. Pick a persona, that's perfectly right.
+
+460
+01:15:49.180 --> 01:15:53.409
+Abhirath Batra: part of personal ways, keep my… I may be horrible wrong, but this question, is this condition.
+
+461
+01:16:02.340 --> 01:16:25.789
+Abhirath Batra: Yeah, Satya, sure. Yeah, this is… I mean, you know, who knows what'll happen. But anyway, we'll get back. So, again, what we are trying to do now is we're trying to be very specific about, as Venuca very rightly pointed out, pick a persona and be very specific, and my attempt here, before my iPad, betrayed me, was to, you know, kind of, narrow down on the persona. And, the persona is…
+
+462
+01:16:25.790 --> 01:16:31.959
+Abhirath Batra: You know, and I'm trying to write as much as I can. I'm trying to say, hey, this is what this persona does.
+
+463
+01:16:32.040 --> 01:16:34.200
+Abhirath Batra: Right?
+
+464
+01:16:35.250 --> 01:16:49.420
+Abhirath Batra: And what we'll find out, most likely by… with this prompt, is that even with my best intentions, I must have left some things here and there. And so we might have to prompt it again to correct those mistakes. So for now, what we can do is, we can let it go.
+
+465
+01:16:49.460 --> 01:16:56.139
+Abhirath Batra: I'm probably going to add one more engineering bit here, or actually it'll probably figure it out itself. We'll see.
+
+466
+01:16:56.730 --> 01:16:57.880
+Abhirath Batra: Let's start.
+
+467
+01:17:13.120 --> 01:17:19.190
+Abhirath Batra: I have a quick question. Is everybody comfortable with the ideas of what an API is and what keys are?
+
+468
+01:17:25.200 --> 01:17:26.030
+Abhirath Batra: Awesome.
+
+469
+01:17:26.550 --> 01:17:27.590
+Abhirath Batra: Love that.
+
+470
+01:17:28.800 --> 01:17:37.379
+Abhirath Batra: Yeah, that's the feedback I got from the other instructors when I was preparing for this class, that all the learners are super advanced, and then I can just dive right in.
+
+471
+01:17:37.760 --> 01:17:40.229
+Abhirath Batra: And I'm a little worried if I'm boring everybody.
+
+472
+01:17:45.610 --> 01:17:53.620
+Abhirath Batra: Yes, Madhu, definitely. And I think this… this minimum set of guardrails actually keeps evolving. What happens is that,
+
+473
+01:17:56.440 --> 01:18:14.829
+Abhirath Batra: at least that's my experience, that every time I try to do something and I find something new, a new way in which it screws up, and then I add that as a guardrail to my clot.md file or something like that. Because, you know, it does… it does innovate in finding out interesting ways.
+
+474
+01:18:32.730 --> 01:18:38.760
+Abhirath Batra: Why do well lensgate.env.example by default instead of .env, well, I think they're just,
+
+475
+01:18:44.460 --> 01:18:46.239
+Abhirath Batra: It seems like a preference.
+
+476
+01:18:46.500 --> 01:18:48.629
+Abhirath Batra: I could just do the .env as well.
+
+477
+01:18:49.490 --> 01:18:54.300
+Abhirath Batra: I think they just don't want empty spaces to be left out, because that would ***** up execution.
+
+478
+01:18:54.530 --> 01:18:55.890
+Abhirath Batra: Maybe that's the idea.
+
+479
+01:19:06.540 --> 01:19:10.840
+Abhirath Batra: Oh, cool, so I think Nitya's added a Q&A link, so…
+
+480
+01:19:11.510 --> 01:19:14.550
+Abhirath Batra: that we can go through the Q&A towards the end.
+
+481
+01:19:25.520 --> 01:19:27.379
+Abhirath Batra: This is the part that's going to take some time.
+
+482
+01:19:35.180 --> 01:19:37.979
+Abhirath Batra: Why don't we give a recap in the meantime? Yeah, sure.
+
+483
+01:19:38.460 --> 01:19:51.539
+Abhirath Batra: So, the recap's simple, right? We are trying to build agents from scratch, and the reason for doing that is because we want the flexibility of the cloud code agents and the capability to go to scale, because we may want to build products.
+
+484
+01:19:51.610 --> 01:20:08.420
+Abhirath Batra: And ultimately, we are doing this on… knowing very well that this is still a demo. This is… this is still just, what, 60-70% of the way of going to production, but they're going to make something that, looks like, oh, it's almost there, all we need to do is,
+
+485
+01:20:08.710 --> 01:20:23.989
+Abhirath Batra: really tighten all the loose edges, because in production, you're going to get attacked. So I have a nice story here, actually, that I built an OpenClaw agent for myself, and I asked it to find interesting content on the internet, things that I don't find on my regular feeds.
+
+486
+01:20:23.990 --> 01:20:30.219
+Abhirath Batra: And, posted on a database for me, and I wanted to expose that on my personal website.
+
+487
+01:20:30.560 --> 01:20:33.859
+Abhirath Batra: And, I set up the agent.
+
+488
+01:20:34.910 --> 01:20:42.210
+Abhirath Batra: at 6pm in the evening, and by morning, I'd found out that my server was down because it was being attacked.
+
+489
+01:20:42.830 --> 01:20:45.200
+Abhirath Batra: And one would assume that,
+
+490
+01:20:46.530 --> 01:21:02.880
+Abhirath Batra: you know, maybe somebody was looking out for me, maybe a friend who received the link tried to play a prank on me, but that's actually not the case. What happened was that there is just botnets sitting out there looking for any server exposing a public IP and trying to attack it.
+
+491
+01:21:03.830 --> 01:21:11.770
+Abhirath Batra: What I mean by that is that, Going to production, Is its own beast.
+
+492
+01:21:12.000 --> 01:21:29.060
+Abhirath Batra: with any kind of software, be it an agent, be it whatever. And by going to production, I mean exposing it to external customers. Which is why cloud services exist in the first place. They say, you just write your application and deploy with us, so that you don't have to worry about all these things happening.
+
+493
+01:21:29.330 --> 01:21:42.359
+Abhirath Batra: But they still happen. And so, this is the point I'm trying to drive home consistently, that while we are looking at a very engineering-heavy thing, this is, still very short of what it takes to build and sell something.
+
+494
+01:21:49.070 --> 01:21:55.800
+Abhirath Batra: Lastly, with the Cloud Agent SDK, we are, building…
+
+495
+01:21:56.400 --> 01:22:06.380
+Abhirath Batra: the agents using Claude Code itself, and we are trying to give it very strict guardrails using a thoroughly defined architecture in Cloud.md file.
+
+496
+01:22:06.700 --> 01:22:09.870
+Abhirath Batra: And as you can see, it's using all of that to build.
+
+497
+01:22:29.740 --> 01:22:32.780
+Abhirath Batra: what I found, somebody else was asking about,
+
+498
+01:22:34.920 --> 01:22:41.719
+Abhirath Batra: anti-gravity versus Claude, and what I've found from the community is that Claude is well-loved.
+
+499
+01:22:41.870 --> 01:22:46.330
+Abhirath Batra: For being cute, by… because of these kind of things that they've added.
+
+500
+01:22:46.800 --> 01:22:50.190
+Abhirath Batra: And, that's why it's a preference with a lot of people.
+
+501
+01:22:51.010 --> 01:22:59.630
+Abhirath Batra: Had you secured your server to a single IPS HSH access and firewall and still attacked? Yes, yes. And by attack, I mean that they were just botnets trying to,
+
+502
+01:22:59.810 --> 01:23:12.759
+Abhirath Batra: Trying to try all sorts of exploits on my standard 4.43 HTTP server that I was serving, Apache server that I was serving, and actually, it was before the Apache server, just the application server that went down.
+
+503
+01:23:13.010 --> 01:23:19.170
+Abhirath Batra: This answer is specifically for Lonnie, not for people who don't know what this is.
+
+504
+01:23:19.490 --> 01:23:20.909
+Abhirath Batra: Please don't worry about it.
+
+505
+01:23:23.660 --> 01:23:30.210
+Abhirath Batra: What is the process of building a Cloud MD architecture? The process of building the Cloud MD architecture is that,
+
+506
+01:23:30.460 --> 01:23:37.670
+Abhirath Batra: You can try building an agent and see how it does things, and then refine it with iterations.
+
+507
+01:23:37.750 --> 01:23:49.980
+Abhirath Batra: basically see if you don't tell it to do something based on… I mean, you're going to give it instructions, so you're probably going to put instructions in a folder. You're probably going to let it make tools, so you're going to put them in a folder.
+
+508
+01:23:49.980 --> 01:24:01.649
+Abhirath Batra: It's just a little bit of intuition, and after that, a little bit of iteration. If you see that, oh, if you don't give it an artifact folder, it just keeps putting everything in the same folder itself, and it gets hard to manage, things like that.
+
+509
+01:24:36.310 --> 01:24:41.890
+Abhirath Batra: I think there's… the best practices to follow while building the Cloud MD is…
+
+510
+01:24:42.410 --> 01:24:53.670
+Abhirath Batra: you have to sort of experiment and figure it out. Like, I'm pretty sure that there's… you know, we're going to hit an edge case at some point where I'll have to update this one. This is just…
+
+511
+01:24:54.150 --> 01:24:58.199
+Abhirath Batra: A particular architecture that I've found to work well.
+
+512
+01:24:58.920 --> 01:25:13.509
+Abhirath Batra: Especially for the use cases we're trying right now, I'm sure there's going to be, like, if I were doing an engineering thing, I would probably add a lot of engineering-specific stuff to it, but that's not the direction we're taking right now, so I'm avoiding all of that right now.
+
+513
+01:25:14.660 --> 01:25:17.419
+Abhirath Batra: Like, I would add a lot of security-related stuff.
+
+514
+01:25:22.260 --> 01:25:29.039
+Abhirath Batra: as I said, the right way to see how to… what to prevent LLMs from doing is to see the message first.
+
+515
+01:25:29.960 --> 01:25:31.600
+Abhirath Batra: That seems to help me most.
+
+516
+01:25:37.250 --> 01:25:39.110
+Abhirath Batra: Yes, and we're looking to see.
+
+517
+01:25:39.500 --> 01:25:43.259
+Abhirath Batra: In terms of compute, I'm not sure, Dhanjay, what that means.
+
+518
+01:25:58.830 --> 01:26:00.000
+Abhirath Batra: I see.
+
+519
+01:26:00.440 --> 01:26:01.640
+Abhirath Batra: Oh…
+
+520
+01:26:02.270 --> 01:26:17.310
+Abhirath Batra: I would not recommend setting up your own compute, because on your own compute, you would have to use open source models. You can't really use the closed source models, like Cloud Opus 4.6 or GPT-5.3, and they are state-of-the-art.
+
+521
+01:26:17.410 --> 01:26:23.470
+Abhirath Batra: if you do find a use case which can run on the open source models, let's say DEC R3,
+
+522
+01:26:23.790 --> 01:26:27.919
+Abhirath Batra: Then, it'll depend on the size of the model, how many parameters it has.
+
+523
+01:26:28.070 --> 01:26:32.610
+Abhirath Batra: Are you using a quantized Version of the model, things like that.
+
+524
+01:26:44.690 --> 01:26:48.330
+Abhirath Batra: Alright, so… we have…
+
+525
+01:26:51.770 --> 01:27:00.359
+Abhirath Batra: the agents ready. So, before we work with them, let's look at what the Asana projects look like.
+
+526
+01:27:03.730 --> 01:27:05.000
+Abhirath Batra: And second…
+
+527
+01:27:25.100 --> 01:27:31.219
+Abhirath Batra: Perplexity computer is… somewhat different, Rajendra.
+
+528
+01:27:31.940 --> 01:27:40.530
+Abhirath Batra: It is… not really… I mean…
+
+529
+01:27:41.930 --> 01:27:55.009
+Abhirath Batra: it's, again, you're building agents of the tool, not from scratch, so you may not be able to productionize them, that's the point. Anyway, so here we go. So, I have a very…
+
+530
+01:27:55.380 --> 01:27:59.140
+Abhirath Batra: toy Asana system set up here with a support inbox.
+
+531
+01:27:59.360 --> 01:28:05.710
+Abhirath Batra: And there's a feature request from a client, some customer cannot access some course, There's a customer email.
+
+532
+01:28:06.030 --> 01:28:07.800
+Abhirath Batra: There's a refund request.
+
+533
+01:28:08.900 --> 01:28:22.709
+Abhirath Batra: there's a question about pricing, things like that. So there's these things out here, right? And then there's a marketing calendar that is currently empty, so we want the content marketing guy to fill these in. So, let's come here.
+
+534
+01:28:22.990 --> 01:28:28.049
+Abhirath Batra: So, first thing it wants us to do is, naturally fill out these keys.
+
+535
+01:28:34.550 --> 01:28:35.540
+Abhirath Batra: And…
+
+536
+01:28:38.900 --> 01:28:45.120
+Abhirath Batra: I probably have the keys written out somewhere else, so I'm going to just pull them up.
+
+537
+01:28:47.690 --> 01:28:49.629
+Abhirath Batra: To make life easy here.
+
+538
+01:29:48.490 --> 01:29:50.670
+Abhirath Batra: Okay, I just copied those secrets.
+
+539
+01:29:50.990 --> 01:30:00.240
+Abhirath Batra: And what we're going to do is, we're going to be a little hard on cloud code, and we're going to say, I don't want to run these commands.
+
+540
+01:30:20.350 --> 01:30:28.000
+Abhirath Batra: And ask it to just run everything, and just give me a single entry point. I don't want to… you know, we are not doing that today.
+
+541
+01:30:28.120 --> 01:30:31.949
+Abhirath Batra: However, we'll have to switch at the, you know, pull up the terminal.
+
+542
+01:30:36.060 --> 01:30:37.739
+Abhirath Batra: While it does all of this.
+
+543
+01:30:39.160 --> 01:30:42.629
+Abhirath Batra: Because ultimately, we're going to execute this in a terminal.
+
+544
+01:31:21.920 --> 01:31:24.629
+Abhirath Batra: Lipsa, there is…
+
+545
+01:31:25.230 --> 01:31:29.179
+Abhirath Batra: Just this advantage, that I can see all these files and folders changing in real time.
+
+546
+01:31:40.400 --> 01:31:47.610
+Abhirath Batra: Arthur, will this take license? I took the, I'm not using a licensed Asana thing right now, I'm just using the 14-day trial.
+
+547
+01:31:48.890 --> 01:31:53.160
+Abhirath Batra: What is the difference between playbook files? That's a good question, Cynthia. So, in the playbook.
+
+548
+01:31:53.900 --> 01:31:56.470
+Abhirath Batra: We're basically telling the agent
+
+549
+01:31:57.000 --> 01:32:05.090
+Abhirath Batra: how to respond to the customer queries. This is where the… as you can see, we had described this in our,
+
+550
+01:32:05.800 --> 01:32:13.030
+Abhirath Batra: We described this in our, claw.md file that… hold on.
+
+551
+01:32:13.220 --> 01:32:14.840
+Abhirath Batra: what we have to say is.
+
+552
+01:32:20.600 --> 01:32:29.109
+Abhirath Batra: Right. So, in Cloud.md, we had said that each sub-agent should have its own playbook, each sub-agent should have its own,
+
+553
+01:32:29.350 --> 01:32:36.460
+Abhirath Batra: this thing, tools, or whatever it needs, right? So that's kind of what we have done here. We have said in the playbooks.
+
+554
+01:32:40.280 --> 01:32:41.949
+Abhirath Batra: We'll do what…
+
+555
+01:32:42.300 --> 01:32:57.919
+Abhirath Batra: I was asked to do earlier. The playbook, it has described get open tickets, then get ticket details, then post comment, then move into progress. This is what the Cloud code came up with as the guidelines for this. And this is something we should,
+
+556
+01:32:58.620 --> 01:33:11.830
+Abhirath Batra: change ourselves. So if I were building this agent for my company, I would say, here is my SOP of how to interact with customer support requests and add it to this playbook. And I would do the same for the content marketing agent. What…
+
+557
+01:33:12.020 --> 01:33:16.520
+Abhirath Batra: Claude Code has done is it's come up with a basic boilerplate, initially.
+
+558
+01:33:16.840 --> 01:33:17.750
+Abhirath Batra: That's it.
+
+559
+01:33:19.230 --> 01:33:27.330
+Abhirath Batra: So it's come up with some hashtags, some fun content pillars, And things like that.
+
+560
+01:33:31.940 --> 01:33:33.529
+Abhirath Batra: Make sense, Sylvia?
+
+561
+01:33:37.790 --> 01:33:38.550
+Abhirath Batra: Awesome.
+
+562
+01:33:56.720 --> 01:33:59.330
+Abhirath Batra: Alright, so it's given us a couple of commands here.
+
+563
+01:33:59.590 --> 01:34:01.320
+Abhirath Batra: To finally execute.
+
+564
+01:34:02.330 --> 01:34:04.359
+Abhirath Batra: And we have our terminal here.
+
+565
+01:34:05.100 --> 01:34:08.440
+Abhirath Batra: We're just going to paste them and see if it works.
+
+566
+01:34:08.660 --> 01:34:09.840
+Abhirath Batra: It did not.
+
+567
+01:34:12.680 --> 01:34:14.370
+Abhirath Batra: We should just tell it that.
+
+568
+01:34:44.040 --> 01:34:51.649
+Abhirath Batra: Another thing is that, I would typically just go and fix this error, because…
+
+569
+01:34:52.570 --> 01:34:58.789
+Abhirath Batra: No matter what we do, it does make these tiny errors here and there, but we want to try and use the whole
+
+570
+01:35:00.760 --> 01:35:03.399
+Abhirath Batra: Agentic power as much as we can.
+
+571
+01:35:06.750 --> 01:35:08.330
+Abhirath Batra: So we don't want to touch anything.
+
+572
+01:35:16.490 --> 01:35:20.850
+Abhirath Batra: Right, so, I think we'll discuss this, at the end of the thing. One second.
+
+573
+01:35:28.350 --> 01:35:34.020
+Abhirath Batra: Alright, so it has done what we asked it to do, it has created an agent, so let's try it out.
+
+574
+01:35:57.660 --> 01:35:59.889
+Abhirath Batra: It is unable to work.
+
+575
+01:36:14.840 --> 01:36:29.630
+Abhirath Batra: it's… I'm not sure if I'm happy that we're seeing errors come while using Claude code in the class or not, because it doesn't look great, but I think that it's a good illustration of the fact that it does keep making errors. So, building…
+
+576
+01:36:30.140 --> 01:36:37.059
+Abhirath Batra: actual programs with clawed code, even though it's being sold as the end of software engineering, is not where it's at.
+
+577
+01:36:37.460 --> 01:36:39.970
+Abhirath Batra: It's a very simple,
+
+578
+01:36:40.100 --> 01:36:48.590
+Abhirath Batra: Program, and it's not doing a good job, because even after this much guardrailing, it can still, you know, make all these sorts of mistakes.
+
+579
+01:36:54.370 --> 01:36:57.270
+Abhirath Batra: Yeah, I appreciate that. Everybody agrees.
+
+580
+01:36:58.870 --> 01:37:00.239
+Abhirath Batra: This is the reality.
+
+581
+01:37:01.220 --> 01:37:08.589
+Abhirath Batra: Because I wish, you know, if it would have been a sanitized demo, like a video where everything worked perfectly, it wouldn't have helped.
+
+582
+01:37:13.470 --> 01:37:17.069
+Abhirath Batra: Nabila, I think we can take that question towards the end of the class.
+
+583
+01:37:17.350 --> 01:37:20.389
+Abhirath Batra: Same, Sylvia, your question, we will take it in a bit.
+
+584
+01:38:20.400 --> 01:38:24.590
+Abhirath Batra: The thing that it should get credit for is it keeps trying, especially on the max plan.
+
+585
+01:38:39.960 --> 01:38:46.150
+Abhirath Batra: And I feel like if it doesn't work on this try, I can show you what I made when preparing for this class.
+
+586
+01:38:50.520 --> 01:38:52.629
+Abhirath Batra: Or is it better if we…
+
+587
+01:38:53.350 --> 01:38:56.260
+Abhirath Batra: Try hard and get this to work. What do you guys say?
+
+588
+01:39:00.020 --> 01:39:04.890
+Abhirath Batra: Share what you want? Sure, I can do that. It's the same thing. It's exactly the same thing.
+
+589
+01:39:07.120 --> 01:39:09.990
+Abhirath Batra: It's not different in terms of what it does.
+
+590
+01:39:11.820 --> 01:39:18.020
+Abhirath Batra: Yeah, some people want us to try and get it. What I've done is actually, I mean, I've done the exact same steps, that's the whole point.
+
+591
+01:39:25.090 --> 01:39:29.660
+Abhirath Batra: I'd like to see the professional debugging process, sure. Okay.
+
+592
+01:39:30.700 --> 01:39:31.999
+Abhirath Batra: You can do that.
+
+593
+01:39:32.400 --> 01:39:33.779
+Abhirath Batra: Let's see what it does.
+
+594
+01:39:54.610 --> 01:39:56.330
+Abhirath Batra: It was doing strange things.
+
+595
+01:39:57.170 --> 01:39:59.200
+Abhirath Batra: It shouldn't be this complicated.
+
+596
+01:40:03.510 --> 01:40:07.630
+Abhirath Batra: Mmm… I think we can let it go bad, it's fine.
+
+597
+01:40:14.740 --> 01:40:19.499
+Abhirath Batra: While it does all of this, we should… we can see the output of what I had done earlier.
+
+598
+01:40:19.680 --> 01:40:20.750
+Abhirath Batra: And then…
+
+599
+01:40:35.080 --> 01:40:38.639
+Abhirath Batra: We can check back on this guy, because it's taking a lot of time.
+
+600
+01:40:41.140 --> 01:40:44.350
+Abhirath Batra: We would like to see everything, but time is a factor.
+
+601
+01:40:44.800 --> 01:40:48.710
+Abhirath Batra: Alright, so this is what we had.
+
+602
+01:40:49.960 --> 01:40:58.769
+Abhirath Batra: same cloud.md, everything else, and again, even at that point of time, I did ask it to do a few things, and what it came up with was…
+
+603
+01:40:58.950 --> 01:41:10.200
+Abhirath Batra: our run.sh script, which creates this. So, we can see here that the customer support inbox looks like this right now. You can say, what's up with…
+
+604
+01:41:10.520 --> 01:41:12.660
+Abhirath Batra: customer support tickets.
+
+605
+01:41:14.810 --> 01:41:20.400
+Abhirath Batra: So, the master agent starts with a loop, it classifies the intent.
+
+606
+01:41:23.880 --> 01:41:28.359
+Abhirath Batra: it routes it to the sub-agent customer support, it generates a work ID,
+
+607
+01:41:47.290 --> 01:41:49.010
+Abhirath Batra: It takes a second to run.
+
+608
+01:41:56.750 --> 01:42:15.210
+Abhirath Batra: And it says, process 2 of 2 new tickets, status count new 4. And so if we come here, we can see that it set a couple of Asana tickets into in-progress mode, it wrote some… write it, wow, what's happening to me? It wrote, some draft responses.
+
+609
+01:42:15.560 --> 01:42:17.980
+Abhirath Batra: For the human to operate upon.
+
+610
+01:42:19.320 --> 01:42:35.709
+Abhirath Batra: Why did I choose to query on the terminal rather than the chat box? Because this is now our agent. This is the bean loop response agent. This is not, Claude Code. And this is the agent that spun up based on the work we did. This is the agent that Claude Code created.
+
+611
+01:42:35.950 --> 01:42:51.079
+Abhirath Batra: And the run.sh commands run that up. It's not cloud code. This is a fresh, brand new, created from scratch agent. You can look at what run.sh does, it starts the main.py file, Python file in the script directory.
+
+612
+01:42:52.280 --> 01:42:55.850
+Abhirath Batra: Which is… Whoa.
+
+613
+01:42:57.140 --> 01:42:58.780
+Abhirath Batra: It's created a lot of stuff here.
+
+614
+01:43:00.510 --> 01:43:05.280
+Abhirath Batra: Where is… Mean.py, right here.
+
+615
+01:43:06.450 --> 01:43:08.349
+Abhirath Batra: It has all this code written.
+
+616
+01:43:08.700 --> 01:43:23.280
+Abhirath Batra: And it has instructions on how to run that code, what tokens to set up. This is our agent. This is no more just a set of skills, it's no more just a set of instructions, it's actual code that it wrote.
+
+617
+01:43:24.630 --> 01:43:32.970
+Abhirath Batra: Yes, this particular example, Sylvia, was a terminal. We could have asked it to make a chatbot that connects to the browser.
+
+618
+01:43:32.970 --> 01:43:52.200
+Abhirath Batra: And we can talk to it there. We could have done that, yes. This just is the simplest entry point, so I felt like this would be the simplest demo. As you can see, that our live demo did face errors doing that, and, you know, with the front-end interface, it might have gone even more wrong, so it was just a good idea to
+
+619
+01:43:52.200 --> 01:43:53.350
+Abhirath Batra: Try this out here.
+
+620
+01:43:58.380 --> 01:44:01.150
+Abhirath Batra: Alright, the other one is also ready.
+
+621
+01:44:01.420 --> 01:44:04.159
+Abhirath Batra: And I feel like we can bring that in.
+
+622
+01:44:04.350 --> 01:44:11.810
+Abhirath Batra: it worked really hard and got that working. And so let's see if we can… Try that.
+
+623
+01:44:15.800 --> 01:44:25.200
+Abhirath Batra: Are we going to say is the content, strategy… For… sorry.
+
+624
+01:44:26.050 --> 01:44:27.559
+Abhirath Batra: This week, ready?
+
+625
+01:44:29.120 --> 01:44:31.690
+Abhirath Batra: Okay, now my…
+
+626
+01:44:32.530 --> 01:44:37.470
+Abhirath Batra: Key was incorrect. Okay, so we're gonna ignore this for now. We can just do this here.
+
+627
+01:44:57.580 --> 01:44:59.599
+Abhirath Batra: It's sent it to the marketing agent.
+
+628
+01:45:00.320 --> 01:45:03.900
+Abhirath Batra: It's trying to talk to fire crawl, I didn't give it a Fire Crawl key.
+
+629
+01:45:10.580 --> 01:45:12.250
+Abhirath Batra: But it'll come up with something.
+
+630
+01:45:14.170 --> 01:45:19.570
+Abhirath Batra: So, here you go. It's creating a couple of… Things.
+
+631
+01:45:21.060 --> 01:45:22.300
+Abhirath Batra: for marketing.
+
+632
+01:45:26.360 --> 01:45:28.929
+Abhirath Batra: It's written a caption, and what?
+
+633
+01:45:29.950 --> 01:45:30.930
+Abhirath Batra: Right?
+
+634
+01:45:31.440 --> 01:45:34.720
+Abhirath Batra: So, to recap, we basically built
+
+635
+01:45:34.840 --> 01:45:48.510
+Abhirath Batra: an agent from scratch. The one that we built, I'm not going to spend more time on figuring out the key right now, because I feel like we've seen what it does. Everything else is pretty much the same. It has the…
+
+636
+01:45:49.230 --> 01:45:53.290
+Abhirath Batra: same master agent, Python file.
+
+637
+01:45:53.470 --> 01:45:59.640
+Abhirath Batra: with all the code that does all of these things, it uses the anthropic
+
+638
+01:46:00.260 --> 01:46:08.630
+Abhirath Batra: library to use the Cloud Agent SDK. It uses prompts, And talks to the…
+
+639
+01:46:08.910 --> 01:46:11.950
+Abhirath Batra: Claude API, and does all of these things for us.
+
+640
+01:46:17.070 --> 01:46:29.780
+Abhirath Batra: Are there any questions now? Because I think this is all for the demo for now, that we created an agent and a sub-agent, and now, I think that I covered the why pretty well, but now…
+
+641
+01:46:29.980 --> 01:46:37.940
+Abhirath Batra: what other questions do we have? Nikita… sorry, Nitya, should we go into the questions part of the session?
+
+642
+01:46:38.680 --> 01:46:40.100
+Nitya Outskill Team: Yeah, sure.
+
+643
+01:46:40.100 --> 01:46:41.610
+Abhirath Batra: Let's do that.
+
+644
+01:46:46.940 --> 01:46:48.980
+Nitya Outskill Team: Yeah, I just dropped the slide open.
+
+645
+01:46:50.870 --> 01:46:53.059
+Nitya Outskill Team: One second, I'll share my screen.
+
+646
+01:46:53.640 --> 01:46:55.129
+Abhirath Batra: Oh, your restaurant has been great.
+
+647
+01:46:56.960 --> 01:46:57.710
+Abhirath Batra: stupid.
+
+648
+01:47:19.740 --> 01:47:21.960
+Abhirath Batra: Okay, should I start from the top?
+
+649
+01:47:21.960 --> 01:47:22.590
+Nitya Outskill Team: Yes.
+
+650
+01:47:23.020 --> 01:47:29.989
+Abhirath Batra: All right. Should CloudMD be updated to include the project actions? Should this be developed as a skill? We could do that,
+
+651
+01:47:30.370 --> 01:47:31.680
+Abhirath Batra: I think…
+
+652
+01:47:33.510 --> 01:47:52.630
+Abhirath Batra: I think the right way to do it is to separate out the architecture in one file, and then all these other things that are project-specific to another file, because the more reusable artifacts we have with LLMs, I find that to be more useful. So this one single CloudMD file can be used everywhere, and then
+
+653
+01:47:52.720 --> 01:47:57.840
+Abhirath Batra: The other project-specific files can be used elsewhere.
+
+654
+01:48:04.080 --> 01:48:05.620
+Abhirath Batra: How can we ensure that?
+
+655
+01:48:06.270 --> 01:48:07.150
+Abhirath Batra: automate.
+
+656
+01:48:08.930 --> 01:48:18.219
+Abhirath Batra: Will it help to use the Evering Compound Engineering plugin? I have not used that, I'm not sure of that. I'll have to look that up, Narend.
+
+657
+01:48:19.450 --> 01:48:27.410
+Abhirath Batra: difference in today's agent and open law. Yeah, I think that I can answer. Openclaw is…
+
+658
+01:48:28.090 --> 01:48:30.039
+Abhirath Batra: an agent system.
+
+659
+01:48:30.310 --> 01:48:39.240
+Abhirath Batra: that, has already been built, and what we are seeing is how we can build a system from scratch. So, if the question is.
+
+660
+01:48:39.580 --> 01:48:46.820
+Abhirath Batra: what we built and what OpenClaw is, what is the difference between them, then the difference between them is that OpenClaw is,
+
+661
+01:48:46.820 --> 01:49:05.569
+Abhirath Batra: a generic agent, so it says I can do anything that you ask me to do. And for agentic tasks, I will create sub-agents. So you can tell OpenClaw, hey, here's my Asana key, why don't you go and use that? And it would do that. It may not do it really well, because we don't have
+
+662
+01:49:05.690 --> 01:49:09.280
+Abhirath Batra: Programmatic control over the subagents, here we have that.
+
+663
+01:49:09.720 --> 01:49:24.500
+Abhirath Batra: So, if you were building a product, you would not use OpenCloud to do that, because that would be, slightly better than using just Cloud Code to write the agent, where you just have a skills.md file and things like that. It's a little restrictive, slightly less powerful, and definitely not scalable.
+
+664
+01:49:24.550 --> 01:49:30.690
+Abhirath Batra: Out here, because it's programmatic, you have a lot more control, a lot more flexibility, and…
+
+665
+01:49:30.750 --> 01:49:32.470
+Abhirath Batra: Definitely a lot of scale.
+
+666
+01:49:34.540 --> 01:49:42.980
+Abhirath Batra: How can we sell these agents as a service, and how can we make it more autonomous and enterprise level? That is a whole session's worth of…
+
+667
+01:49:43.850 --> 01:49:48.519
+Abhirath Batra: Information, because productizing is definitely not easy.
+
+668
+01:49:50.380 --> 01:49:53.019
+Abhirath Batra: I would say…
+
+669
+01:49:55.280 --> 01:50:08.540
+Abhirath Batra: Yeah, I mean, that's an engineering question. I don't think we should, that's outside the scope of this class, I would say. Okay, how to use these agents sub-agencies as MVPs with monetization target. Yeah, I think…
+
+670
+01:50:09.080 --> 01:50:22.320
+Abhirath Batra: Running them on a machine, like your laptop, is monetizable, but I think… I would repeat myself, I don't think that without a lot more engineering, this is a viable way of doing it.
+
+671
+01:50:23.600 --> 01:50:31.039
+Abhirath Batra: Okay, should cloud.md be updated to include the project actions? Should be developed as a skills? Project actions should go as skills.
+
+672
+01:50:31.300 --> 01:50:38.229
+Abhirath Batra: specific skills or playbooks, different files. Cloud.md should stay, for the architecture.
+
+673
+01:50:39.670 --> 01:50:40.680
+Abhirath Batra: Okay.
+
+674
+01:50:40.900 --> 01:50:47.340
+Abhirath Batra: How can we ensure the context stays consistent as we continue to do our project? How can we update our workflow each session?
+
+675
+01:50:47.990 --> 01:50:54.300
+Abhirath Batra: The context to stay consistent as we continue our project, there is memory.
+
+676
+01:50:54.560 --> 01:51:05.419
+Abhirath Batra: I think what I like to do is, I ask it to say, prepare a summary of what we've done so far, and write it in a file. And then I,
+
+677
+01:51:05.900 --> 01:51:29.640
+Abhirath Batra: start a new session and say, read the summary, and then start a fresh conversation. Because if you go really deep into the context length, and as you must have noticed in the IDE, Claude code tends to, report how many, tokens are left in its context window and asks you to compact every time, so it is a very small context length, so it does suffer with that problem that,
+
+678
+01:51:29.940 --> 01:51:34.249
+Abhirath Batra: It's… it's just better to summarize and start a new agent.
+
+679
+01:51:35.940 --> 01:51:43.810
+Abhirath Batra: Okay, what other tools should be used with these agents to make them more powerful, especially with memory? Depends on the task,
+
+680
+01:51:44.190 --> 01:51:46.980
+Abhirath Batra: Ideally, a bash?
+
+681
+01:51:47.210 --> 01:51:48.310
+Abhirath Batra: the web…
+
+682
+01:51:49.060 --> 01:52:08.220
+Abhirath Batra: these two tools will do everything, because in Bash, you can write any kind of programs, you can write Python, and with the web, you can get all sorts of information. So with these two broadly, all sorts of things can happen, and that's kind of what we're doing here, right? We are building agents from scratch, because, once you start writing programs, basically anything is possible. You can connect to any tools.
+
+683
+01:52:08.220 --> 01:52:14.820
+Abhirath Batra: And, you can have different, Capabilities attached to the agents.
+
+684
+01:52:15.350 --> 01:52:24.429
+Abhirath Batra: Especially with memory. And yes, I think the aspect of memory can be structured and unstructured, right? So if an agent interacts with a person.
+
+685
+01:52:24.920 --> 01:52:31.450
+Abhirath Batra: Then maybe it can store things in memory, but let's say it learns where you live, what you do,
+
+686
+01:52:32.020 --> 01:52:47.899
+Abhirath Batra: or very specific things, like what is the inventory in my fridge right now? Then a database and structured storage is the right way to go, so I would say that connecting it to an actual database would then be the right tool.
+
+687
+01:52:48.530 --> 01:52:59.770
+Abhirath Batra: what is context? How can we use MCP in Claude code? Context 7, I'm… if you meant to say Context 7, I'm not familiar with that. The way to use MCP is Claude Code.
+
+688
+01:53:00.250 --> 01:53:17.130
+Abhirath Batra: Claude itself, the macOS app in Claude already has a way to connect to MCP. So, for example, my browser shows that Claude is able to connect to the MCP server of my browser, and basically, if I say, go book me flight tickets, it
+
+689
+01:53:17.130 --> 01:53:26.859
+Abhirath Batra: literally opens my browser, browses through the website, selects a flight, compares the prices, and does things. So, you can use that, and…
+
+690
+01:53:26.860 --> 01:53:39.059
+Abhirath Batra: The other thing is, if you were using the Cloud Agent SDK, yeah, you should just write a prompt, say, use the MCP server for whatever service you want to connect to, and it should be able to write a program… I mean, write itself a programmatic tool to do that.
+
+691
+01:53:42.430 --> 01:53:49.350
+Abhirath Batra: How do you address preserving the context window and track token usage? Well,
+
+692
+01:53:51.340 --> 01:53:56.480
+Abhirath Batra: That is pretty tricky if you're using the agent SDK.
+
+693
+01:53:56.710 --> 01:54:14.800
+Abhirath Batra: Because you would probably have to, literally count how much you're sending and you're pulling back. I can check if they have updated it and provided a way to track that yourself, like, if they have an API that gives that information, but
+
+694
+01:54:14.800 --> 01:54:32.540
+Abhirath Batra: Otherwise, you would actually have to just count. The context window thing may work out, because it will treat each API call as a fresh context. So, which is why you have a header of context that is sent with each API call, that this is what we are doing.
+
+695
+01:54:32.540 --> 01:54:40.360
+Abhirath Batra: And if you want to build memory in context, then you would have to do that on the end of your agent's program itself.
+
+696
+01:54:40.490 --> 01:54:45.919
+Abhirath Batra: That is not, the SDK itself does not maintain context.
+
+697
+01:54:47.200 --> 01:55:00.249
+Abhirath Batra: What popular MCPs and scale plugins do you recommend? Oh, sorry. Let's say we have built an app, can we add these agents to any of our app and make them more autonomous and powerful? Yeah, of course. Use the Cloud Agent SDK, that should be easy to do.
+
+698
+01:55:01.370 --> 01:55:02.160
+Abhirath Batra: Okay.
+
+699
+01:55:02.290 --> 01:55:06.129
+Abhirath Batra: If we cannot monetize, what purpose would it solve for us?
+
+700
+01:55:06.290 --> 01:55:07.460
+Abhirath Batra: Oh…
+
+701
+01:55:07.890 --> 01:55:15.229
+Abhirath Batra: This is like a demo of capability. It can be monetized, but it requires a lot more investment in terms of effort.
+
+702
+01:55:15.480 --> 01:55:23.550
+Abhirath Batra: That it requires engineering effort, so it can monetize, just with a lot more to do, more than what this class covers.
+
+703
+01:55:26.960 --> 01:55:32.079
+Abhirath Batra: What popular MCPs and skill plugins do you recommend to load before creating agents from scratch?
+
+704
+01:55:32.890 --> 01:55:36.760
+Abhirath Batra: Depends, again, depends on the task. If you're going to use
+
+705
+01:55:37.180 --> 01:55:44.919
+Abhirath Batra: an agent that talks to your browser to do things for you, then definitely the MCP for the Chromium browser would help.
+
+706
+01:55:46.840 --> 01:55:55.380
+Abhirath Batra: Skills and plugins, again, depends on the requirement. If the, let's say if you're building a chartered accountant.
+
+707
+01:55:55.680 --> 01:56:02.190
+Abhirath Batra: agent, then you would want finance skills, and you want an MCP server to connect to Microsoft Excel.
+
+708
+01:56:02.360 --> 01:56:08.799
+Abhirath Batra: And that would, make that agent pretty capable. So it really depends on the context.
+
+709
+01:56:09.970 --> 01:56:19.950
+Abhirath Batra: Can we do similar stuff with Google ADK? Yes, yes, you can do similar stuff with Google ADK. This is just because Claude is the rage these days. We are doing Claude.
+
+710
+01:56:21.580 --> 01:56:25.380
+Abhirath Batra: Can I add the MCP server, add in separate section?
+
+711
+01:56:25.850 --> 01:56:34.970
+Abhirath Batra: Yeah, yeah, sure, you can. But, you'll have to work with Claude Code to implement that connection well, and
+
+712
+01:56:35.310 --> 01:56:41.080
+Abhirath Batra: You know, you may face a little bit of an issue there, but yeah, if you can make it work, that's what works.
+
+713
+01:56:42.140 --> 01:56:49.080
+Abhirath Batra: Can we compare files and projects in Claude with playlists and Claude Code agents and SDK?
+
+714
+01:56:50.080 --> 01:56:54.650
+Abhirath Batra: What is playlist? Can someone tell me? I'm not sure.
+
+715
+01:56:59.270 --> 01:57:09.269
+Abhirath Batra: We can… we can circle back to that, if somebody can tell me. How do we build Agent 7 to build production-ready engineering caliber builds? Yeah, that's… that's a big question.
+
+716
+01:57:09.660 --> 01:57:17.339
+Abhirath Batra: I mean, for… production-grade stuff, you have to think about every little thing. So, for example.
+
+717
+01:57:17.560 --> 01:57:28.170
+Abhirath Batra: how the program… Like, for example, how will you interact with the agents? Will the interaction be with the… it's probably not going to be CLI, it's going to be web. So,
+
+718
+01:57:28.210 --> 01:57:48.169
+Abhirath Batra: there's going to be a lot of sanitization of input, a lot of prevention of prompt injection, lot of scale, because what if your user just writes too much in the text box, and it blows up your tokens, right? So there's just an enormous amount of edge case handling that goes into that engineering.
+
+719
+01:57:48.260 --> 01:57:50.250
+Abhirath Batra: It's point one, and point two is…
+
+720
+01:57:50.540 --> 01:57:52.610
+Abhirath Batra: Running the servers that do this.
+
+721
+01:57:53.230 --> 01:58:00.529
+Abhirath Batra: is also, like, you'll have to use a cloud service like AWS or Azure to get that to work. So yeah, that's,
+
+722
+01:58:01.280 --> 01:58:03.629
+Abhirath Batra: A lot of… again, it's not a simple answer.
+
+723
+01:58:04.340 --> 01:58:09.189
+Abhirath Batra: Can you say, in short, what prompt should we give to add this SDK in an existing app?
+
+724
+01:58:09.490 --> 01:58:15.300
+Abhirath Batra: I think I should answer that in text, I don't think saying that on voice will help.
+
+725
+01:58:16.350 --> 01:58:27.719
+Abhirath Batra: How do non-tech builders tackle gotcha situations? They don't know what they don't. Yeah, I agree. I don't think it's easy. I think for non-tech users.
+
+726
+01:58:27.950 --> 01:58:41.840
+Abhirath Batra: the better option continues to be using N8 and building agents using Cloud Code itself, as sub-agents within Cloud Code, rather than using Cloud Code, sorry, Cloud Agent SDK. It's not easy.
+
+727
+01:58:43.450 --> 01:58:53.260
+Abhirath Batra: Anti-gravity versus Cloud Core for building agents, your take, please. I am a big believer in don't marry the tools. I don't think,
+
+728
+01:58:54.360 --> 01:59:00.429
+Abhirath Batra: the, you know, going, you know, saying that this is the right… this is the one tool that I use
+
+729
+01:59:00.660 --> 01:59:10.629
+Abhirath Batra: it's a good strategy for anything, because tools, capabilities keep changing, market demand keeps changing, and it just…
+
+730
+01:59:10.830 --> 01:59:26.129
+Abhirath Batra: the fundamentals are the same. There may be certain preferences, like a couple of friends of mine who do front-end development, they tell me that Gemini models excel at front-end, whereas for very,
+
+731
+01:59:26.290 --> 01:59:35.100
+Abhirath Batra: difficult backend tasks, OpenAI's codecs is better, and on the balance, Cloud Code is best So,
+
+732
+01:59:35.900 --> 01:59:38.590
+Abhirath Batra: I don't think… this…
+
+733
+01:59:38.870 --> 01:59:57.470
+Abhirath Batra: This is a fair question. I think it's, one, personal preference, and two, context-dependent, market-dependent. You may find that in three months, the Frontier model is coming out with Gemini, and in that, you know, at that time, anti-gravity is the best tool to use. So, AI is changing too fast to have such preferences, in my view.
+
+734
+01:59:59.740 --> 02:00:01.720
+Abhirath Batra: Yeah, I think we went through all the questions.
+
+735
+02:00:03.850 --> 02:00:04.560
+Abhirath Batra: Yo.
+
+736
+02:00:06.640 --> 02:00:10.080
+Abhirath Batra: I think Rashmi has one question in the chat, is there a framework for this?
+
+737
+02:00:10.570 --> 02:00:15.360
+Abhirath Batra: Yeah, there are agentic frameworks, like Langchain and Langsmith.
+
+738
+02:00:15.480 --> 02:00:33.819
+Abhirath Batra: But then they're super engineering heavy, they're technically heavy. So, the framework… if you're talking about a verbal framework of how to think about this, that's kind of what the cloud.md file is supposed to contain, that this is how I, you know, this is one framework for how agents should run in a folder.
+
+739
+02:00:33.820 --> 02:00:38.619
+Abhirath Batra: And, that we'll definitely be sharing. So, yeah, that's one aspect.
+
+740
+02:00:39.740 --> 02:00:42.760
+Abhirath Batra: Any other question that I left?
+
+741
+02:00:44.100 --> 02:00:49.590
+Abhirath Batra: I had covered, I think, Nabila's question on agents and open club you've done.
+
+742
+02:00:50.340 --> 02:00:59.009
+Abhirath Batra: And… Sylvia's question, build your cloud.m.org playbooks, strategize about agents you want to build, what about the next steps?
+
+743
+02:01:00.370 --> 02:01:10.009
+Abhirath Batra: Yeah, the next step is the prompting and asking the cloud code to build the agent itself, and then refining whatever engineering problems might come. Sylvia, did I answer your question?
+
+744
+02:01:15.540 --> 02:01:16.809
+Abhirath Batra: Thanks, thanks, Roland.
+
+745
+02:01:18.040 --> 02:01:25.010
+Abhirath Batra: Danjay, so LangChain is a proper programmatic framework for writing agents.
+
+746
+02:01:25.250 --> 02:01:29.359
+Abhirath Batra: It is… for developers.
+
+747
+02:01:30.420 --> 02:01:35.570
+Abhirath Batra: If that's the direction you're in, then we can probably chat on the side.
+
+748
+02:01:46.300 --> 02:01:57.570
+Nitya Outskill Team: Okay. Yes, Abhrit, so, can maybe… do you have a few pointers to share on something that can bridge the gap between today's session and tomorrow's session? Like, something they should be prepared with?
+
+749
+02:01:57.910 --> 02:02:00.320
+Nitya Outskill Team: Or something they can go back and refer to.
+
+750
+02:02:00.610 --> 02:02:11.110
+Abhirath Batra: Yeah, I think we're gonna do parallel agents, a team of form of agents with Claude Code, and I think the Claude Code sessions that deleted are a great, revision point.
+
+751
+02:02:11.110 --> 02:02:21.019
+Abhirath Batra: Because that's kind of where we'll jump off from. We'll revert back to that world where we are using skills and things. We are not going to do the programmatic stuff. We might use…
+
+752
+02:02:21.060 --> 02:02:28.369
+Abhirath Batra: the Clot Code Agent, swarm to write these kind of agents and codes for us.
+
+753
+02:02:28.460 --> 02:02:32.499
+Abhirath Batra: But broadly, those sessions should be…
+
+754
+02:02:32.690 --> 02:02:35.350
+Abhirath Batra: The best to have in mind.
+
+755
+02:02:35.730 --> 02:02:49.550
+Nitya Outskill Team: Got it, okay. Okay, guys, thank you so much. I know today was unexpectedly a pretty short session, so, any feedback that you guys have on today's session, please let us know. Abhirat, thank you so much for giving your time. I think.
+
+756
+02:02:49.550 --> 02:02:50.210
+Abhirath Batra: Liberty.
+
+757
+02:02:50.210 --> 02:02:52.849
+Nitya Outskill Team: Yeah, I think you did great.
+
+758
+02:02:52.980 --> 02:03:02.499
+Nitya Outskill Team: Also, if anything else you guys specifically want, like, Walker basically had some suggestions on what could be covered. If you have any other topic suggestions as well, you can let us know.
+
+759
+02:03:02.680 --> 02:03:06.300
+Nitya Outskill Team: Right? Yep. Anything else? Any other question?
+
+760
+02:03:06.560 --> 02:03:17.969
+Nitya Outskill Team: Can we… sorry, I missed that question. Can we get some homework today after the class? Amirot, maybe if you can come up with some use case that you can, give them, like, as a task for today.
+
+761
+02:03:20.120 --> 02:03:27.720
+Abhirath Batra: Yeah, I think just replicating this would be a good enough thing for now, because there'll be a lot of smaller issues, we'll just share the
+
+762
+02:03:27.900 --> 02:03:36.640
+Abhirath Batra: Oh, for the… for tomorrow's class? Yeah, just, I think the cloud code, sessions, if you could go through the notes from then, that should be enough.
+
+763
+02:03:37.650 --> 02:03:38.449
+Nitya Outskill Team: Yep.
+
+764
+02:03:39.000 --> 02:03:42.330
+Nitya Outskill Team: Okay, will claw skills be covered in detail?
+
+765
+02:03:45.580 --> 02:03:53.340
+Abhirath Batra: Let me check, you know, till what degree did… were they covered in, previously, and yes, we can do that, for sure.
+
+766
+02:03:55.890 --> 02:03:58.179
+Abhirath Batra: Yes, Amir, we'll definitely provide all these.
+
+767
+02:03:58.540 --> 02:03:59.180
+Nitya Outskill Team: Yeah.
+
+768
+02:04:01.870 --> 02:04:04.660
+Abhirath Batra: Yeah, Renika, this is,
+
+769
+02:04:05.400 --> 02:04:14.180
+Abhirath Batra: very, user-dependent, like, a lot of people have preferences. Like, if you were building with AWS, it has its own set of things to build with.
+
+770
+02:04:14.290 --> 02:04:18.249
+Abhirath Batra: Others like to use things like post-hoc sentry.
+
+771
+02:04:18.490 --> 02:04:26.340
+Abhirath Batra: Yeah, it's, it's… I cannot answer, mainly talk about what we need to think about.
+
+772
+02:04:26.530 --> 02:04:35.319
+Abhirath Batra: I mean, should we do a session on how to take these agents to production? If that is something a lot of people want, then we can…
+
+773
+02:04:35.800 --> 02:04:44.530
+Abhirath Batra: probably look at that, but oh, wow, everybody says yes. But that's very engineering heavy. Is everybody comfortable going engineering heavy? If yes, we can do that.
+
+774
+02:04:45.530 --> 02:04:47.129
+Abhirath Batra: Wow, that's a lot of yeses.
+
+775
+02:04:47.290 --> 02:04:52.229
+Abhirath Batra: live engineering, okay. Okay, past engineers, sure.
+
+776
+02:04:52.710 --> 02:05:00.610
+Abhirath Batra: Yeah, Nitya, I think we need to talk about this. We can do… we can, we can do production, if that's what everybody wants to do.
+
+777
+02:05:02.270 --> 02:05:05.969
+Nitya Outskill Team: Okay, okay, great, thank you guys, thank you so much.
+
+778
+02:05:05.970 --> 02:05:06.550
+Abhirath Batra: Everybody.
+
+779
+02:05:06.550 --> 02:05:17.269
+Nitya Outskill Team: Try to, upload in the recording by today night, if possible. I think it'll be ready in the next 2-3 hours, so that you guys can catch up on that, and tomorrow as well, you can spend time working on it, yeah.
+
+780
+02:05:17.470 --> 02:05:20.149
+Nitya Outskill Team: Thank you so much, have a nice day, see you tomorrow.
+
+781
+02:05:20.420 --> 02:05:21.340
+Nitya Outskill Team: Buh-bye.
+

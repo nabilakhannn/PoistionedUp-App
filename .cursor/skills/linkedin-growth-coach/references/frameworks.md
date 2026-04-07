@@ -107,6 +107,10 @@ Do **not** make every post in a week about one subtopic only. **Vary angle and p
 
 Rough pattern: **four** posts per week across **three** content types: educational, personal or founder-led, lead gen or offer-adjacent. Adjust numbers to user's reality.
 
+## Generated copy (human-sounding rules)
+
+When the model writes **posts or comments** for the user, it must follow `human-writing-ai-tells.md` and `custom-ai-instructions.md`, not only hook theory. That includes: **no em dash**, no **parallel anaphora triples** ("no X, no Y, no Z" style), no gimmick intros, and default to **paragraphs** instead of bullets unless the user asked for bullets.
+
 ## Hook rules (feed behavior)
 
 - Optimize for "see more" / dwell: first lines must **not** resolve the whole arc.
