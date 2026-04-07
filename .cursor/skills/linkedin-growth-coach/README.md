@@ -9,6 +9,8 @@ A **Cursor / Claude Code** skill that steers the model like a direct, systems-fi
 | `SKILL.md` | Main skill: stance, session flow, questions, playbooks, human-writing contract, LinkedIn post + five comments bundle |
 | `references/frameworks.md` | Time split, trackers, habits, hooks, platform notes, nurture |
 | `references/coach-voice.md` | How the cohort-style coach talks, thinks, and stacks questions |
+| `references/coaching-patterns-and-examples.md` | Diagnosis order, moves, and many short examples (teardowns, headlines, DMs, launches) |
+| `references/source/session-index.md` | Fathom links and topic map per recorded session |
 | `references/human-writing-ai-tells.md` | Full AI-tell library, detector teaching rules, generation process, prompt template |
 | `references/human-writing-ai-tells.json` | Machine-readable hard bans + pointers (full prose in `.md`) |
 | `references/custom-ai-instructions.md` | LinkedIn formatting defaults, voice, gimmick intro ban, hashtag rule |
@@ -55,6 +57,8 @@ After push, open the skill from the default branch (`main` if that is your defau
 - **Main skill:** [`.cursor/skills/linkedin-growth-coach/SKILL.md`](https://github.com/nabilakhannn/PoistionedUp-App/blob/main/.cursor/skills/linkedin-growth-coach/SKILL.md)
 - **Frameworks:** [`.cursor/skills/linkedin-growth-coach/references/frameworks.md`](https://github.com/nabilakhannn/PoistionedUp-App/blob/main/.cursor/skills/linkedin-growth-coach/references/frameworks.md)
 - **Coach voice:** [`.cursor/skills/linkedin-growth-coach/references/coach-voice.md`](https://github.com/nabilakhannn/PoistionedUp-App/blob/main/.cursor/skills/linkedin-growth-coach/references/coach-voice.md)
+- **Patterns + examples:** [`.cursor/skills/linkedin-growth-coach/references/coaching-patterns-and-examples.md`](https://github.com/nabilakhannn/PoistionedUp-App/blob/main/.cursor/skills/linkedin-growth-coach/references/coaching-patterns-and-examples.md)
+- **Session index (Fathom):** [`.cursor/skills/linkedin-growth-coach/references/source/session-index.md`](https://github.com/nabilakhannn/PoistionedUp-App/blob/main/.cursor/skills/linkedin-growth-coach/references/source/session-index.md)
 - **Human writing (full):** [`.cursor/skills/linkedin-growth-coach/references/human-writing-ai-tells.md`](https://github.com/nabilakhannn/PoistionedUp-App/blob/main/.cursor/skills/linkedin-growth-coach/references/human-writing-ai-tells.md)
 - **Human writing (JSON):** [`.cursor/skills/linkedin-growth-coach/references/human-writing-ai-tells.json`](https://github.com/nabilakhannn/PoistionedUp-App/blob/main/.cursor/skills/linkedin-growth-coach/references/human-writing-ai-tells.json)
 - **Custom AI instructions:** [`.cursor/skills/linkedin-growth-coach/references/custom-ai-instructions.md`](https://github.com/nabilakhannn/PoistionedUp-App/blob/main/.cursor/skills/linkedin-growth-coach/references/custom-ai-instructions.md)

@@ -1,0 +1,12 @@
+# Session index (links and coverage)
+
+Use this list to find **original recordings**. Pattern summaries and examples live in `../coaching-patterns-and-examples.md`.
+
+| Session | Link | Topics useful for the skill |
+|--------|------|-----------------------------|
+| Impromptu Zoom, 2026-03-20 | [Fathom](https://fathom.video/share/aE8o9UmQz6A8NQzp7NVJknfaBXQSzoFm) | Wins ritual, tactical Q&A only, offer stacking + waitlist, ICP DMs, broad/narrow/niche, Paul clarity-call vs blueprint, Ashley profile + employee-creator thesis + Cannes proof, Shannon reintroduction structure, Luisa lead magnet framing + pillars, Alexander fitness + founder pillars, Nabila headline match + DM homework, Srushti double-down format + carousel graphs, Julia image mismatch, Ivan announcement + language test, Ishita connections + magnet, Victoria education vs pain posts + tangibility, Kate vague headline fix, Ana female founders vs three random industries, Ana (Spanish) tech vs LinkedIn guru pivot + email timing |
+| Known Club, 2025-11-17 | [Fathom](https://fathom.video/calls/475058569) | Cleo + SOP workflow, live hook surgery, Abby positioning vs great content, static photo advice, quote card anatomy, scheduling vs first-30-min engagement, hook library + swipe remix, SLAY/PAS/AIDA mention, Denise reintroduction + CTA philosophy, Leslie Web Summit post vs newsletter, Paras family story hook + photo, Tanya carousel A/B lesson, Janine overwhelm → educate + story first |
+| Known Club, 2025-11-24 | [Fathom](https://fathom.video/calls/483614619) | Pivot Venn diagram, LinkedIny → agency pivot, corporate as strength, Irina H2H content vs B2B voice, Aida neurodiversity × personal branding intersection, Elena parallel SaaS + workshops, Tanya overwhelmed stack, Nabila stop selling the whole product in one message + loom + volume, Vivi purpose vs money framing, Carly RevOps simplification hooks, Mariela packaging + quotes vs photos, Ahmad “where is the content” diagnosis, Srushti unfair advantage + pricing mindset, Jirrove reintroduction + tree, Olga two ICPs, Karen Palmer real photos vs AI, launch tactics Mariela |
+| Blueprint: $100k+ launch | [Fathom summary share](https://fathom.video/share/vceAPW6oC7_48wNthmDVrGTHdxkmGPs7) + related call refs in user notes | Warm-up cadence, magnet + email, offer types, blitz channels, Lives structure |
+
+Add new rows when you drop more transcripts into `transcripts/` or new Fathom links here.

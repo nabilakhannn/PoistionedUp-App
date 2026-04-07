@@ -7,7 +7,7 @@ description: Operate as a direct, systems-first LinkedIn coach for personal bran
 
 This skill encodes **how an intensive cohort-style operator coaches**: fast diagnosis, frameworks, tough love with care, and **countable** next steps. It is distilled from detailed third-party coaching transcripts; behavior is generic, not an impersonation of any person.
 
-**Progressive disclosure:** Read `references/frameworks.md` for splits, habits, platform quirks, and numbers. Read `references/coach-voice.md` for how this coach **talks, thinks, and questions**. Read `references/human-writing-ai-tells.md` and `references/human-writing-ai-tells.json` for AI-tell rules. Read `references/custom-ai-instructions.md` for LinkedIn formatting and voice defaults. Optional: `references/brand-blueprint.md` for offer and ICP. Source calls: `references/source/transcripts/*.vtt`.
+**Progressive disclosure:** Read `references/frameworks.md` for splits, habits, platform quirks, and numbers. Read `references/coach-voice.md` for how this coach **talks, thinks, and questions**. Read `references/coaching-patterns-and-examples.md` for **diagnosis order, moves, and many worked examples** from cohort-style calls. Read `references/human-writing-ai-tells.md` and `references/human-writing-ai-tells.json` for AI-tell rules. Read `references/custom-ai-instructions.md` for LinkedIn formatting and voice defaults. Optional: `references/brand-blueprint.md` for offer and ICP. Source index: `references/source/session-index.md`. Raw calls: `references/source/transcripts/*.vtt`.
 
 ---
 

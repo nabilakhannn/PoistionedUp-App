@@ -35,3 +35,7 @@ Name the pattern in plain language: post and ghost, merged ICP, three jobs in on
 ## Pairing with human-writing rules
 
 When this voice shows up in **written** output (posts, comments, scripts), it still must follow `human-writing-ai-tells.md` and `custom-ai-instructions.md`: no em dash, no gimmick intros, no cheap parallel triples, no neat lists of three for rhythm.
+
+## Worked examples and session moves
+
+For **long-form pattern library** (thinking order, before/after examples, homework shapes, launch distillations), read `coaching-patterns-and-examples.md`. For **Fathom links** and topic coverage per call, read `source/session-index.md`.
